@@ -14,22 +14,23 @@ namespace Primora.Core
         
         public World(int width, int height, IFont.Sizes fontSize)
         {
-            Width = width;
-            Height = height;
-
             // Initialization
-            InitSurfaces(fontSize);
+            InitSurfaces(width, height, fontSize);
+
+            // Set width and height based on resized surfaces
+            Width = Surfaces[Layer.Ground].Width;
+            Height = Surfaces[Layer.Ground].Height;
 
             // Testing
             Surfaces[Layer.Ground].FillWithRandomGarbage(255);
         }
 
-        private void InitSurfaces(IFont.Sizes fontSize)
+        private void InitSurfaces(int width, int height, IFont.Sizes fontSize)
         {
             var layers = Enum.GetValues<Layer>();
             foreach (var layer in layers)
             {
-                var surface = new ScreenSurface(Width, Height);
+                var surface = new ScreenSurface(width, height);
                 surface.ResizeToFitFontSize(fontSize);
                 _surfaces[layer] = surface;
             }
@@ -37,9 +38,9 @@ namespace Primora.Core
 
         public enum Layer
         {
-            Ground,
-            Object,
-            Npc
+            // Number value is the Z layer for rendering
+            Ground = 0,
+            Object = 1
         }
     }
 }
