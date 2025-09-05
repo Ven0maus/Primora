@@ -17,8 +17,8 @@ namespace Primora.Extensions
         internal static Point TranslatedSize(this IScreenSurface surface)
         {
             return new Point(
-                (int)Math.Ceiling((double)Constants.DefaultWindowSize.width / surface.FontSize.X), 
-                (int)Math.Ceiling((double)Constants.DefaultWindowSize.height / surface.FontSize.Y));
+                (int)Math.Ceiling((double)Constants.General.DefaultWindowSize.width / surface.FontSize.X), 
+                (int)Math.Ceiling((double)Constants.General.DefaultWindowSize.height / surface.FontSize.Y));
         }
 
         /// <summary>

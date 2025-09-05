@@ -14,13 +14,13 @@ namespace Primora
         /// </summary>
         private static void Main()
         {
-            Settings.WindowTitle = Constants.GameTitle;
+            Settings.WindowTitle = Constants.General.GameTitle;
 
             // Configure how SadConsole starts up
             Builder startup = new Builder()
                 .SetWindowSizeInPixels(
-                    Constants.DefaultWindowSize.width,
-                    Constants.DefaultWindowSize.height)
+                    Constants.General.DefaultWindowSize.width,
+                    Constants.General.DefaultWindowSize.height)
                 .SetStartingScreen<RootScreen>()
                 .IsStartingScreenFocused(true)
                 .ConfigureFonts((fc, gh) =>

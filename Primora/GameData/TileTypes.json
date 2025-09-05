@@ -1,0 +1,50 @@
+﻿[
+  {
+    "id": 0,
+    "name": "Grass",
+    "foreground": null,
+    "background": "#438a59",
+    "glyph": 0,
+    "obstruction": "None"
+  },
+  {
+    "id": 1,
+    "name": "Grass",
+    "foreground": null,
+    "background": "Green",
+    "glyph": 0,
+    "obstruction": "None"
+  },
+  {
+    "id": 2,
+    "name": "Bush",
+    "foreground": "#588028",
+    "background": null,
+    "glyph": "*",
+    "obstruction": "None"
+  },
+  {
+    "id": 3,
+    "name": "Tree",
+    "foreground": "#224d37",
+    "background": null,
+    "glyph": 6,
+    "obstruction": "NotWalkable, NoVision"
+  },
+  {
+    "id": 4,
+    "name": "Rock",
+    "foreground": "#565863",
+    "background": null,
+    "glyph": 7,
+    "obstruction": "NotWalkable, NoVision"
+  },
+  {
+    "id": 5,
+    "name": "Hut",
+    "foreground": "White",
+    "background": null,
+    "glyph": 127,
+    "obstruction": "NotWalkable, NoVision"
+  }
+]

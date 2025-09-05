@@ -1,8 +1,27 @@
-﻿namespace Primora
+﻿using Primora.Serialization;
+using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Primora
 {
     internal static class Constants
     {
-        internal const string GameTitle = "Primora";
-        internal static readonly (int width, int height) DefaultWindowSize = (1920, 1080);
+        internal static class General
+        {
+            internal const string GameTitle = "Primora";
+            internal static readonly (int width, int height) DefaultWindowSize = (1920, 1080);
+            internal static readonly Random Random = new(1337);
+            internal static readonly JsonSerializerOptions SerializerOptions = new()
+            {
+                PropertyNameCaseInsensitive = true,
+                Converters = { new ColorJsonConverter(), new JsonStringEnumConverter() }
+            };
+        }
+
+        internal static class GameData
+        {
+            internal const string TileTypesDataPath = "GameData/TileTypes.json";
+        }
     }
 }
