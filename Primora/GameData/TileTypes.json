@@ -2,17 +2,17 @@
   {
     "id": 0,
     "name": "Grass",
-    "foreground": null,
-    "background": "#438a59",
-    "glyph": 0,
+    "foreground": "#438a59",
+    "background": "#3d6b51",
+    "glyph": 177,
     "obstruction": "None"
   },
   {
     "id": 1,
     "name": "Grass",
-    "foreground": null,
-    "background": "Green",
-    "glyph": 0,
+    "foreground": "#2f874b",
+    "background": "#3d6b51",
+    "glyph": 176,
     "obstruction": "None"
   },
   {
