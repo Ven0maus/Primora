@@ -1,12 +1,14 @@
-﻿using System.Runtime.CompilerServices;
+﻿using SadRogue.Primitives;
+using System;
+using System.Runtime.CompilerServices;
 
-namespace Primora.Core
+namespace Primora.Core.Procedural.Common
 {
     /**
      * K.jpg's OpenSimplex 2, smooth variant ("SuperSimplex")
      * https://github.com/KdotJPG/OpenSimplex2
      */
-    public static class OpenSimplex2S
+    public static class OpenSimplex
     {
         private const long PRIME_X = 0x5205402B9270C86FL;
         private const long PRIME_Y = 0x598CD327003817B5L;
@@ -40,6 +42,113 @@ namespace Primora.Core
         private const float RSQUARED_2D = 2.0f / 3.0f;
         private const float RSQUARED_3D = 3.0f / 4.0f;
         private const float RSQUARED_4D = 4.0f / 5.0f;
+
+        /*
+         * Noise Map Generators 
+         */
+
+        /// <summary>
+        /// Returns a noisemap based on opensimplex noise.
+        /// </summary>
+        /// <param name="mapWidth"></param>
+        /// <param name="mapHeight"></param>
+        /// <param name="seed"></param>
+        /// <param name="scale"></param>
+        /// <param name="octaves"></param>
+        /// <param name="persistance"></param>
+        /// <param name="lacunarity"></param>
+        /// <param name="offset"></param>
+        /// <returns></returns>
+        public static float[] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Point? offset = null)
+        {
+            float[] noiseMap = new float[mapWidth * mapHeight];
+
+            var random = new Random(seed);
+
+            // We need atleast one octave
+            if (octaves < 1)
+            {
+                octaves = 1;
+            }
+
+            offset ??= Point.Zero;
+            Point[] octaveOffsets = new Point[octaves];
+            for (int i = 0; i < octaves; i++)
+            {
+                int offsetX = random.Next(-100000, 100000) + offset.Value.X;
+                int offsetY = random.Next(-100000, 100000) + offset.Value.Y;
+                octaveOffsets[i] = new Point(offsetX, offsetY);
+            }
+
+            if (scale <= 0f)
+            {
+                scale = 0.0001f;
+            }
+
+            float maxNoiseHeight = float.MinValue;
+            float minNoiseHeight = float.MaxValue;
+
+            // When changing noise scale, it zooms from top-right corner
+            // This will make it zoom from the center
+            float halfWidth = mapWidth / 2f;
+            float halfHeight = mapHeight / 2f;
+
+            for (int x = 0, y; x < mapWidth; x++)
+            {
+                for (y = 0; y < mapHeight; y++)
+                {
+                    float amplitude = 1;
+                    float frequency = 1;
+                    float noiseHeight = 0;
+                    for (int i = 0; i < octaves; i++)
+                    {
+                        float sampleX = (x - halfWidth) / scale * frequency + octaveOffsets[i].X;
+                        float sampleY = (y - halfHeight) / scale * frequency + octaveOffsets[i].Y;
+
+                        // Use unity's implementation of perlin noise
+                        float perlinValue = Noise2(seed, sampleX, sampleY) * 2 - 1;
+
+                        noiseHeight += perlinValue * amplitude;
+                        amplitude *= persistance;
+                        frequency *= lacunarity;
+                    }
+
+                    if (noiseHeight > maxNoiseHeight)
+                        maxNoiseHeight = noiseHeight;
+                    else if (noiseHeight < minNoiseHeight)
+                        minNoiseHeight = noiseHeight;
+
+                    noiseMap[y * mapWidth + x] = noiseHeight;
+                }
+            }
+
+            for (int x = 0, y; x < mapWidth; x++)
+            {
+                for (y = 0; y < mapHeight; y++)
+                {
+                    // Returns a value between 0f and 1f based on noiseMap value
+                    // minNoiseHeight being 0f, and maxNoiseHeight being 1f
+                    noiseMap[y * mapWidth + x] = InverseLerp(minNoiseHeight, maxNoiseHeight, noiseMap[y * mapWidth + x]);
+                }
+            }
+            return noiseMap;
+        }
+
+        private static float InverseLerp(float a, float b, float value)
+        {
+            if (a < b)
+            {
+                if (value <= a) return 0f;
+                if (value >= b) return 1f;
+            }
+            else
+            {
+                if (value <= b) return 1f;
+                if (value >= a) return 0f;
+            }
+
+            return (value - a) / (b - a);
+        }
 
         /*
          * Noise Evaluators
@@ -91,13 +200,13 @@ namespace Primora.Core
 
             // First vertex.
             float a0 = RSQUARED_2D - dx0 * dx0 - dy0 * dy0;
-            float value = (a0 * a0) * (a0 * a0) * Grad(seed, xsbp, ysbp, dx0, dy0);
+            float value = a0 * a0 * (a0 * a0) * Grad(seed, xsbp, ysbp, dx0, dy0);
 
             // Second vertex.
             float a1 = (float)(2 * (1 + 2 * UNSKEW_2D) * (1 / UNSKEW_2D + 2)) * t + ((float)(-2 * (1 + 2 * UNSKEW_2D) * (1 + 2 * UNSKEW_2D)) + a0);
             float dx1 = dx0 - (float)(1 + 2 * UNSKEW_2D);
             float dy1 = dy0 - (float)(1 + 2 * UNSKEW_2D);
-            value += (a1 * a1) * (a1 * a1) * Grad(seed, xsbp + PRIME_X, ysbp + PRIME_Y, dx1, dy1);
+            value += a1 * a1 * (a1 * a1) * Grad(seed, xsbp + PRIME_X, ysbp + PRIME_Y, dx1, dy1);
 
             // Third and fourth vertices.
             // Nested conditionals were faster than compact bit logic/arithmetic.
@@ -111,7 +220,7 @@ namespace Primora.Core
                     float a2 = RSQUARED_2D - dx2 * dx2 - dy2 * dy2;
                     if (a2 > 0)
                     {
-                        value += (a2 * a2) * (a2 * a2) * Grad(seed, xsbp + (PRIME_X << 1), ysbp + PRIME_Y, dx2, dy2);
+                        value += a2 * a2 * (a2 * a2) * Grad(seed, xsbp + (PRIME_X << 1), ysbp + PRIME_Y, dx2, dy2);
                     }
                 }
                 else
@@ -121,7 +230,7 @@ namespace Primora.Core
                     float a2 = RSQUARED_2D - dx2 * dx2 - dy2 * dy2;
                     if (a2 > 0)
                     {
-                        value += (a2 * a2) * (a2 * a2) * Grad(seed, xsbp, ysbp + PRIME_Y, dx2, dy2);
+                        value += a2 * a2 * (a2 * a2) * Grad(seed, xsbp, ysbp + PRIME_Y, dx2, dy2);
                     }
                 }
 
@@ -132,7 +241,7 @@ namespace Primora.Core
                     float a3 = RSQUARED_2D - dx3 * dx3 - dy3 * dy3;
                     if (a3 > 0)
                     {
-                        value += (a3 * a3) * (a3 * a3) * Grad(seed, xsbp + PRIME_X, ysbp + (PRIME_Y << 1), dx3, dy3);
+                        value += a3 * a3 * (a3 * a3) * Grad(seed, xsbp + PRIME_X, ysbp + (PRIME_Y << 1), dx3, dy3);
                     }
                 }
                 else
@@ -142,7 +251,7 @@ namespace Primora.Core
                     float a3 = RSQUARED_2D - dx3 * dx3 - dy3 * dy3;
                     if (a3 > 0)
                     {
-                        value += (a3 * a3) * (a3 * a3) * Grad(seed, xsbp + PRIME_X, ysbp, dx3, dy3);
+                        value += a3 * a3 * (a3 * a3) * Grad(seed, xsbp + PRIME_X, ysbp, dx3, dy3);
                     }
                 }
             }
@@ -155,7 +264,7 @@ namespace Primora.Core
                     float a2 = RSQUARED_2D - dx2 * dx2 - dy2 * dy2;
                     if (a2 > 0)
                     {
-                        value += (a2 * a2) * (a2 * a2) * Grad(seed, xsbp - PRIME_X, ysbp, dx2, dy2);
+                        value += a2 * a2 * (a2 * a2) * Grad(seed, xsbp - PRIME_X, ysbp, dx2, dy2);
                     }
                 }
                 else
@@ -165,7 +274,7 @@ namespace Primora.Core
                     float a2 = RSQUARED_2D - dx2 * dx2 - dy2 * dy2;
                     if (a2 > 0)
                     {
-                        value += (a2 * a2) * (a2 * a2) * Grad(seed, xsbp + PRIME_X, ysbp, dx2, dy2);
+                        value += a2 * a2 * (a2 * a2) * Grad(seed, xsbp + PRIME_X, ysbp, dx2, dy2);
                     }
                 }
 
@@ -176,7 +285,7 @@ namespace Primora.Core
                     float a2 = RSQUARED_2D - dx2 * dx2 - dy2 * dy2;
                     if (a2 > 0)
                     {
-                        value += (a2 * a2) * (a2 * a2) * Grad(seed, xsbp, ysbp - PRIME_Y, dx2, dy2);
+                        value += a2 * a2 * (a2 * a2) * Grad(seed, xsbp, ysbp - PRIME_Y, dx2, dy2);
                     }
                 }
                 else
@@ -186,7 +295,7 @@ namespace Primora.Core
                     float a2 = RSQUARED_2D - dx2 * dx2 - dy2 * dy2;
                     if (a2 > 0)
                     {
-                        value += (a2 * a2) * (a2 * a2) * Grad(seed, xsbp, ysbp + PRIME_Y, dx2, dy2);
+                        value += a2 * a2 * (a2 * a2) * Grad(seed, xsbp, ysbp + PRIME_Y, dx2, dy2);
                     }
                 }
             }
@@ -282,7 +391,7 @@ namespace Primora.Core
             float y0 = yi + yNMask;
             float z0 = zi + zNMask;
             float a0 = RSQUARED_3D - x0 * x0 - y0 * y0 - z0 * z0;
-            float value = (a0 * a0) * (a0 * a0) * Grad(seed,
+            float value = a0 * a0 * (a0 * a0) * Grad(seed,
                 xrbp + (xNMask & PRIME_X), yrbp + (yNMask & PRIME_Y), zrbp + (zNMask & PRIME_Z), x0, y0, z0);
 
             // Second vertex.
@@ -290,7 +399,7 @@ namespace Primora.Core
             float y1 = yi - 0.5f;
             float z1 = zi - 0.5f;
             float a1 = RSQUARED_3D - x1 * x1 - y1 * y1 - z1 * z1;
-            value += (a1 * a1) * (a1 * a1) * Grad(seed2,
+            value += a1 * a1 * (a1 * a1) * Grad(seed2,
                 xrbp + PRIME_X, yrbp + PRIME_Y, zrbp + PRIME_Z, x1, y1, z1);
 
             // Shortcuts for building the remaining falloffs.
@@ -309,7 +418,7 @@ namespace Primora.Core
                 float x2 = x0 - (xNMask | 1);
                 float y2 = y0;
                 float z2 = z0;
-                value += (a2 * a2) * (a2 * a2) * Grad(seed,
+                value += a2 * a2 * (a2 * a2) * Grad(seed,
                     xrbp + (~xNMask & PRIME_X), yrbp + (yNMask & PRIME_Y), zrbp + (zNMask & PRIME_Z), x2, y2, z2);
             }
             else
@@ -320,7 +429,7 @@ namespace Primora.Core
                     float x3 = x0;
                     float y3 = y0 - (yNMask | 1);
                     float z3 = z0 - (zNMask | 1);
-                    value += (a3 * a3) * (a3 * a3) * Grad(seed,
+                    value += a3 * a3 * (a3 * a3) * Grad(seed,
                         xrbp + (xNMask & PRIME_X), yrbp + (~yNMask & PRIME_Y), zrbp + (~zNMask & PRIME_Z), x3, y3, z3);
                 }
 
@@ -330,7 +439,7 @@ namespace Primora.Core
                     float x4 = (xNMask | 1) + x1;
                     float y4 = y1;
                     float z4 = z1;
-                    value += (a4 * a4) * (a4 * a4) * Grad(seed2,
+                    value += a4 * a4 * (a4 * a4) * Grad(seed2,
                         xrbp + (xNMask & unchecked(PRIME_X * 2)), yrbp + PRIME_Y, zrbp + PRIME_Z, x4, y4, z4);
                     skip5 = true;
                 }
@@ -343,7 +452,7 @@ namespace Primora.Core
                 float x6 = x0;
                 float y6 = y0 - (yNMask | 1);
                 float z6 = z0;
-                value += (a6 * a6) * (a6 * a6) * Grad(seed,
+                value += a6 * a6 * (a6 * a6) * Grad(seed,
                     xrbp + (xNMask & PRIME_X), yrbp + (~yNMask & PRIME_Y), zrbp + (zNMask & PRIME_Z), x6, y6, z6);
             }
             else
@@ -354,7 +463,7 @@ namespace Primora.Core
                     float x7 = x0 - (xNMask | 1);
                     float y7 = y0;
                     float z7 = z0 - (zNMask | 1);
-                    value += (a7 * a7) * (a7 * a7) * Grad(seed,
+                    value += a7 * a7 * (a7 * a7) * Grad(seed,
                         xrbp + (~xNMask & PRIME_X), yrbp + (yNMask & PRIME_Y), zrbp + (~zNMask & PRIME_Z), x7, y7, z7);
                 }
 
@@ -364,8 +473,8 @@ namespace Primora.Core
                     float x8 = x1;
                     float y8 = (yNMask | 1) + y1;
                     float z8 = z1;
-                    value += (a8 * a8) * (a8 * a8) * Grad(seed2,
-                        xrbp + PRIME_X, yrbp + (yNMask & (PRIME_Y << 1)), zrbp + PRIME_Z, x8, y8, z8);
+                    value += a8 * a8 * (a8 * a8) * Grad(seed2,
+                        xrbp + PRIME_X, yrbp + (yNMask & PRIME_Y << 1), zrbp + PRIME_Z, x8, y8, z8);
                     skip9 = true;
                 }
             }
@@ -377,7 +486,7 @@ namespace Primora.Core
                 float xA = x0;
                 float yA = y0;
                 float zA = z0 - (zNMask | 1);
-                value += (aA * aA) * (aA * aA) * Grad(seed,
+                value += aA * aA * (aA * aA) * Grad(seed,
                     xrbp + (xNMask & PRIME_X), yrbp + (yNMask & PRIME_Y), zrbp + (~zNMask & PRIME_Z), xA, yA, zA);
             }
             else
@@ -388,7 +497,7 @@ namespace Primora.Core
                     float xB = x0 - (xNMask | 1);
                     float yB = y0 - (yNMask | 1);
                     float zB = z0;
-                    value += (aB * aB) * (aB * aB) * Grad(seed,
+                    value += aB * aB * (aB * aB) * Grad(seed,
                         xrbp + (~xNMask & PRIME_X), yrbp + (~yNMask & PRIME_Y), zrbp + (zNMask & PRIME_Z), xB, yB, zB);
                 }
 
@@ -398,8 +507,8 @@ namespace Primora.Core
                     float xC = x1;
                     float yC = y1;
                     float zC = (zNMask | 1) + z1;
-                    value += (aC * aC) * (aC * aC) * Grad(seed2,
-                        xrbp + PRIME_X, yrbp + PRIME_Y, zrbp + (zNMask & (PRIME_Z << 1)), xC, yC, zC);
+                    value += aC * aC * (aC * aC) * Grad(seed2,
+                        xrbp + PRIME_X, yrbp + PRIME_Y, zrbp + (zNMask & PRIME_Z << 1), xC, yC, zC);
                     skipD = true;
                 }
             }
@@ -412,8 +521,8 @@ namespace Primora.Core
                     float x5 = x1;
                     float y5 = (yNMask | 1) + y1;
                     float z5 = (zNMask | 1) + z1;
-                    value += (a5 * a5) * (a5 * a5) * Grad(seed2,
-                        xrbp + PRIME_X, yrbp + (yNMask & (PRIME_Y << 1)), zrbp + (zNMask & (PRIME_Z << 1)), x5, y5, z5);
+                    value += a5 * a5 * (a5 * a5) * Grad(seed2,
+                        xrbp + PRIME_X, yrbp + (yNMask & PRIME_Y << 1), zrbp + (zNMask & PRIME_Z << 1), x5, y5, z5);
                 }
             }
 
@@ -425,8 +534,8 @@ namespace Primora.Core
                     float x9 = (xNMask | 1) + x1;
                     float y9 = y1;
                     float z9 = (zNMask | 1) + z1;
-                    value += (a9 * a9) * (a9 * a9) * Grad(seed2,
-                        xrbp + (xNMask & unchecked(PRIME_X * 2)), yrbp + PRIME_Y, zrbp + (zNMask & (PRIME_Z << 1)), x9, y9, z9);
+                    value += a9 * a9 * (a9 * a9) * Grad(seed2,
+                        xrbp + (xNMask & unchecked(PRIME_X * 2)), yrbp + PRIME_Y, zrbp + (zNMask & PRIME_Z << 1), x9, y9, z9);
                 }
             }
 
@@ -438,8 +547,8 @@ namespace Primora.Core
                     float xD = (xNMask | 1) + x1;
                     float yD = (yNMask | 1) + y1;
                     float zD = z1;
-                    value += (aD * aD) * (aD * aD) * Grad(seed2,
-                        xrbp + (xNMask & (PRIME_X << 1)), yrbp + (yNMask & (PRIME_Y << 1)), zrbp + PRIME_Z, xD, yD, zD);
+                    value += aD * aD * (aD * aD) * Grad(seed2,
+                        xrbp + (xNMask & PRIME_X << 1), yrbp + (yNMask & PRIME_Y << 1), zrbp + PRIME_Z, xD, yD, zD);
                 }
             }
 
@@ -532,10 +641,10 @@ namespace Primora.Core
             long xsvp = xsb * PRIME_X, ysvp = ysb * PRIME_Y, zsvp = zsb * PRIME_Z, wsvp = wsb * PRIME_W;
 
             // Index into initial table.
-            int index = ((FastFloor(xs * 4) & 3) << 0)
-                | ((FastFloor(ys * 4) & 3) << 2)
-                | ((FastFloor(zs * 4) & 3) << 4)
-                | ((FastFloor(ws * 4) & 3) << 6);
+            int index = (FastFloor(xs * 4) & 3) << 0
+                | (FastFloor(ys * 4) & 3) << 2
+                | (FastFloor(zs * 4) & 3) << 4
+                | (FastFloor(ws * 4) & 3) << 6;
 
             // Point contributions
             float value = 0;
@@ -544,7 +653,7 @@ namespace Primora.Core
             {
                 LatticeVertex4D c = LOOKUP_4D_B[i];
                 float dx = xi + c.dx, dy = yi + c.dy, dz = zi + c.dz, dw = wi + c.dw;
-                float a = (dx * dx + dy * dy) + (dz * dz + dw * dw);
+                float a = dx * dx + dy * dy + (dz * dz + dw * dw);
                 if (a < RSQUARED_4D)
                 {
                     a -= RSQUARED_4D;
@@ -564,29 +673,29 @@ namespace Primora.Core
         {
             long hash = seed ^ xsvp ^ ysvp;
             hash *= HASH_MULTIPLIER;
-            hash ^= hash >> (64 - N_GRADS_2D_EXPONENT + 1);
-            int gi = (int)hash & ((N_GRADS_2D - 1) << 1);
+            hash ^= hash >> 64 - N_GRADS_2D_EXPONENT + 1;
+            int gi = (int)hash & N_GRADS_2D - 1 << 1;
             return GRADIENTS_2D[gi | 0] * dx + GRADIENTS_2D[gi | 1] * dy;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static float Grad(long seed, long xrvp, long yrvp, long zrvp, float dx, float dy, float dz)
         {
-            long hash = (seed ^ xrvp) ^ (yrvp ^ zrvp);
+            long hash = seed ^ xrvp ^ yrvp ^ zrvp;
             hash *= HASH_MULTIPLIER;
-            hash ^= hash >> (64 - N_GRADS_3D_EXPONENT + 2);
-            int gi = (int)hash & ((N_GRADS_3D - 1) << 2);
+            hash ^= hash >> 64 - N_GRADS_3D_EXPONENT + 2;
+            int gi = (int)hash & N_GRADS_3D - 1 << 2;
             return GRADIENTS_3D[gi | 0] * dx + GRADIENTS_3D[gi | 1] * dy + GRADIENTS_3D[gi | 2] * dz;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static float Grad(long seed, long xsvp, long ysvp, long zsvp, long wsvp, float dx, float dy, float dz, float dw)
         {
-            long hash = seed ^ (xsvp ^ ysvp) ^ (zsvp ^ wsvp);
+            long hash = seed ^ xsvp ^ ysvp ^ zsvp ^ wsvp;
             hash *= HASH_MULTIPLIER;
-            hash ^= hash >> (64 - N_GRADS_4D_EXPONENT + 2);
-            int gi = (int)hash & ((N_GRADS_4D - 1) << 2);
-            return (GRADIENTS_4D[gi | 0] * dx + GRADIENTS_4D[gi | 1] * dy) + (GRADIENTS_4D[gi | 2] * dz + GRADIENTS_4D[gi | 3] * dw);
+            hash ^= hash >> 64 - N_GRADS_4D_EXPONENT + 2;
+            int gi = (int)hash & N_GRADS_4D - 1 << 2;
+            return GRADIENTS_4D[gi | 0] * dx + GRADIENTS_4D[gi | 1] * dy + (GRADIENTS_4D[gi | 2] * dz + GRADIENTS_4D[gi | 3] * dw);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -606,7 +715,7 @@ namespace Primora.Core
         private static readonly (short SecondaryIndexStart, short SecondaryIndexStop)[] LOOKUP_4D_A;
         private static readonly LatticeVertex4D[] LOOKUP_4D_B;
 
-        static OpenSimplex2S()
+        static OpenSimplex()
         {
 
             GRADIENTS_2D = new float[N_GRADS_2D * 2];
@@ -1144,10 +1253,10 @@ namespace Primora.Core
             LatticeVertex4D[] latticeVerticesByCode = new LatticeVertex4D[256];
             for (int i = 0; i < 256; i++)
             {
-                int cx = ((i >> 0) & 3) - 1;
-                int cy = ((i >> 2) & 3) - 1;
-                int cz = ((i >> 4) & 3) - 1;
-                int cw = ((i >> 6) & 3) - 1;
+                int cx = (i >> 0 & 3) - 1;
+                int cy = (i >> 2 & 3) - 1;
+                int cz = (i >> 4 & 3) - 1;
+                int cw = (i >> 6 & 3) - 1;
                 latticeVerticesByCode[i] = new LatticeVertex4D(cx, cy, cz, cw);
             }
             int nLatticeVerticesTotal = 0;
@@ -1173,13 +1282,13 @@ namespace Primora.Core
             public readonly long xsvp, ysvp, zsvp, wsvp;
             public LatticeVertex4D(int xsv, int ysv, int zsv, int wsv)
             {
-                this.xsvp = xsv * PRIME_X; this.ysvp = ysv * PRIME_Y;
-                this.zsvp = zsv * PRIME_Z; this.wsvp = wsv * PRIME_W;
+                xsvp = xsv * PRIME_X; ysvp = ysv * PRIME_Y;
+                zsvp = zsv * PRIME_Z; wsvp = wsv * PRIME_W;
                 float ssv = (xsv + ysv + zsv + wsv) * UNSKEW_4D;
-                this.dx = -xsv - ssv;
-                this.dy = -ysv - ssv;
-                this.dz = -zsv - ssv;
-                this.dw = -wsv - ssv;
+                dx = -xsv - ssv;
+                dy = -ysv - ssv;
+                dz = -zsv - ssv;
+                dw = -wsv - ssv;
             }
         }
     }

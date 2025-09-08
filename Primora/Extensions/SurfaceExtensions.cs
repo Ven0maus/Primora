@@ -1,6 +1,6 @@
 ﻿using SadConsole;
+using SadRogue.Primitives;
 using System;
-using System.Drawing;
 
 namespace Primora.Extensions
 {
@@ -9,6 +9,17 @@ namespace Primora.Extensions
     /// </summary>
     internal static class SurfaceExtensions
     {
+        /// <summary>
+        /// Translate the given width and height to a new fontsize.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="fontSize"></param>
+        /// <returns></returns>
+        internal static (int width, int height) TranslateSize(this (int width, int height) size, Point fontSize)
+        {
+            return ((int)Math.Ceiling((double)size.width / fontSize.X), (int)Math.Ceiling((double)size.height / fontSize.Y));
+        }
+
         /// <summary>
         /// Returns the translated width and height of the surface based on its fontsize.
         /// </summary>

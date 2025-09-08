@@ -1,5 +1,4 @@
-﻿using Primora.Serialization;
-using System;
+﻿using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -15,13 +14,13 @@ namespace Primora
             internal static readonly JsonSerializerOptions SerializerOptions = new()
             {
                 PropertyNameCaseInsensitive = true,
-                Converters = { new ColorJsonConverter(), new JsonStringEnumConverter() }
+                Converters = { new JsonStringEnumConverter() }
             };
         }
 
         internal static class GameData
         {
-            internal const string TileTypesDataPath = "GameData/TileTypes.json";
+            internal const string TileTypesDataPath = "GameData/TileDefinitions.json";
         }
     }
 }

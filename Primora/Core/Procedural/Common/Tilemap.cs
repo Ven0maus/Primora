@@ -1,23 +1,19 @@
-﻿using Primora.Extensions;
+﻿using Primora.Core.Procedural.Objects;
 using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
 
-namespace Primora.Core
+namespace Primora.Core.Procedural.Common
 {
     /// <summary>
     /// The class that contains all methods to modify the world.
     /// </summary>
-    internal class TileGrid
+    internal class Tilemap
     {
-        public readonly int Width, Height;
+        internal readonly int Width, Height;
 
         private readonly int[] _tiles;
-        private readonly Dictionary<int, TileType> _tileTypes;
 
         private static readonly Point[] _cardinalDirections =
         [
@@ -35,32 +31,14 @@ namespace Primora.Core
             new(-1, 1),  // SW
         ];
 
-        /// <summary>
-        /// The rendering surface of the tile grid.
-        /// </summary>
-        public readonly ScreenSurface Surface;
-
-        public TileGrid(int width, int height, IFont.Sizes fontSize) 
+        internal Tilemap(int width, int height) 
         {
-            // Load and cache reference to all tile types
-            _tileTypes = LoadTileTypeData();
-
-            // Setup the rendering surface
-            Surface = new ScreenSurface(width, height);
-            if (fontSize != IFont.Sizes.One)
-                Surface.ResizeToFitFontSize(fontSize);
-
             // Set width and height based on the surface (it could be resized)
-            Width = Surface.Width;
-            Height = Surface.Height;
+            Width = width;
+            Height = height;
 
             // Setup internal tiles array
             _tiles = new int[Width * Height];
-
-            // Initial appearance rendering
-            for (int x = 0; x < Width; x++)
-                for (int y = 0; y < Height; y++)
-                    Surface.SetCellAppearance(x, y, GetTile(x, y).CellAppearance);
         }
 
         /// <summary>
@@ -69,7 +47,7 @@ namespace Primora.Core
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <returns></returns>
-        public bool InBounds(int x, int y)
+        internal bool InBounds(int x, int y)
         {
             return x >= 0 && y >= 0 && x < Width && y < Height;
         }
@@ -79,7 +57,7 @@ namespace Primora.Core
         /// </summary>
         /// <param name="point"></param>
         /// <returns></returns>
-        public bool InBounds(Point point)
+        internal bool InBounds(Point point)
             => InBounds(point.X, point.Y);
 
         /// <summary>
@@ -88,12 +66,12 @@ namespace Primora.Core
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <returns></returns>
-        public TileType GetTile(int x, int y)
+        internal TileVariant GetTile(int x, int y)
         {
             if (!InBounds(x, y))
                 throw new Exception($"Point ({x}, {y}) is out of bounds of the world.");
 
-            return _tileTypes[_tiles[Point.ToIndex(x, y, Width)]];
+            return TileRegistry.GetVariant(_tiles[Point.ToIndex(x, y, Width)]);
         }
 
         /// <summary>
@@ -101,7 +79,7 @@ namespace Primora.Core
         /// </summary>
         /// <param name="point"></param>
         /// <returns></returns>
-        public TileType GetTile(Point point)
+        internal TileVariant GetTile(Point point)
             => GetTile(point.X, point.Y);
 
         /// <summary>
@@ -111,7 +89,7 @@ namespace Primora.Core
         /// <param name="y"></param>
         /// <param name="tileId"></param>
         /// <exception cref="ArgumentException"></exception>
-        public void SetTile(int x, int y, int tileId, bool asDecorator = false)
+        internal void SetTile(int x, int y, int tileId)
         {
             if (!InBounds(x, y))
                 throw new Exception($"Point ({x}, {y}) is out of bounds of the world.");
@@ -123,21 +101,11 @@ namespace Primora.Core
             if (currentTile == tileId) return;
 
             // Verify if tile type exists
-            if (!_tileTypes.TryGetValue(tileId, out var tileType))
+            if (!TileRegistry.Exists(tileId))
                 throw new ArgumentException($"Provided {nameof(tileId)} \"{tileId}\" does not match with a known tile type.", nameof(tileId));
 
             // Set new tile
             _tiles[index] = tileId;
-
-            // Set appearance on the rendering surface
-            var appearance = tileType.CellAppearance;
-            if (asDecorator)
-                Surface.SetDecorator(index, new CellDecorator(appearance.Foreground, appearance.Glyph, Mirror.None));
-            else
-            {
-                Surface.SetDecorator(index, null);
-                Surface.SetCellAppearance(x, y, appearance);
-            }
         }
 
         /// <summary>
@@ -145,8 +113,27 @@ namespace Primora.Core
         /// </summary>
         /// <param name="point"></param>
         /// <param name="tileId"></param>
-        public void SetTile(Point point, int tileId, bool asDecorator = false)
-            => SetTile(point.X, point.Y, tileId, asDecorator);
+        internal void SetTile(Point point, int tileId)
+            => SetTile(point.X, point.Y, tileId);
+
+        /// <summary>
+        /// Renders the entire tilemap onto a screensurface.
+        /// </summary>
+        /// <param name="surface"></param>
+        internal void Render(ScreenSurface surface)
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    var appearance = TileRegistry.GetVariant(_tiles[Point.ToIndex(x, y, Width)])?.CellAppearance;
+                    if (appearance == null)
+                        surface.Clear(x, y);
+                    else
+                        surface.SetCellAppearance(x, y, appearance);
+                }
+            }
+        }
 
         /// <summary>
         /// Returns all the neighbors of the specified position.
@@ -154,7 +141,7 @@ namespace Primora.Core
         /// <param name="point"></param>
         /// <param name="includeDiagonals"></param>
         /// <returns></returns>
-        public IEnumerable<(Point Position, TileType TileType)> GetNeighbors(Point point, bool includeDiagonals = false)
+        internal IEnumerable<(Point Position, TileVariant TileType)> GetNeighbors(Point point, bool includeDiagonals = false)
         {
             foreach (var dir in _cardinalDirections)
             {
@@ -171,22 +158,6 @@ namespace Primora.Core
                     if (InBounds(neighbor))
                         yield return (neighbor, GetTile(neighbor));
                 }
-            }
-        }
-
-        private static Dictionary<int, TileType> LoadTileTypeData()
-        {
-            var tileTypesPath = Constants.GameData.TileTypesDataPath;
-            if (!File.Exists(tileTypesPath))
-                throw new Exception($"Missing game data file \"{Path.GetFileName(tileTypesPath)}\" at path \"{tileTypesPath}\".");
-            try
-            {
-                var tiles = JsonSerializer.Deserialize<List<TileType>>(File.ReadAllText(tileTypesPath), Constants.General.SerializerOptions);
-                return tiles.ToDictionary(a => a.Id, a => a);
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Unable to deserialize game data file \"{Path.GetFileName(tileTypesPath)}\", game data is corrupted:\n{e.Message}");
             }
         }
     }

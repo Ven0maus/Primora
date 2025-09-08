@@ -19,7 +19,7 @@
     <None Update="Assets\font_12x12.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="GameData\TileTypes.json">
+    <None Update="GameData\TileDefinitions.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
