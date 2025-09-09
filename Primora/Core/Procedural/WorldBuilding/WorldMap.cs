@@ -46,7 +46,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 for (int x = 0; x < _width; x++)
                 {
-                    variationMap[x, y] = globalRand.Next(0, 31); // 0..30
+                    variationMap[x, y] = globalRand.Next(-30, 31); // -30..30
                 }
             }
 
@@ -76,7 +76,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                         int avg = sum / count;
 
                         // Blend self + neighbor average (don’t overwrite completely!)
-                        newMap[x, y] = (int)(variationMap[x, y] * 0.6f + avg * 0.4f);
+                        newMap[x, y] = (int)(variationMap[x, y] * 0.55f + avg * 0.45f);
                     }
                 }
 
