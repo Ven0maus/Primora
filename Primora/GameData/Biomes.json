@@ -1,0 +1,37 @@
+﻿[
+  {
+    "name": "Grassland",
+    "color": "#479648",
+    "noiseLevel": 0.6
+  },
+  {
+    "name": "Forest",
+    "color": "#276339",
+    "noiseLevel": 0.7
+  },
+  {
+    "name": "Mountain",
+    "color": "#7c7d7c",
+    "noiseLevel": 0.8
+  },
+  {
+    "name": "Snowy_Mountain",
+    "color": "#b3b3b3",
+    "noiseLevel": 1
+  },
+  {
+    "name": "Savannah",
+    "color": "#b38659",
+    "noiseLevel": 0.4
+  },
+  {
+    "name": "Deep_Water",
+    "color": "#12338c",
+    "noiseLevel": 0.05
+  },
+  {
+    "name": "Shallow_Water",
+    "color": "#437bbf",
+    "noiseLevel": 0.2
+  }
+]

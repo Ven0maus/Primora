@@ -13,7 +13,7 @@ namespace Primora.Core.Procedural.Common
     {
         internal readonly int Width, Height;
 
-        private readonly int[] _tiles;
+        private readonly ColoredGlyph[] _tiles;
 
         private static readonly Point[] _cardinalDirections =
         [
@@ -38,7 +38,7 @@ namespace Primora.Core.Procedural.Common
             Height = height;
 
             // Setup internal tiles array
-            _tiles = new int[Width * Height];
+            _tiles = new ColoredGlyph[Width * Height];
         }
 
         /// <summary>
@@ -66,12 +66,12 @@ namespace Primora.Core.Procedural.Common
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <returns></returns>
-        internal TileVariant GetTile(int x, int y)
+        internal ColoredGlyph GetTile(int x, int y)
         {
             if (!InBounds(x, y))
                 throw new Exception($"Point ({x}, {y}) is out of bounds of the world.");
 
-            return TileRegistry.GetVariant(_tiles[Point.ToIndex(x, y, Width)]);
+            return _tiles[Point.ToIndex(x, y, Width)];
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace Primora.Core.Procedural.Common
         /// </summary>
         /// <param name="point"></param>
         /// <returns></returns>
-        internal TileVariant GetTile(Point point)
+        internal ColoredGlyph GetTile(Point point)
             => GetTile(point.X, point.Y);
 
         /// <summary>
@@ -87,9 +87,9 @@ namespace Primora.Core.Procedural.Common
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
-        /// <param name="tileId"></param>
+        /// <param name="tile"></param>
         /// <exception cref="ArgumentException"></exception>
-        internal void SetTile(int x, int y, int tileId)
+        internal void SetTile(int x, int y, ColoredGlyph tile)
         {
             if (!InBounds(x, y))
                 throw new Exception($"Point ({x}, {y}) is out of bounds of the world.");
@@ -98,23 +98,19 @@ namespace Primora.Core.Procedural.Common
 
             // Return when tile is not modified
             var currentTile = _tiles[index];
-            if (currentTile == tileId) return;
-
-            // Verify if tile type exists
-            if (!TileRegistry.Exists(tileId))
-                throw new ArgumentException($"Provided {nameof(tileId)} \"{tileId}\" does not match with a known tile type.", nameof(tileId));
+            if (currentTile == tile) return;
 
             // Set new tile
-            _tiles[index] = tileId;
+            _tiles[index] = tile;
         }
 
         /// <summary>
         /// Sets the specified tile at the specified coordinates.
         /// </summary>
         /// <param name="point"></param>
-        /// <param name="tileId"></param>
-        internal void SetTile(Point point, int tileId)
-            => SetTile(point.X, point.Y, tileId);
+        /// <param name="tile"></param>
+        internal void SetTile(Point point, ColoredGlyph tile)
+            => SetTile(point.X, point.Y, tile);
 
         /// <summary>
         /// Renders the entire tilemap onto a screensurface.
@@ -126,11 +122,11 @@ namespace Primora.Core.Procedural.Common
             {
                 for (int y = 0; y < Height; y++)
                 {
-                    var appearance = TileRegistry.GetVariant(_tiles[Point.ToIndex(x, y, Width)])?.CellAppearance;
-                    if (appearance == null)
+                    var tile = _tiles[Point.ToIndex(x, y, Width)];
+                    if (tile == null)
                         surface.Clear(x, y);
                     else
-                        surface.SetCellAppearance(x, y, appearance);
+                        surface.SetCellAppearance(x, y, tile);
                 }
             }
         }
@@ -141,7 +137,7 @@ namespace Primora.Core.Procedural.Common
         /// <param name="point"></param>
         /// <param name="includeDiagonals"></param>
         /// <returns></returns>
-        internal IEnumerable<(Point Position, TileVariant TileType)> GetNeighbors(Point point, bool includeDiagonals = false)
+        internal IEnumerable<(Point Position, ColoredGlyph Tile)> GetNeighbors(Point point, bool includeDiagonals = false)
         {
             foreach (var dir in _cardinalDirections)
             {

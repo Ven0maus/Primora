@@ -4,6 +4,13 @@
     {
         Grassland,
         Forest,
-        Corrupted
+        Beach,
+        Snow,
+        Mountain,
+        Snowy_Mountain,
+        Savannah,
+        Desert,
+        Deep_Water,
+        Shallow_Water
     }
 }

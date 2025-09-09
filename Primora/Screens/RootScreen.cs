@@ -33,7 +33,7 @@ namespace Primora.Screens
             RenderingSurface = new ScreenSurface(
                 Constants.General.DefaultWindowSize.width,
                 Constants.General.DefaultWindowSize.height);
-            RenderingSurface.ResizeToFitFontSize(IFont.Sizes.Two, true);
+            RenderingSurface.ResizeToFitFontSize(IFont.Sizes.One, true);
             Children.Add(RenderingSurface);
 
             // Setup the world elements

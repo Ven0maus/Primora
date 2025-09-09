@@ -1,4 +1,5 @@
-﻿using SadRogue.Primitives;
+﻿using Primora.Extensions;
+using SadRogue.Primitives;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -47,6 +48,32 @@ namespace Primora.Core.Procedural.Common
          * Noise Map Generators 
          */
 
+        public static float[] GenerateIslandGradientMap(int mapWidth, int mapHeight)
+        {
+            float[] map = new float[mapWidth * mapHeight];
+            for (int x = 0; x < mapWidth; x++)
+            {
+                for (int y = 0; y < mapHeight; y++)
+                {
+                    // Value between 0 and 1 where * 2 - 1 makes it between -1 and 0
+                    float i = x / (float)mapWidth * 2 - 1;
+                    float j = y / (float)mapHeight * 2 - 1;
+
+                    // Find closest x or y to the edge of the map
+                    float value = Math.Max(Math.Abs(i), Math.Abs(j));
+
+                    // Apply a curve graph to have more values around 0 on the edge, and more values >= 3 in the middle
+                    float a = 3;
+                    float b = 2.2f;
+                    float islandGradientValue = (float)Math.Pow(value, a) / (float)(Math.Pow(value, a) + (float)Math.Pow(b - b * value, a));
+
+                    // Apply gradient in the map
+                    map[y * mapWidth + x] = islandGradientValue;
+                }
+            }
+            return map;
+        }
+
         /// <summary>
         /// Returns a noisemap based on opensimplex noise.
         /// </summary>
@@ -59,7 +86,7 @@ namespace Primora.Core.Procedural.Common
         /// <param name="lacunarity"></param>
         /// <param name="offset"></param>
         /// <returns></returns>
-        public static float[] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Point? offset = null)
+        public static float[] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Point? offset = null, bool applyIslandGradient = false)
         {
             float[] noiseMap = new float[mapWidth * mapHeight];
 
@@ -131,6 +158,23 @@ namespace Primora.Core.Procedural.Common
                     noiseMap[y * mapWidth + x] = InverseLerp(minNoiseHeight, maxNoiseHeight, noiseMap[y * mapWidth + x]);
                 }
             }
+
+            if (applyIslandGradient)
+            {
+                var islandGradient = GenerateIslandGradientMap(mapWidth, mapHeight);
+                for (int x = 0, y; x < mapWidth; x++)
+                {
+                    for (y = 0; y < mapHeight; y++)
+                    {
+                        // Subtract the islandGradient value from the noiseMap value
+                        float subtractedValue = noiseMap[y * mapWidth + x] - islandGradient[y * mapWidth + x];
+
+                        // Apply it into the map, but make sure we clamp it between 0f and 1f
+                        noiseMap[y * mapWidth + x] = MathUtils.Clamp01(subtractedValue);
+                    }
+                }
+            }
+
             return noiseMap;
         }
 

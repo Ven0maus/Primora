@@ -20,7 +20,7 @@ namespace Primora
 
         internal static class GameData
         {
-            internal const string TileTypesDataPath = "GameData/TileDefinitions.json";
+            internal const string Biomes = "GameData/Biomes.json";
         }
     }
 }
