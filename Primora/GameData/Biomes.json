@@ -1,37 +1,44 @@
 ﻿[
   {
-    "name": "Grassland",
-    "color": "#479648",
-    "noiseLevel": 0.6
-  },
-  {
-    "name": "Forest",
-    "color": "#276339",
-    "noiseLevel": 0.7
-  },
-  {
-    "name": "Mountain",
-    "color": "#7c7d7c",
-    "noiseLevel": 0.8
-  },
-  {
-    "name": "Snowy_Mountain",
-    "color": "#b3b3b3",
-    "noiseLevel": 1
-  },
-  {
-    "name": "Savannah",
-    "color": "#b38659",
-    "noiseLevel": 0.4
-  },
-  {
     "name": "Deep_Water",
     "color": "#12338c",
-    "noiseLevel": 0.05
+    "minNoise": 0.00,
+    "maxNoise": 0.10
   },
   {
     "name": "Shallow_Water",
     "color": "#437bbf",
-    "noiseLevel": 0.2
+    "minNoise": 0.08,
+    "maxNoise": 0.25
+  },
+  {
+    "name": "Savannah",
+    "color": "#b38659",
+    "minNoise": 0.22,
+    "maxNoise": 0.45
+  },
+  {
+    "name": "Grassland",
+    "color": "#479648",
+    "minNoise": 0.40,
+    "maxNoise": 0.65
+  },
+  {
+    "name": "Forest",
+    "color": "#276339",
+    "minNoise": 0.60,
+    "maxNoise": 0.75
+  },
+  {
+    "name": "Mountain",
+    "color": "#7c7d7c",
+    "minNoise": 0.70,
+    "maxNoise": 0.85
+  },
+  {
+    "name": "Snowy_Mountain",
+    "color": "#b3b3b3",
+    "minNoise": 0.80,
+    "maxNoise": 1.00
   }
 ]

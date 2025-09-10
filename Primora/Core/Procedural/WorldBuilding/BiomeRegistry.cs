@@ -10,10 +10,14 @@ namespace Primora.Core.Procedural.WorldBuilding
     internal static class BiomeRegistry
     {
         private readonly static Dictionary<Biome, BiomeDefinition> _biomeGlyphs;
+        private readonly static List<(float min, float max, Biome biome)> _biomeNoiseLookup;
 
         static BiomeRegistry()
         {
             _biomeGlyphs = LoadBiomeGlyphDefinitions();
+            _biomeNoiseLookup = [.. _biomeGlyphs.Values
+                .OrderBy(a => a.MinNoise)
+                .Select(a => (a.MinNoise, a.MaxNoise, a.Biome))];
         }
 
         /// <summary>
@@ -28,7 +32,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// Gets all biome definitions ordered by noise level.
         /// </summary>
         /// <returns></returns>
-        public static BiomeDefinition[] GetBiomesByNoise() => [.. _biomeGlyphs.Values.OrderBy(a => a.NoiseLevel)];
+        public static IReadOnlyList<(float min, float max, Biome biome)> GetBiomesByNoise() => _biomeNoiseLookup;
 
         private static Dictionary<Biome, BiomeDefinition> LoadBiomeGlyphDefinitions()
         {
