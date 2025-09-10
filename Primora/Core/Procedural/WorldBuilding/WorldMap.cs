@@ -181,7 +181,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     int b = Math.Clamp(neighborBlended.B + totalVariation, 0, 255);
 
                     colorMap[x, y] = new Color(r, g, b);
-                    colorMap[x, y] = AdjustForElevation(colorMap[x, y], height);
+                    colorMap[x, y] = AdjustForElevation(colorMap[x, y], height, biomeMap[x, y]);
                 }
             }
 
@@ -322,70 +322,53 @@ namespace Primora.Core.Procedural.WorldBuilding
         }
 
         private static Color AdjustForElevation(
-            Color c,
-            float height)
+                    Color c,
+                    float height,
+                    Biome biome)
         {
             float h, s, l;
             RgbToHsl(c.R, c.G, c.B, out h, out s, out l);
 
-            // Factor: 0 = lowland, 1 = highest elevation
             float factor = Math.Clamp(height, 0f, 1f);
 
-            if (factor < 0.3f)
+            if (biome == Biome.Snow || biome == Biome.Glacial)
             {
-                // ---- Low elevation (beach, swamp, shallow water) ----
+                // Don't adjust, these are already fine
+            }
+            else if (factor < 0.3f)
+            {
                 float lowFactor = 1f - (factor / 0.3f);
-
-                s *= 1f + 0.3f * lowFactor;   // boost saturation
-                h = (h + 0.03f * lowFactor) % 1f; // small warm shift
-                l *= 1f + 0.2f * lowFactor;   // lighter
+                s *= 1f + 0.3f * lowFactor;
+                h = (h + 0.03f * lowFactor) % 1f;
+                l *= 1f + 0.2f * lowFactor;
             }
             else if (factor > 0.85f)
             {
-                // ---- Smooth snowy peak transition ----
-                float snowFactor = (factor - 0.85f) / 0.15f; // 0 at 0.9, 1 at 1.0
+                float snowFactor = (factor - 0.85f) / 0.15f;
                 snowFactor = Math.Clamp(snowFactor, 0f, 1f);
-
-                // Smooth easing for natural ramp
-                snowFactor = snowFactor * snowFactor * (3f - 2f * snowFactor); // smoothstep
-
-                // Target snow color: cold, desaturated, high lightness
-                float targetS = 0.15f;  // low saturation for cold snow
-                float targetL = 0.95f;  // bright snow
-                float targetH = 0f;     // hue neutral/white
-
-                // Interpolate from current (rocky mid-high) to target snow
+                float targetS = 0.15f;
+                float targetL = 0.95f;
+                float targetH = 0f;
                 s = s * (1f - snowFactor) + targetS * snowFactor;
                 l = l * (1f - snowFactor) + targetL * snowFactor;
                 h = h * (1f - snowFactor) + targetH * snowFactor;
             }
             else if (factor > 0.6f)
             {
-                // ---- High elevation (rocky mountains) ----
                 float highFactor = (factor - 0.6f) / 0.3f;
-
-                s *= 1f - 0.5f * highFactor;   // less saturated
-                l *= 1f - 0.3f * highFactor;   // darker
-                h = (h - 0.02f * highFactor + 1f) % 1f; // slight cold shift
+                s *= 1f - 0.5f * highFactor;
+                l *= 1f - 0.3f * highFactor;
+                h = (h - 0.02f * highFactor + 1f) % 1f;
             }
             else
             {
-                // ---- Mid elevation (grasslands, forests, savannah) ----
-                // 0 at edges (0.4 and 0.6), 1 in the middle (~0.5)
                 float midFactor = 1f - Math.Abs((factor - 0.5f) / 0.1f);
                 midFactor = Math.Clamp(midFactor, 0f, 1f);
-
-                // Boost saturation more
                 s *= 1f + 0.4f * midFactor;
-
-                // Shift hue slightly toward green/yellow for freshness
                 h = (h + 0.04f * midFactor) % 1f;
-
-                // Give a subtle lightness bump (makes greenery feel more "alive")
                 l *= 1f + 0.1f * midFactor;
             }
 
-            // Clamp
             s = Math.Clamp(s, 0f, 1f);
             l = Math.Clamp(l, 0f, 1f);
 

@@ -1,7 +1,7 @@
 ﻿[
   {
     "name": "Deep_Water",
-    "color": "#1a2f70",
+    "color": "#1d3c75",
     "minHeight": 0.0,
     "maxHeight": 0.08,
     "minTemp": 0.0,
@@ -11,7 +11,7 @@
   },
   {
     "name": "Shallow_Water",
-    "color": "#2a3e8f",
+    "color": "#2f4f9f",
     "minHeight": 0.08,
     "maxHeight": 0.18,
     "minTemp": 0.0,
@@ -21,7 +21,7 @@
   },
   {
     "name": "Beach",
-    "color": "#c7b17b",
+    "color": "#cbb078",
     "minHeight": 0.15,
     "maxHeight": 0.22,
     "minTemp": 0.3,
@@ -31,7 +31,7 @@
   },
   {
     "name": "Swamp",
-    "color": "#2f4624",
+    "color": "#2c4524",
     "minHeight": 0.15,
     "maxHeight": 0.35,
     "minTemp": 0.4,
@@ -51,7 +51,7 @@
   },
   {
     "name": "Desert",
-    "color": "#d9b16c",
+    "color": "#d8b36c",
     "minHeight": 0.2,
     "maxHeight": 0.50,
     "minTemp": 0.7,
@@ -61,7 +61,7 @@
   },
   {
     "name": "Oasis",
-    "color": "#4ca35a",
+    "color": "#3f9953",
     "minHeight": 0.22,
     "maxHeight": 0.45,
     "minTemp": 0.7,
@@ -71,7 +71,7 @@
   },
   {
     "name": "Grassland",
-    "color": "#1f6e2d",
+    "color": "#1e6529",
     "minHeight": 0.40,
     "maxHeight": 0.60,
     "minTemp": 0.4,
@@ -81,7 +81,7 @@
   },
   {
     "name": "Woodland",
-    "color": "#236233",
+    "color": "#225c2f",
     "minHeight": 0.45,
     "maxHeight": 0.65,
     "minTemp": 0.3,
@@ -91,7 +91,7 @@
   },
   {
     "name": "Forest",
-    "color": "#1a4722",
+    "color": "#173e1d",
     "minHeight": 0.50,
     "maxHeight": 0.80,
     "minTemp": 0.25,
@@ -101,7 +101,7 @@
   },
   {
     "name": "Hills",
-    "color": "#6c704f",
+    "color": "#55664a",
     "minHeight": 0.60,
     "maxHeight": 0.75,
     "minTemp": 0.3,
@@ -111,7 +111,7 @@
   },
   {
     "name": "Badlands",
-    "color": "#8b6d4f",
+    "color": "#a36f4f",
     "minHeight": 0.50,
     "maxHeight": 0.70,
     "minTemp": 0.5,
@@ -121,7 +121,7 @@
   },
   {
     "name": "Mountain",
-    "color": "#847e72",
+    "color": "#7f7469",
     "minHeight": 0.75,
     "maxHeight": 0.85,
     "minTemp": 0.0,
@@ -130,9 +130,19 @@
     "maxMoisture": 1.0
   },
   {
+    "name": "Glacial",
+    "color": "#cde6f5",
+    "minHeight": 0.88,
+    "maxHeight": 1.0,
+    "minTemp": 0.0,
+    "maxTemp": 0.25,
+    "minMoisture": 0.5,
+    "maxMoisture": 1.0
+  },
+  {
     "name": "Snowy_Mountain",
-    "color": "#d9d9d9",
-    "minHeight": 0.80,
+    "color": "#ebf5fb",
+    "minHeight": 0.90,
     "maxHeight": 1.0,
     "minTemp": 0.0,
     "maxTemp": 0.4,

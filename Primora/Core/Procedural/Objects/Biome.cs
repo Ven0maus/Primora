@@ -15,6 +15,7 @@
         Snowy_Mountain,
         Savannah,
         Desert,
+        Glacial,
         Deep_Water,
         Shallow_Water
     }
