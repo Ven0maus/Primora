@@ -10,7 +10,7 @@ namespace Primora
         {
             internal const string GameTitle = "Primora";
             internal static readonly (int width, int height) DefaultWindowSize = (1920, 1080);
-            internal static readonly Random Random = new(1337);
+            internal static readonly Random Random = new();
             internal static readonly JsonSerializerOptions SerializerOptions = new()
             {
                 PropertyNameCaseInsensitive = true,
