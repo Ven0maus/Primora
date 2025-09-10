@@ -173,7 +173,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     // neighbor-aware blend that is gated by height-similarity and capped by maxBlend
                     var neighborBlended = BlendTowardBestNeighbor(
                         x, y, baseColor, biomeMap, biomeColors, heightmap, _width, _height,
-                        maxBlend: 0.28f, radius: 3);
+                        maxBlend: 0.4f, radius: 2);
 
                     // apply per-tile variation last (so variation doesn't smear across biomes)
                     int r = Math.Clamp(neighborBlended.R + totalVariation, 0, 255);
