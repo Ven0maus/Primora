@@ -32,23 +32,36 @@ namespace Primora.Core.Procedural.WorldBuilding
             var globalRand = Constants.General.Random;
             var heightmap = OpenSimplex.GenerateNoiseMap(_width, _height,
                 seed: globalRand.Next(),
-                scale: 100f,
-                octaves: 2,
+                scale: 120f,
+                octaves: 6,
                 persistance: 0.5f,
                 lacunarity: 2.0f);
 
-            var biomeTransitions = new Dictionary<Biome, Biome>
-            {
-                { Biome.Deep_Water, Biome.Shallow_Water },
-                { Biome.Shallow_Water, Biome.Beach },
-                { Biome.Beach, Biome.Grassland },
-                { Biome.Grassland, Biome.Forest },
-                { Biome.Forest, Biome.Mountain },
-                { Biome.Mountain, Biome.Snowy_Mountain },
-                { Biome.Savannah, Biome.Grassland } // or direct to Desert if you add one
-            };
+            var tempMap = OpenSimplex.GenerateNoiseMap(_width, _height,
+                seed: globalRand.Next(),
+                scale: 300f, // very smooth, almost latitudinal
+                octaves: 2,
+                persistance: 0.6f,
+                lacunarity: 2f);
 
-            var biomes = BiomeRegistry.GetBiomesByNoise(); // Assumes ascending NoiseLevel
+            var moistureMap = OpenSimplex.GenerateNoiseMap(_width, _height,
+                seed: globalRand.Next(),
+                scale: 180f,
+                octaves: 4,
+                persistance: 0.55f,
+                lacunarity: 2f);
+
+            for (int x = 0; x < _width; x++)
+            {
+                for (int y = 0; y < _height; y++)
+                {
+                    int i = Point.ToIndex(x, y, _width);
+                    float latitude = (float)y / _height; // 0 = south pole, 1 = north pole
+                    tempMap[i] = tempMap[i] * 0.7f + (1f - Math.Abs(latitude - 0.5f) * 2f) * 0.3f;
+                }
+            }
+
+            var biomes = BiomeRegistry.GetAll(); // Assumes ascending NoiseLevel
             var biomeMap = new Biome[_width, _height];
 
             // ----------------------------
@@ -60,8 +73,10 @@ namespace Primora.Core.Procedural.WorldBuilding
                 {
                     int i = Point.ToIndex(x, y, _width);
                     float h = heightmap[i];
+                    float t = tempMap[i];
+                    float m = moistureMap[i];
 
-                    biomeMap[x, y] = SelectOrganicBiome(Constants.General.Seed, h, x, y, biomes, globalRand);
+                    biomeMap[x, y] = SelectOrganicBiome(Constants.General.Seed, h, t, m, x, y, biomes, globalRand);
                 }
             }
 
@@ -135,7 +150,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             // ----------------------------
             var colorMap = new SadRogue.Primitives.Color[_width, _height];
             var biomeColors = biomes
-                .Select(a => (a.min, a.max, biome: a.biome, color: BiomeRegistry.Get(a.biome).Color))
+                .Select(a => (a.MinHeight, a.MaxHeight, biome: a.Biome, color: BiomeRegistry.Get(a.Biome).Color))
                 .ToList();
 
             // Height variation for coloring
@@ -158,7 +173,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     // neighbor-aware blend that is gated by height-similarity and capped by maxBlend
                     var neighborBlended = BlendTowardBestNeighbor(
                         x, y, baseColor, biomeMap, biomeColors, heightmap, _width, _height,
-                        maxBlend: 0.28f, radius: 1);
+                        maxBlend: 0.28f, radius: 3);
 
                     // apply per-tile variation last (so variation doesn't smear across biomes)
                     int r = Math.Clamp(neighborBlended.R + totalVariation, 0, 255);
@@ -249,42 +264,54 @@ namespace Primora.Core.Procedural.WorldBuilding
         }
 
         private static Biome SelectOrganicBiome(
-            int seed, float height, int x, int y,
-            IReadOnlyList<(float minNoise, float maxNoise, Biome biome)> biomeRanges,
+            int seed, 
+            float height,
+            float temperature,
+            float moisture,
+            int x, int y,
+            ICollection<BiomeDefinition> biomeRanges,
             Random rand)
         {
             // 1. Apply low-frequency noise to height to wiggle borders
-            // The scale (0.05f) controls size of wiggles: lower = larger features
             float edgeNoise = (float)OpenSimplex.Noise2(seed, x * 0.05f, y * 0.05f);
             float adjustedHeight = height + edgeNoise * 0.05f; // tweak 0.05 for more/less wiggling
 
-            // 2. Check which biomes are valid candidates
+            // 2. Collect candidate biomes based on ranges
             var candidates = new List<(Biome biome, float weight)>();
-            foreach (var (minNoise, maxNoise, biome) in biomeRanges)
+            foreach (var b in biomeRanges)
             {
-                if (adjustedHeight >= minNoise && adjustedHeight <= maxNoise)
+                bool inHeight = adjustedHeight >= b.MinHeight && adjustedHeight <= b.MaxHeight;
+                bool inTemp = temperature >= b.MinTemp && temperature <= b.MaxTemp;
+                bool inMoisture = moisture >= b.MinMoisture && moisture <= b.MaxMoisture;
+
+                if (inHeight && inTemp && inMoisture)
                 {
-                    // Weight is proportional to closeness to biome center
-                    float center = (minNoise + maxNoise) / 2f;
-                    float distance = Math.Abs(adjustedHeight - center);
-                    float weight = 1f - distance / ((maxNoise - minNoise) / 2f);
-                    weight = Math.Clamp(weight, 0f, 1f);
-                    candidates.Add((biome, weight));
+                    // Weight based on how close the tile is to biome center (height, temp, moisture)
+                    float hCenter = (b.MinHeight + b.MaxHeight) / 2f;
+                    float tCenter = (b.MinTemp + b.MaxTemp) / 2f;
+                    float mCenter = (b.MinMoisture + b.MaxMoisture) / 2f;
+
+                    float hWeight = 1f - Math.Abs(adjustedHeight - hCenter) / ((b.MaxHeight - b.MinHeight) / 2f);
+                    float tWeight = 1f - Math.Abs(temperature - tCenter) / ((b.MaxTemp - b.MinTemp) / 2f);
+                    float mWeight = 1f - Math.Abs(moisture - mCenter) / ((b.MaxMoisture - b.MinMoisture) / 2f);
+
+                    float weight = Math.Clamp((hWeight + tWeight + mWeight) / 3f, 0f, 1f);
+                    candidates.Add((b.Biome, weight));
                 }
             }
 
-            // 3. Randomly pick one biome based on weights
+            // 3. Pick biome using weighted random
             if (candidates.Count == 0)
             {
-                // fallback to nearest biome
-                var nearest = biomeRanges.OrderBy(b => Math.Abs(adjustedHeight - (b.minNoise + b.maxNoise) / 2f)).First();
-                return nearest.biome;
+                // fallback to nearest by height only
+                var nearest = biomeRanges.OrderBy(b => Math.Abs(adjustedHeight - (b.MinHeight + b.MaxHeight) / 2f)).First();
+                return nearest.Biome;
             }
 
-            // Weighted random selection
             float totalWeight = candidates.Sum(c => c.weight);
             float pick = (float)(rand.NextDouble() * totalWeight);
             float running = 0f;
+
             foreach (var (biome, weight) in candidates)
             {
                 running += weight;
@@ -341,7 +368,6 @@ namespace Primora.Core.Procedural.WorldBuilding
                 l *= 1f - 0.3f * highFactor;   // darker
                 h = (h - 0.02f * highFactor + 1f) % 1f; // slight cold shift
             }
-
             else
             {
                 // ---- Mid elevation (grasslands, forests, savannah) ----

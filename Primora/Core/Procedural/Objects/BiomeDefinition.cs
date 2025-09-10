@@ -13,8 +13,12 @@ namespace Primora.Core.Procedural.Objects
         [JsonConverter(typeof(ColorJsonConverter))]
         public Color Color { get; set; }
 
-        public float MinNoise { get; set; }
-        public float MaxNoise { get; set; }
+        public float MinHeight { get; set; }
+        public float MaxHeight { get; set; }
+        public float MinTemp { get; set; }
+        public float MaxTemp { get; set; }
+        public float MinMoisture { get; set; }
+        public float MaxMoisture { get; set; }
 
         private ColoredGlyph _appearance;
         [JsonIgnore]

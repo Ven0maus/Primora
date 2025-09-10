@@ -2,43 +2,71 @@
   {
     "name": "Deep_Water",
     "color": "#12338c",
-    "minNoise": 0.00,
-    "maxNoise": 0.10
+    "minHeight": 0.0,
+    "maxHeight": 0.10,
+    "minTemp": 0.0,
+    "maxTemp": 1.0,
+    "minMoisture": 0.0,
+    "maxMoisture": 1.0
   },
   {
     "name": "Shallow_Water",
     "color": "#437bbf",
-    "minNoise": 0.08,
-    "maxNoise": 0.25
+    "minHeight": 0.08,
+    "maxHeight": 0.25,
+    "minTemp": 0.0,
+    "maxTemp": 1.0,
+    "minMoisture": 0.0,
+    "maxMoisture": 1.0
   },
   {
     "name": "Savannah",
     "color": "#b38659",
-    "minNoise": 0.22,
-    "maxNoise": 0.45
+    "minHeight": 0.22,
+    "maxHeight": 0.45,
+    "minTemp": 0.6,
+    "maxTemp": 1.0,
+    "minMoisture": 0.0,
+    "maxMoisture": 0.4
   },
   {
     "name": "Grassland",
     "color": "#479648",
-    "minNoise": 0.40,
-    "maxNoise": 0.65
+    "minHeight": 0.40,
+    "maxHeight": 0.65,
+    "minTemp": 0.4,
+    "maxTemp": 0.8,
+    "minMoisture": 0.3,
+    "maxMoisture": 0.6
   },
   {
     "name": "Forest",
     "color": "#276339",
-    "minNoise": 0.60,
-    "maxNoise": 0.75
+    "minHeight": 0.60,
+    "maxHeight": 0.75,
+    "minTemp": 0.3,
+    "maxTemp": 0.7,
+    "minMoisture": 0.6,
+    "maxMoisture": 1.0
   },
   {
     "name": "Mountain",
     "color": "#7c7d7c",
-    "minNoise": 0.70,
-    "maxNoise": 0.85
+    "minHeight": 0.70,
+    "maxHeight": 0.85,
+    "minTemp": 0.0,
+    "maxTemp": 1.0,
+    "minMoisture": 0.0,
+    "maxMoisture": 1.0
   },
   {
     "name": "Snowy_Mountain",
     "color": "#b3b3b3",
-    "minNoise": 0.80,
-    "maxNoise": 1.00
+    "minHeight": 0.80,
+    "maxHeight": 1.0,
+    "minTemp": 0.0,
+    "maxTemp": 0.4,
+    "minMoisture": 0.0,
+    "maxMoisture": 1.0
   }
 ]
