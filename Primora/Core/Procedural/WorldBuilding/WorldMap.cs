@@ -32,7 +32,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             var globalRand = Constants.General.Random;
             var heightmap = OpenSimplex.GenerateNoiseMap(_width, _height,
                 seed: globalRand.Next(),
-                scale: 120f,
+                scale: 180f,
                 octaves: 6,
                 persistance: 0.5f,
                 lacunarity: 2.0f);
