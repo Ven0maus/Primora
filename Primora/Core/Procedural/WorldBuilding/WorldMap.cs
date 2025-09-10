@@ -15,6 +15,7 @@ namespace Primora.Core.Procedural.WorldBuilding
     {
         private readonly int _width, _height;
         private readonly Dictionary<Point, Zone> _zones;
+        private readonly Biome[] _biomes;
 
         internal readonly Tilemap Tilemap;
 
@@ -23,111 +24,171 @@ namespace Primora.Core.Procedural.WorldBuilding
             _width = width;
             _height = height;
             _zones = [];
+            _biomes = new Biome[width * height];
 
             Tilemap = new Tilemap(width, height);
         }
 
+        #region World Generation
+
         internal void Generate()
         {
             var globalRand = Constants.General.Random;
-            var heightmap = OpenSimplex.GenerateNoiseMap(_width, _height,
-                seed: globalRand.Next(),
-                scale: 180f,
-                octaves: 6,
-                persistance: 0.5f,
-                lacunarity: 2.0f);
 
-            var tempMap = OpenSimplex.GenerateNoiseMap(_width, _height,
-                seed: globalRand.Next(),
-                scale: 300f, // very smooth, almost latitudinal
-                octaves: 2,
-                persistance: 0.6f,
-                lacunarity: 2f);
+            // Step 0: Generate base noise maps
+            var heightmap = GenerateHeightMap(globalRand);
+            var tempMap = GenerateTemperatureMap(globalRand);
+            var moistureMap = GenerateMoistureMap(globalRand);
 
-            var moistureMap = OpenSimplex.GenerateNoiseMap(_width, _height,
-                seed: globalRand.Next(),
-                scale: 180f,
-                octaves: 4,
-                persistance: 0.55f,
-                lacunarity: 2f);
+            ApplyLatitudeAdjustment(tempMap);
 
+            // Step 1: Determine biome map
+            var biomes = BiomeRegistry.GetAll(); // Assumes ascending NoiseLevel
+            var biomeMap = GenerateBiomeMap(heightmap, tempMap, moistureMap, biomes, globalRand);
+
+            // Step 2: Smooth biome transitions and record biomes into world map
+            biomeMap = SmoothBiomes(biomeMap);
+            RecordBiomesIntoWorldMap(biomeMap);
+
+            // Step 3: Create random variation map
+            var variationMap = GenerateVariationMap(globalRand);
+
+            // Step 4: Define colors
+            var colorMap = GenerateColorMap(heightmap, biomeMap, biomes, variationMap);
+
+            // Step 5: Apply directional shading
+            ApplyDirectionalShading(colorMap, heightmap);
+
+            // Step 6: Smooth final colors
+            var smoothed = SmoothColors(colorMap);
+
+            // Step 7: Assign colors to tiles
+            ApplyColorsToTilemap(smoothed);
+        }
+
+        #endregion
+
+        #region Noise Map Generators
+
+        private float[] GenerateHeightMap(Random rand) =>
+            OpenSimplex.GenerateNoiseMap(_width, _height, seed: rand.Next(), scale: 180f, octaves: 6, persistance: 0.5f, lacunarity: 2.0f);
+
+        private float[] GenerateTemperatureMap(Random rand) =>
+            OpenSimplex.GenerateNoiseMap(_width, _height, seed: rand.Next(), scale: 300f, octaves: 2, persistance: 0.6f, lacunarity: 2f);
+
+        private float[] GenerateMoistureMap(Random rand) =>
+            OpenSimplex.GenerateNoiseMap(_width, _height, seed: rand.Next(), scale: 180f, octaves: 4, persistance: 0.55f, lacunarity: 2f);
+
+        private void ApplyLatitudeAdjustment(float[] tempMap)
+        {
             for (int x = 0; x < _width; x++)
             {
                 for (int y = 0; y < _height; y++)
                 {
                     int i = Point.ToIndex(x, y, _width);
-                    float latitude = (float)y / _height; // 0 = south pole, 1 = north pole
+                    float latitude = (float)y / _height;
                     tempMap[i] = tempMap[i] * 0.7f + (1f - Math.Abs(latitude - 0.5f) * 2f) * 0.3f;
                 }
             }
+        }
 
-            var biomes = BiomeRegistry.GetAll(); // Assumes ascending NoiseLevel
+        #endregion
+
+        #region Biome Generation
+
+        private Biome[,] GenerateBiomeMap(float[] heightmap, float[] tempMap, float[] moistureMap, ICollection<BiomeDefinition> biomes, Random rand)
+        {
             var biomeMap = new Biome[_width, _height];
 
-            // ----------------------------
-            // Step 0: Define basic biome map based on elevation
-            // ----------------------------
             for (int y = 0; y < _height; y++)
             {
                 for (int x = 0; x < _width; x++)
                 {
                     int i = Point.ToIndex(x, y, _width);
-                    float h = heightmap[i];
-                    float t = tempMap[i];
-                    float m = moistureMap[i];
-
-                    biomeMap[x, y] = SelectOrganicBiome(Constants.General.Seed, h, t, m, x, y, biomes, globalRand);
+                    biomeMap[x, y] = SelectOrganicBiome(
+                        Constants.General.Seed,
+                        heightmap[i],
+                        tempMap[i],
+                        moistureMap[i],
+                        x, y,
+                        biomes,
+                        rand
+                    );
                 }
             }
 
-            // Grow/shrink biomes with region masks
+            return biomeMap;
+        }
+
+        private Biome[,] SmoothBiomes(Biome[,] biomeMap)
+        {
             for (int pass = 0; pass < 2; pass++)
             {
                 var newBiomes = new Biome[_width, _height];
+
                 for (int y = 0; y < _height; y++)
                 {
                     for (int x = 0; x < _width; x++)
                     {
                         var counts = new Dictionary<Biome, int>();
+
                         for (int dy = -1; dy <= 1; dy++)
                         {
                             for (int dx = -1; dx <= 1; dx++)
                             {
                                 int nx = x + dx, ny = y + dy;
                                 if (nx < 0 || ny < 0 || nx >= _width || ny >= _height) continue;
+
                                 var b = biomeMap[nx, ny];
                                 if (!counts.ContainsKey(b)) counts[b] = 0;
                                 counts[b]++;
                             }
                         }
-                        // Pick majority biome in neighborhood
+
                         newBiomes[x, y] = counts.OrderByDescending(kvp => kvp.Value).First().Key;
                     }
                 }
+
                 biomeMap = newBiomes;
             }
 
-            // ----------------------------
-            // Step 1: Random noise variation map
-            // ----------------------------
-            int[,] variationMap = new int[_width, _height];
-            for (int y = 0; y < _height; y++)
+            return biomeMap;
+        }
+
+        public void RecordBiomesIntoWorldMap(Biome[,] biomeMap)
+        {
+            for (int x = 0; x < _width; x++)
             {
-                for (int x = 0; x < _width; x++)
+                for (int y=0; y < _height; y++)
                 {
-                    variationMap[x, y] = globalRand.Next(-30, 31); // -30..30
+                    _biomes[Point.ToIndex(x, y, _width)] = biomeMap[x, y];
                 }
             }
+        }
 
-            // Smooth the variation a few passes
+        #endregion
+
+        #region Variation Map
+
+        private int[,] GenerateVariationMap(Random rand)
+        {
+            var variationMap = new int[_width, _height];
+
+            for (int y = 0; y < _height; y++)
+                for (int x = 0; x < _width; x++)
+                    variationMap[x, y] = rand.Next(-30, 31);
+
+            // Smooth variation
             for (int pass = 0; pass < 3; pass++)
             {
-                int[,] newMap = new int[_width, _height];
+                var newMap = new int[_width, _height];
+
                 for (int y = 0; y < _height; y++)
                 {
                     for (int x = 0; x < _width; x++)
                     {
                         int sum = 0, count = 0;
+
                         for (int dy = -1; dy <= 1; dy++)
                         {
                             for (int dx = -1; dx <= 1; dx++)
@@ -138,22 +199,29 @@ namespace Primora.Core.Procedural.WorldBuilding
                                 count++;
                             }
                         }
+
                         int avg = sum / count;
                         newMap[x, y] = (int)(variationMap[x, y] * 0.55f + avg * 0.45f);
                     }
                 }
+
                 variationMap = newMap;
             }
 
-            // ----------------------------
-            // Step 2: Define colors based on (elevation and previous created noise variation)
-            // ----------------------------
-            var colorMap = new SadRogue.Primitives.Color[_width, _height];
+            return variationMap;
+        }
+
+        #endregion
+
+        #region Color Map
+
+        private Color[,] GenerateColorMap(float[] heightmap, Biome[,] biomeMap, ICollection<BiomeDefinition> biomes, int[,] variationMap)
+        {
+            var colorMap = new Color[_width, _height];
             var biomeColors = biomes
-                .Select(a => (a.MinHeight, a.MaxHeight, biome: a.Biome, color: BiomeRegistry.Get(a.Biome).Color))
+                .Select(a => (a.MinHeight, a.MaxHeight, a.Biome, color: BiomeRegistry.Get(a.Biome).Color))
                 .ToList();
 
-            // Height variation for coloring
             for (int y = 0; y < _height; y++)
             {
                 for (int x = 0; x < _width; x++)
@@ -161,36 +229,37 @@ namespace Primora.Core.Procedural.WorldBuilding
                     int i = Point.ToIndex(x, y, _width);
                     float height = heightmap[i];
 
-                    // height-based variation [-30..30]
                     int heightVariation = (int)((height - 0.5f) * 60f);
                     int noiseVariation = variationMap[x, y];
                     int totalVariation = heightVariation + noiseVariation;
 
-                    // base biome color
-                    var currentIndex = biomeColors.FindIndex(b => b.biome == biomeMap[x, y]);
+                    var currentIndex = biomeColors.FindIndex(b => b.Biome == biomeMap[x, y]);
                     var baseColor = biomeColors[currentIndex].color;
 
-                    // neighbor-aware blend that is gated by height-similarity and capped by maxBlend
                     var neighborBlended = BlendTowardBestNeighbor(
-                        x, y, baseColor, biomeMap, biomeColors, heightmap, _width, _height,
-                        maxBlend: 0.4f, radius: 2);
+                        x, y, baseColor, biomeMap, biomeColors, heightmap, _width, _height, maxBlend: 0.4f, radius: 2
+                    );
 
-                    // apply per-tile variation last (so variation doesn't smear across biomes)
                     int r = Math.Clamp(neighborBlended.R + totalVariation, 0, 255);
                     int g = Math.Clamp(neighborBlended.G + totalVariation, 0, 255);
                     int b = Math.Clamp(neighborBlended.B + totalVariation, 0, 255);
 
-                    colorMap[x, y] = new Color(r, g, b);
-                    colorMap[x, y] = AdjustForElevation(colorMap[x, y], height, biomeMap[x, y]);
+                    colorMap[x, y] = AdjustForElevation(new Color(r, g, b), height, biomeMap[x, y]);
                 }
             }
 
-            // ----------------------------
-            // Step 3: Shading (directional light)
-            // ----------------------------
+            return colorMap;
+        }
+
+        #endregion
+
+        #region Shading & Smoothing
+
+        private void ApplyDirectionalShading(Color[,] colorMap, float[] heightmap)
+        {
             for (int y = 0; y < _height; y++)
             {
-                for (int x = 1; x < _width; x++) // start at 1 so we can look left
+                for (int x = 1; x < _width; x++)
                 {
                     int i = Point.ToIndex(x, y, _width);
                     int leftIndex = Point.ToIndex(x - 1, y, _width);
@@ -199,9 +268,8 @@ namespace Primora.Core.Procedural.WorldBuilding
                     float hLeft = heightmap[leftIndex];
 
                     var c = colorMap[x, y];
+                    int delta = (int)((hLeft - h) * 40f);
 
-                    // If left tile is lower → lighten, if higher → darken
-                    int delta = (int)((hLeft - h) * 40f); // tweak 40 for stronger/weaker shading
                     int r = Math.Clamp(c.R + delta, 0, 255);
                     int g = Math.Clamp(c.G + delta, 0, 255);
                     int b = Math.Clamp(c.B + delta, 0, 255);
@@ -209,24 +277,26 @@ namespace Primora.Core.Procedural.WorldBuilding
                     colorMap[x, y] = new Color(r, g, b);
                 }
             }
+        }
 
-            // ----------------------------
-            // Step 4: Smooth by blending with neighbors
-            // ----------------------------
+        private Color[,] SmoothColors(Color[,] colorMap)
+        {
             var smoothed = new Color[_width, _height];
-            float smoothingFactor = 0.3f; // lower = crisper, higher = blurrier
+            float smoothingFactor = 0.3f;
 
             for (int y = 0; y < _height; y++)
             {
                 for (int x = 0; x < _width; x++)
                 {
                     int sumR = 0, sumG = 0, sumB = 0, count = 0;
+
                     for (int dy = -1; dy <= 1; dy++)
                     {
                         for (int dx = -1; dx <= 1; dx++)
                         {
                             int nx = x + dx, ny = y + dy;
                             if (nx < 0 || ny < 0 || nx >= _width || ny >= _height) continue;
+
                             var nc = colorMap[nx, ny];
                             sumR += nc.R;
                             sumG += nc.G;
@@ -235,12 +305,12 @@ namespace Primora.Core.Procedural.WorldBuilding
                         }
                     }
 
-                    int avgR = sumR / count;
-                    int avgG = sumG / count;
-                    int avgB = sumB / count;
+                    var avgR = sumR / count;
+                    var avgG = sumG / count;
+                    var avgB = sumB / count;
 
                     var original = colorMap[x, y];
-                    
+
                     smoothed[x, y] = new Color(
                         (int)(original.R * (1 - smoothingFactor) + avgR * smoothingFactor),
                         (int)(original.G * (1 - smoothingFactor) + avgG * smoothingFactor),
@@ -249,20 +319,29 @@ namespace Primora.Core.Procedural.WorldBuilding
                 }
             }
 
-            // ----------------------------
-            // Final: Assign to tiles
-            // ----------------------------
+            return smoothed;
+        }
+
+        #endregion
+
+        #region Apply to Tilemap
+
+        private void ApplyColorsToTilemap(Color[,] colorMap)
+        {
             for (int y = 0; y < _height; y++)
             {
                 for (int x = 0; x < _width; x++)
                 {
-                    var appearance = BiomeRegistry.Get(Biome.Grassland).Appearance.Clone();
-                    appearance.Background = smoothed[x, y];
+                    var appearance = BiomeRegistry.Get(_biomes[Point.ToIndex(x, y, _width)]).Appearance.Clone();
+                    appearance.Background = colorMap[x, y]; // Adjust biome coloring to be more accurate
                     Tilemap.SetTile(x, y, (ColoredGlyph)appearance);
                 }
             }
         }
 
+        #endregion
+
+        #region Utility Functions
         private static Biome SelectOrganicBiome(
             int seed, 
             float height,
@@ -533,5 +612,6 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             return new Color(r, g, b);
         }
+        #endregion
     }
 }
