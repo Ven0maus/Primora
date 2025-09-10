@@ -4,6 +4,7 @@ using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -37,9 +38,61 @@ namespace Primora.Core.Procedural.WorldBuilding
                 lacunarity: 2.0f);
 
             var biomes = BiomeRegistry.GetBiomesByNoise(); // Assumes ascending NoiseLevel
+            var biomeMap = new Biome[_width, _height];
 
             // ----------------------------
-            // Step 0: Random noise variation map
+            // Step 0: Define basic biome map based on elevation
+            // ----------------------------
+            for (int y = 0; y < _height; y++)
+            {
+                for (int x = 0; x < _width; x++)
+                {
+                    int i = Point.ToIndex(x, y, _width);
+                    float height = heightmap[i];
+
+                    Biome selectedBiome = Biome.Grassland;
+                    foreach (var biomeDef in biomes)
+                    {
+                        if (height <= biomeDef.NoiseLevel)
+                        {
+                            selectedBiome = biomeDef.Biome;
+                            break;
+                        }
+                    }
+
+                    biomeMap[x, y] = selectedBiome;
+                }
+            }
+
+            // Grow/shrink biomes with region masks
+            for (int pass = 0; pass < 2; pass++)
+            {
+                var newBiomes = new Biome[_width, _height];
+                for (int y = 0; y < _height; y++)
+                {
+                    for (int x = 0; x < _width; x++)
+                    {
+                        var counts = new Dictionary<Biome, int>();
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                int nx = x + dx, ny = y + dy;
+                                if (nx < 0 || ny < 0 || nx >= _width || ny >= _height) continue;
+                                var b = biomeMap[nx, ny];
+                                if (!counts.ContainsKey(b)) counts[b] = 0;
+                                counts[b]++;
+                            }
+                        }
+                        // Pick majority biome in neighborhood
+                        newBiomes[x, y] = counts.OrderByDescending(kvp => kvp.Value).First().Key;
+                    }
+                }
+                biomeMap = newBiomes;
+            }
+
+            // ----------------------------
+            // Step 1: Random noise variation map
             // ----------------------------
             int[,] variationMap = new int[_width, _height];
             for (int y = 0; y < _height; y++)
@@ -77,10 +130,11 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
 
             // ----------------------------
-            // Step 1: Base color (height + noise variation)
+            // Step 2: Define colors based on (elevation and previous created noise variation)
             // ----------------------------
             var colorMap = new SadRogue.Primitives.Color[_width, _height];
 
+            // Height variation for coloring
             for (int y = 0; y < _height; y++)
             {
                 for (int x = 0; x < _width; x++)
@@ -88,24 +142,13 @@ namespace Primora.Core.Procedural.WorldBuilding
                     int i = Point.ToIndex(x, y, _width);
                     float height = heightmap[i];
 
-                    Biome selectedBiome = Biome.Grassland;
-                    foreach (var biomeDef in biomes)
-                    {
-                        if (height <= biomeDef.NoiseLevel)
-                        {
-                            selectedBiome = biomeDef.Biome;
-                            break;
-                        }
-                    }
-
-                    var baseColor = BiomeRegistry.Get(selectedBiome).Appearance.Background;
-
                     // Height-based variation [-30..30]
                     int heightVariation = (int)((height - 0.5f) * 60f);
                     // Noise variation (already -30..30 from map)
                     int noiseVariation = variationMap[x, y];
                     int totalVariation = heightVariation + noiseVariation;
 
+                    var baseColor = BiomeRegistry.Get(biomeMap[x, y]).Appearance.Background;
                     int r = Math.Clamp(baseColor.R + totalVariation, 0, 255);
                     int g = Math.Clamp(baseColor.G + totalVariation, 0, 255);
                     int b = Math.Clamp(baseColor.B + totalVariation, 0, 255);
@@ -115,7 +158,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
 
             // ----------------------------
-            // Step 2: Shading (directional light)
+            // Step 3: Shading (directional light)
             // ----------------------------
             for (int y = 0; y < _height; y++)
             {
@@ -140,7 +183,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
 
             // ----------------------------
-            // Step 3: Smooth by blending with neighbors
+            // Step 4: Smooth by blending with neighbors
             // ----------------------------
             var smoothed = new SadRogue.Primitives.Color[_width, _height];
             float smoothingFactor = 0.3f; // lower = crisper, higher = blurrier
@@ -192,5 +235,30 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
         }
 
+        private Biome SelectBiome(float h, List<(float min, float max, Biome biome)> biomeRanges, Random rand)
+        {
+            foreach (var (min, max, biome) in biomeRanges)
+            {
+                if (h < min || h > max) continue;
+
+                // Inside range → return biome
+                return biome;
+            }
+
+            // Check if we're inside a transition band
+            for (int i = 0; i < biomeRanges.Count - 1; i++)
+            {
+                var a = biomeRanges[i];
+                var b = biomeRanges[i + 1];
+
+                if (h >= a.max && h <= b.min)
+                {
+                    float t = (h - a.max) / (b.min - a.max); // 0..1 between biomes
+                    return rand.NextDouble() < t ? b.biome : a.biome;
+                }
+            }
+
+            return biomeRanges[0].biome; // fallback
+        }
     }
 }
