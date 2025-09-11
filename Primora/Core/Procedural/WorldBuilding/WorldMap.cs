@@ -33,25 +33,34 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         internal void Generate()
         {
-            var globalRand = Constants.General.Random;
+            var random = Constants.General.Random;
 
+            // Define the biomes op the world
+            GenerateBiomes(random);
+
+            // Define the details of the biomes of the world
+            GenerateDetails(random);
+        }
+
+        private void GenerateBiomes(Random random)
+        {
             // Step 0: Generate base noise maps
-            var heightmap = GenerateHeightMap(globalRand);
-            var tempMap = GenerateTemperatureMap(globalRand);
-            var moistureMap = GenerateMoistureMap(globalRand);
+            var heightmap = GenerateHeightMap(random);
+            var tempMap = GenerateTemperatureMap(random);
+            var moistureMap = GenerateMoistureMap(random);
 
             ApplyLatitudeAdjustment(tempMap);
 
             // Step 1: Determine biome map
             var biomes = BiomeRegistry.GetAll(); // Assumes ascending NoiseLevel
-            var biomeMap = GenerateBiomeMap(heightmap, tempMap, moistureMap, biomes, globalRand);
+            var biomeMap = GenerateBiomeMap(heightmap, tempMap, moistureMap, biomes, random);
 
             // Step 2: Smooth biome transitions and record biomes into world map
             biomeMap = SmoothBiomes(biomeMap);
             RecordBiomesIntoWorldMap(biomeMap);
 
             // Step 3: Create random variation map
-            var variationMap = GenerateVariationMap(globalRand);
+            var variationMap = GenerateVariationMap(random);
 
             // Step 4: Define colors
             var colorMap = GenerateColorMap(heightmap, biomeMap, biomes, variationMap);
@@ -64,6 +73,11 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // Step 7: Assign colors to tiles
             ApplyColorsToTilemap(smoothed);
+        }
+
+        private void GenerateDetails(Random random)
+        {
+
         }
 
         #endregion

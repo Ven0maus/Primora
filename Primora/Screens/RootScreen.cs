@@ -25,7 +25,7 @@ namespace Primora.Screens
         public RootScreen()
         {
             if (Instance != null) 
-                throw new Exception("An instance of the {nameof(RootScreen)} already exists.");
+                throw new Exception($"An instance of the {nameof(RootScreen)} already exists.");
 
             Instance = this;
 
@@ -33,7 +33,7 @@ namespace Primora.Screens
             RenderingSurface = new ScreenSurface(
                 Constants.General.DefaultWindowSize.width,
                 Constants.General.DefaultWindowSize.height);
-            RenderingSurface.ResizeToFitFontSize(IFont.Sizes.One, true);
+            RenderingSurface.ResizeToFitFontSize(0.5f, true);
             Children.Add(RenderingSurface);
 
             // Setup the world elements
