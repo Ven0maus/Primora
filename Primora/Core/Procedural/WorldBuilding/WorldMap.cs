@@ -42,6 +42,17 @@ namespace Primora.Core.Procedural.WorldBuilding
             GenerateDetails(random);
         }
 
+        /// <summary>
+        /// Returns the biome at the specified coordinate.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        internal Biome GetBiome(int x, int y)
+        {
+            return _biomes[Point.ToIndex(x, y, _width)];
+        }
+
         private void GenerateBiomes(Random random)
         {
             // Step 0: Generate base noise maps
@@ -77,7 +88,13 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private void GenerateDetails(Random random)
         {
-
+            for (int x=0; x < _width; x++)
+            {
+                for (int y = 0; y < _height; y++)
+                {
+                    // TODO
+                }
+            }
         }
 
         #endregion
