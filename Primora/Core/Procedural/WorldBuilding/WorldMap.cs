@@ -1,10 +1,12 @@
 ﻿using Primora.Core.Procedural.Common;
 using Primora.Core.Procedural.Objects;
+using Primora.Extensions;
 using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -36,10 +38,10 @@ namespace Primora.Core.Procedural.WorldBuilding
             var random = Constants.General.Random;
 
             // Define the biomes op the world
-            GenerateBiomes(random);
+            GenerateBiomes(random, out var heightmap);
 
             // Define the details of the biomes of the world
-            GenerateDetails(random);
+            GenerateDetails(random, heightmap);
         }
 
         /// <summary>
@@ -53,10 +55,10 @@ namespace Primora.Core.Procedural.WorldBuilding
             return _biomes[Point.ToIndex(x, y, _width)];
         }
 
-        private void GenerateBiomes(Random random)
+        private void GenerateBiomes(Random random, out float[] heightmap)
         {
             // Step 0: Generate base noise maps
-            var heightmap = GenerateHeightMap(random);
+            heightmap = GenerateHeightMap(random);
             var tempMap = GenerateTemperatureMap(random);
             var moistureMap = GenerateMoistureMap(random);
 
@@ -86,15 +88,208 @@ namespace Primora.Core.Procedural.WorldBuilding
             ApplyColorsToTilemap(smoothed);
         }
 
-        private void GenerateDetails(Random random)
+        private void GenerateDetails(Random random, float[] heightMap)
         {
-            for (int x=0; x < _width; x++)
+            bool[,] treeMask = CreateTreeMask(random);
+
+            // Step 3: Write results back to the map
+            var grassTiles = new[] { ';', '.', ',', '"', '\'', ':' };
+            for (int x = 0; x < _width; x++)
             {
                 for (int y = 0; y < _height; y++)
                 {
-                    // TODO
+                    var tile = Tilemap.GetTile(x, y);
+                    var biome = GetBiome(x, y);
+
+                    if (treeMask[x, y])
+                    {
+                        tile.Glyph = 6;
+                        tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                    }
+                    else if ((biome == Biome.Hills || biome == Biome.Mountains) && random.Next(100) < 20)
+                    {
+                        tile.Glyph = random.Next(2) == 0 ? 94 : 30;
+                        tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                    }
+                    else if ((biome == Biome.Grassland || biome == Biome.Woodland || biome == Biome.Forest) && random.Next(100) < 20)
+                    {
+                        tile.Glyph = grassTiles[random.Next(grassTiles.Length)];
+                        tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                    }
                 }
             }
+        }
+
+        private bool[,] CreateTreeMask(Random random)
+        {
+            // Step 1: Build a mask of where forests should be
+            bool[,] forestMask = new bool[_width, _height];
+
+            for (int x = 0; x < _width; x++)
+            {
+                for (int y = 0; y < _height; y++)
+                {
+                    var biome = GetBiome(x, y);
+                    if (biome == Biome.Woodland || biome == Biome.Forest)
+                    {
+                        // Small random chance to seed a new forest
+                        if (random.Next(100) < 1 && !forestMask[x, y])
+                        {
+                            // Grow a forest from this seed
+                            var localForest = GrowForestFromSeed(new Point(x, y), random, 50);
+
+                            // Merge into main forest mask
+                            for (int xx = 0; xx < _width; xx++)
+                            {
+                                for (int yy = 0; yy < _height; yy++)
+                                {
+                                    if (localForest[xx, yy])
+                                        forestMask[xx, yy] = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Step 2: Apply smoothing with CA
+            forestMask = SmoothForest(forestMask, iterations: 3);
+            return forestMask;
+        }
+
+        private static Color GetBiomeGlyphColor(Color biomeColor, Biome biome, Random rand)
+        {
+            // Convert biome color to HSL
+            RgbToHsl(biomeColor.R, biomeColor.G, biomeColor.B, out var h, out var s, out var l);
+
+            // Very subtle hue variation ±2%
+            h += (float)(rand.NextDouble() * 0.04 - 0.02);
+
+            // Slight saturation variation ±5%
+            s = Math.Clamp(s * (0.95f + (float)rand.NextDouble() * 0.1f), 0f, 1f);
+
+            // Lightness based on biome
+            switch (biome)
+            {
+                case Biome.Forest:
+                    // Base lightness 0.25–0.35 (slightly lighter than before)
+                    l = 0.25f + (float)rand.NextDouble() * 0.1f;
+                    break;
+
+                case Biome.Woodland:
+                    // Base lightness 0.30–0.38 (slightly lighter than forest)
+                    l = 0.30f + (float)rand.NextDouble() * 0.08f;
+                    break;
+
+                default:
+                    l = 0.30f + (float)rand.NextDouble() * 0.08f;
+                    break;
+            }
+
+            // Convert back to RGB
+            var (r, g, b) = HslToRgb(h, s, l);
+            return new Color(r, g, b);
+        }
+
+        private bool[,] SmoothForest(bool[,] mask, int iterations = 2)
+        {
+            int width = mask.GetLength(0);
+            int height = mask.GetLength(1);
+
+            for (int it = 0; it < iterations; it++)
+            {
+                var newMask = new bool[width, height];
+
+                for (int x = 0; x < width; x++)
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        int neighbors = CountTreeNeighbors(mask, x, y);
+
+                        if (mask[x, y])
+                        {
+                            // Tree survives if enough neighbors
+                            newMask[x, y] = neighbors >= 3;
+                        }
+                        else
+                        {
+                            // Empty grows a tree if surrounded by many
+                            newMask[x, y] = neighbors >= 5;
+                        }
+                    }
+                }
+
+                mask = newMask;
+            }
+
+            return mask;
+        }
+
+        private static int CountTreeNeighbors(bool[,] mask, int cx, int cy)
+        {
+            int width = mask.GetLength(0);
+            int height = mask.GetLength(1);
+            int count = 0;
+
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+
+                    int nx = cx + dx;
+                    int ny = cy + dy;
+
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                    {
+                        if (mask[nx, ny]) count++;
+                    }
+                }
+            }
+
+            return count;
+        }
+
+
+        private bool[,] GrowForestFromSeed(Point seed, Random rand, int maxSize = 200)
+        {
+            var mask = new bool[_width, _height];
+            var queue = new Queue<Point>();
+
+            queue.Enqueue(seed);
+            mask[seed.X, seed.Y] = true;
+
+            int size = 1;
+
+            while (queue.Count > 0 && size < maxSize)
+            {
+                var current = queue.Dequeue();
+
+                // Explore neighbors (4 directions, can use 8 for more organic shapes)
+                foreach (var dir in new[] { new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1) })
+                {
+                    int nx = current.X + dir.X;
+                    int ny = current.Y + dir.Y;
+
+                    // Stay inside bounds
+                    if (nx < 0 || ny < 0 || nx >= _width || ny >= _height)
+                        continue;
+
+                    if (mask[nx, ny]) continue; // already forest
+
+                    var biome = GetBiome(nx, ny);
+
+                    // Random growth chance
+                    if ((biome == Biome.Woodland || biome == Biome.Forest) && rand.NextDouble() < 0.45) // 45% chance to expand here
+                    {
+                        mask[nx, ny] = true;
+                        queue.Enqueue(new Point(nx, ny));
+                        size++;
+                    }
+                }
+            }
+
+            return mask;
         }
 
         #endregion
@@ -102,13 +297,29 @@ namespace Primora.Core.Procedural.WorldBuilding
         #region Noise Map Generators
 
         private float[] GenerateHeightMap(Random rand) =>
-            OpenSimplex.GenerateNoiseMap(_width, _height, seed: rand.Next(), scale: 180f, octaves: 6, persistance: 0.5f, lacunarity: 2.0f);
+            OpenSimplex.GenerateNoiseMap(
+                _width, _height,
+                seed: rand.Next(),
+                scale: 200f,          // ↑ slightly bigger scale → smoother continents
+                octaves: 5,
+                persistance: 0.55f,
+                lacunarity: 1.9f
+            ).Select(h => Math.Clamp(h * 0.85f + 0.1f, 0f, 1f)) // squash extremes
+             .ToArray();
 
         private float[] GenerateTemperatureMap(Random rand) =>
             OpenSimplex.GenerateNoiseMap(_width, _height, seed: rand.Next(), scale: 300f, octaves: 2, persistance: 0.6f, lacunarity: 2f);
 
         private float[] GenerateMoistureMap(Random rand) =>
-            OpenSimplex.GenerateNoiseMap(_width, _height, seed: rand.Next(), scale: 180f, octaves: 4, persistance: 0.55f, lacunarity: 2f);
+            OpenSimplex.GenerateNoiseMap(
+                _width, _height,
+                seed: rand.Next(),
+                scale: 180f,
+                octaves: 4,
+                persistance: 0.55f,
+                lacunarity: 2f
+            ).Select(m => Math.Clamp(m * 0.7f + 0.3f, 0f, 1f)) // push upward
+             .ToArray();
 
         private void ApplyLatitudeAdjustment(float[] tempMap)
         {
@@ -275,7 +486,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     int g = Math.Clamp(neighborBlended.G + totalVariation, 0, 255);
                     int b = Math.Clamp(neighborBlended.B + totalVariation, 0, 255);
 
-                    colorMap[x, y] = AdjustForElevation(new Color(r, g, b), height, biomeMap[x, y]);
+                    colorMap[x, y] = new Color(r, g, b);
                 }
             }
 
@@ -374,19 +585,17 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         #region Utility Functions
         private static Biome SelectOrganicBiome(
-            int seed, 
-            float height,
-            float temperature,
-            float moisture,
-            int x, int y,
-            ICollection<BiomeDefinition> biomeRanges,
-            Random rand)
+    int seed,
+    float height,
+    float temperature,
+    float moisture,
+    int x, int y,
+    ICollection<BiomeDefinition> biomeRanges,
+    Random rand)
         {
-            // 1. Apply low-frequency noise to height to wiggle borders
             float edgeNoise = (float)OpenSimplex.Noise2(seed, x * 0.05f, y * 0.05f);
-            float adjustedHeight = height + edgeNoise * 0.05f; // tweak 0.05 for more/less wiggling
+            float adjustedHeight = height + edgeNoise * 0.05f;
 
-            // 2. Collect candidate biomes based on ranges
             var candidates = new List<(Biome biome, float weight)>();
             foreach (var b in biomeRanges)
             {
@@ -396,7 +605,6 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                 if (inHeight && inTemp && inMoisture)
                 {
-                    // Weight based on how close the tile is to biome center (height, temp, moisture)
                     float hCenter = (b.MinHeight + b.MaxHeight) / 2f;
                     float tCenter = (b.MinTemp + b.MaxTemp) / 2f;
                     float mCenter = (b.MinMoisture + b.MaxMoisture) / 2f;
@@ -406,8 +614,25 @@ namespace Primora.Core.Procedural.WorldBuilding
                     float mWeight = 1f - Math.Abs(moisture - mCenter) / ((b.MaxMoisture - b.MinMoisture) / 2f);
 
                     float weight = Math.Clamp((hWeight + tWeight + mWeight) / 3f, 0f, 1f);
+
+                    // 🌲 Forest bias → multiply weight
+                    if (b.Name.Contains("Forest") || b.Name.Contains("Woodland"))
+                        weight *= 1.5f;
+
                     candidates.Add((b.Biome, weight));
                 }
+            }
+
+            // 3. Apply forest bias before weighted random
+            for (int ci = 0; ci < candidates.Count; ci++)
+            {
+                var c = candidates[ci];
+                float bias = 1f;
+
+                if (c.biome == Biome.Forest || c.biome == Biome.Woodland || c.biome == Biome.Grassland)  // or explicit check: (c.biome == Biome.Forest || c.biome == Biome.TropicalForest)
+                    bias = 2.2f; // forests ~2x more likely
+
+                candidates[ci] = (c.biome, c.weight * bias);
             }
 
             // 3. Pick biome using weighted random
@@ -418,6 +643,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 return nearest.Biome;
             }
 
+            // Weighted random pick
             float totalWeight = candidates.Sum(c => c.weight);
             float pick = (float)(rand.NextDouble() * totalWeight);
             float running = 0f;
@@ -430,62 +656,6 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             return candidates[0].biome; // fallback
         }
-
-        private static Color AdjustForElevation(
-                    Color c,
-                    float height,
-                    Biome biome)
-        {
-            float h, s, l;
-            RgbToHsl(c.R, c.G, c.B, out h, out s, out l);
-
-            float factor = Math.Clamp(height, 0f, 1f);
-
-            if (biome == Biome.Snow || biome == Biome.Glacial)
-            {
-                // Don't adjust, these are already fine
-            }
-            else if (factor < 0.3f)
-            {
-                float lowFactor = 1f - (factor / 0.3f);
-                s *= 1f + 0.3f * lowFactor;
-                h = (h + 0.03f * lowFactor) % 1f;
-                l *= 1f + 0.2f * lowFactor;
-            }
-            else if (factor > 0.85f)
-            {
-                float snowFactor = (factor - 0.85f) / 0.15f;
-                snowFactor = Math.Clamp(snowFactor, 0f, 1f);
-                float targetS = 0.15f;
-                float targetL = 0.95f;
-                float targetH = 0f;
-                s = s * (1f - snowFactor) + targetS * snowFactor;
-                l = l * (1f - snowFactor) + targetL * snowFactor;
-                h = h * (1f - snowFactor) + targetH * snowFactor;
-            }
-            else if (factor > 0.6f)
-            {
-                float highFactor = (factor - 0.6f) / 0.3f;
-                s *= 1f - 0.5f * highFactor;
-                l *= 1f - 0.3f * highFactor;
-                h = (h - 0.02f * highFactor + 1f) % 1f;
-            }
-            else
-            {
-                float midFactor = 1f - Math.Abs((factor - 0.5f) / 0.1f);
-                midFactor = Math.Clamp(midFactor, 0f, 1f);
-                s *= 1f + 0.4f * midFactor;
-                h = (h + 0.04f * midFactor) % 1f;
-                l *= 1f + 0.1f * midFactor;
-            }
-
-            s = Math.Clamp(s, 0f, 1f);
-            l = Math.Clamp(l, 0f, 1f);
-
-            var (r, g, b) = HslToRgb(h, s, l);
-            return new Color(r, g, b);
-        }
-
         public static (int r, int g, int b) HslToRgb(float h, float s, float l)
         {
             float r, g, b;

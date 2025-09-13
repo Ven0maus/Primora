@@ -2,21 +2,11 @@
 {
     internal enum Biome
     {
-        Grassland,
-        Forest,
-        Beach,
-        Oasis,
         Woodland,
+        Forest,
+        Grassland,
         Hills,
-        Badlands,
-        Swamp,
-        Snow,
-        Mountain,
-        Snowy_Mountain,
-        Savannah,
-        Desert,
-        Glacial,
-        Deep_Water,
-        Shallow_Water
+        Mountains,
+        River,
     }
 }
