@@ -15,33 +15,18 @@ namespace Primora.Core.Procedural.WorldBuilding
     internal class WorldMap
     {
         private readonly int _width, _height;
-        private readonly Dictionary<Point, Zone> _zones;
         private readonly Tile[] _tiles;
-
         internal readonly Tilemap Tilemap;
 
         internal WorldMap(int width, int height)
         {
             _width = width;
             _height = height;
-            _zones = [];
             _tiles = new Tile[width * height];
             Tilemap = new Tilemap(width, height);
         }
 
-        #region World Generation
-
-        internal void Generate()
-        {
-            var random = new Random(Constants.General.GameSeed);
-
-            // Define the biomes of the world
-            GenerateBiomes(random, out var heightmap);
-
-            // Define the details of the biomes of the world
-            GenerateDetails(random, heightmap);
-        }
-
+        #region Accessors
         /// <summary>
         /// Returns the tile information at the specified coordinate on the world map.
         /// </summary>
@@ -55,6 +40,20 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         internal Tile GetTileInfo(Point position)
             => GetTileInfo(position.X, position.Y);
+        #endregion
+
+        #region World Generation
+
+        internal void Generate()
+        {
+            var random = new Random(Constants.General.GameSeed);
+
+            // Define the biomes of the world
+            GenerateBiomes(random, out var heightmap);
+
+            // Define the details of the biomes of the world
+            GenerateDetails(random, heightmap);
+        }
 
         private void GenerateBiomes(Random random, out float[] heightmap)
         {
@@ -126,115 +125,8 @@ namespace Primora.Core.Procedural.WorldBuilding
             CreateSettlementsAndRoads(random, heightMap);
         }
 
-        private void CreateRivers(Random random, float[] heightMap)
-        {
-            // Collect random city locations and roads
-            var roadPoints = RiverNetworkHelper.BuildMajorRiver(heightMap, _width, _height, random);
-
-            // Draw roads between cities
-            var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
-            foreach (var (coordinate, _) in glyphPositions)
-            {
-                var tile = Tilemap.GetTile(coordinate);
-                tile.Glyph = 0;
-                Color biome = tile.Background;   // biome color
-                Color river = Color.Blue;        // base river color
-
-                // Blend factor (0.3 = 30% river color, 70% biome color)
-                float blend = 0.35f;
-                tile.Background = Color.Lerp(biome, river, blend);
-
-                var tileInfo = GetTileInfo(coordinate);
-                tileInfo.Biome = Biome.River;
-                tileInfo.HasWaterResource = true;
-            }
-        }
-
-        private void CreateSettlementsAndRoads(Random random, float[] heightMap)
-        {
-            // Collect random city locations and roads
-            var cityPositions = GetCityPositions(random, heightMap, _width, _height);
-            var roadPoints = RoadNetworkHelper.BuildRoadNetwork(cityPositions, heightMap, _width, _height, random);
-
-            // Draw roads between cities
-            var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
-            foreach (var (coordinate, glyph) in glyphPositions)
-            {
-                var tile = Tilemap.GetTile(coordinate);
-                tile.Glyph = glyph;
-                tile.Foreground = GetBiomeGlyphColor("#A1866F".HexToColor(), Biome.Road, random);
-
-                var tileInfo = GetTileInfo(coordinate);
-                if (tileInfo.Biome == Biome.River)
-                    tileInfo.Biome = Biome.Bridge;
-                else
-                    tileInfo.Biome = Biome.Road;
-            }
-
-            // Set cities
-            foreach (var coordinate in cityPositions)
-            {
-                var tile = Tilemap.GetTile(coordinate);
-                tile.Glyph = 127;
-                tile.Foreground = Color.White;
-
-                var tileInfo = GetTileInfo(coordinate);
-                tileInfo.Biome = Biome.Settlement;
-            }
-        }
-
-        private List<Point> GetCityPositions(Random random,
-             float[] heightMap, int width, int height,
-             int cityCount = 8, int minDistance = 30,
-             int borderMargin = 10) // new parameter for border margin
-        {
-            var cities = new List<Point>();
-
-            // Step 1: Collect candidate points based on height (avoid mountains and water)
-            var candidates = new List<Point>();
-            for (int y = borderMargin; y < height - borderMargin; y++) // exclude border rows
-            {
-                for (int x = borderMargin; x < width - borderMargin; x++) // exclude border columns
-                {
-                    float h = heightMap[Point.ToIndex(x, y, width)];
-
-                    // realistic city terrain: avoid extremes
-                    if (h >= 0.25f && h <= 0.7f && GetTileInfo(x, y).Biome != Biome.River)
-                        candidates.Add(new Point(x, y));
-                }
-            }
-
-            if (candidates.Count == 0)
-                return cities; // no valid terrain
-
-            // Step 2: Pick cities one by one
-            while (cities.Count < cityCount && candidates.Count > 0)
-            {
-                // Random candidate
-                var candidate = candidates[random.Next(candidates.Count)];
-
-                // Check minimum distance from existing cities
-                bool tooClose = cities.Any(c => EuclideanDistanceSquared(c, candidate) < minDistance * minDistance);
-                if (!tooClose)
-                {
-                    cities.Add(candidate);
-                }
-
-                // Remove candidate to avoid repeated selection
-                candidates.Remove(candidate);
-            }
-
-            return cities;
-        }
-
-        // Distance helper (squared to avoid sqrt)
-        private static int EuclideanDistanceSquared(Point a, Point b)
-        {
-            int dx = a.X - b.X;
-            int dy = a.Y - b.Y;
-            return dx * dx + dy * dy;
-        }
         #endregion
+
 
         #region Noise Map Generators
 
@@ -706,6 +598,119 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
 
             return mask;
+        }
+        #endregion
+
+        #region Rivers
+        private void CreateRivers(Random random, float[] heightMap)
+        {
+            // Collect random city locations and roads
+            var roadPoints = RiverNetworkHelper.BuildMajorRiver(heightMap, _width, _height, random);
+
+            // Draw roads between cities
+            var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
+            foreach (var (coordinate, _) in glyphPositions)
+            {
+                var tile = Tilemap.GetTile(coordinate);
+                tile.Glyph = 0;
+                Color biome = tile.Background;   // biome color
+                Color river = Color.Blue;        // base river color
+
+                // Blend factor (0.3 = 30% river color, 70% biome color)
+                float blend = 0.35f;
+                tile.Background = Color.Lerp(biome, river, blend);
+
+                var tileInfo = GetTileInfo(coordinate);
+                tileInfo.Biome = Biome.River;
+                tileInfo.HasWaterResource = true;
+            }
+        }
+        #endregion
+
+        #region Settlements
+        private void CreateSettlementsAndRoads(Random random, float[] heightMap)
+        {
+            // Collect random city locations and roads
+            var cityPositions = GetCityPositions(random, heightMap, _width, _height);
+            var roadPoints = RoadNetworkHelper.BuildRoadNetwork(cityPositions, heightMap, _width, _height, random);
+
+            // Draw roads between cities
+            var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
+            foreach (var (coordinate, glyph) in glyphPositions)
+            {
+                var tile = Tilemap.GetTile(coordinate);
+                tile.Glyph = glyph;
+                tile.Foreground = GetBiomeGlyphColor("#A1866F".HexToColor(), Biome.Road, random);
+
+                var tileInfo = GetTileInfo(coordinate);
+                if (tileInfo.Biome == Biome.River)
+                    tileInfo.Biome = Biome.Bridge;
+                else
+                    tileInfo.Biome = Biome.Road;
+            }
+
+            // Set cities
+            foreach (var coordinate in cityPositions)
+            {
+                var tile = Tilemap.GetTile(coordinate);
+                tile.Glyph = 127;
+                tile.Foreground = Color.White;
+
+                var tileInfo = GetTileInfo(coordinate);
+                tileInfo.Biome = Biome.Settlement;
+            }
+        }
+
+        private List<Point> GetCityPositions(Random random,
+             float[] heightMap, int width, int height,
+             int cityCount = 8, int minDistance = 30,
+             int borderMargin = 10) // new parameter for border margin
+        {
+            var cities = new List<Point>();
+
+            // Step 1: Collect candidate points based on height (avoid mountains and water)
+            var candidates = new List<Point>();
+            for (int y = borderMargin; y < height - borderMargin; y++) // exclude border rows
+            {
+                for (int x = borderMargin; x < width - borderMargin; x++) // exclude border columns
+                {
+                    float h = heightMap[Point.ToIndex(x, y, width)];
+
+                    // realistic city terrain: avoid extremes
+                    if (h >= 0.25f && h <= 0.7f && GetTileInfo(x, y).Biome != Biome.River)
+                        candidates.Add(new Point(x, y));
+                }
+            }
+
+            if (candidates.Count == 0)
+                return cities; // no valid terrain
+
+            // Step 2: Pick cities one by one
+            while (cities.Count < cityCount && candidates.Count > 0)
+            {
+                // Random candidate
+                var candidate = candidates[random.Next(candidates.Count)];
+
+                // Check minimum distance from existing cities
+                bool tooClose = cities.Any(c => EuclideanDistanceSquared(c, candidate) < minDistance * minDistance);
+                if (!tooClose)
+                {
+                    cities.Add(candidate);
+                }
+
+                // Remove candidate to avoid repeated selection
+                candidates.Remove(candidate);
+            }
+
+            return cities;
+        }
+
+        // Distance helper (squared to avoid sqrt)
+        private static int EuclideanDistanceSquared(Point a, Point b)
+        {
+            int dx = a.X - b.X;
+            int dy = a.Y - b.Y;
+            return dx * dx + dy * dy;
         }
         #endregion
 

@@ -1,4 +1,8 @@
-﻿using Primora.Screens;
+﻿using Primora.Extensions;
+using Primora.Screens;
+using SadConsole;
+using SadRogue.Primitives;
+using System;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -7,6 +11,8 @@ namespace Primora.Core.Procedural.WorldBuilding
     /// </summary>
     internal class World
     {
+        internal static World Instance { get; private set; }
+
         /// <summary>
         /// The map of the overworld containing all the accessible zones.
         /// </summary>
@@ -16,10 +22,25 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// The zone that is currently loaded.
         /// </summary>
         internal Zone CurrentZone { get; private set; }
+        internal static int DefaultZoneWidth { get; private set; }
+        internal static int DefaultZoneHeight { get; private set; }
 
         internal World(int width, int height)
         {
+            if (Instance != null)
+                throw new Exception($"An instance of the {nameof(World)} already exists.");
+
+            Instance = this;
+
+            // World width/height is initialized at fontsize One.
             WorldMap = new WorldMap(width, height);
+
+            // Just used as a helper to collect the zone width/height
+            var surface = new ScreenSurface(width, height);
+            surface.ResizeToFitFontSize(IFont.Sizes.Two);
+
+            DefaultZoneWidth = surface.Width;
+            DefaultZoneHeight = surface.Height;
         }
 
         /// <summary>
@@ -27,24 +48,17 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         internal void Generate()
         {
+            // Start initial world generation
             WorldMap.Generate();
+
+            // Show the world map as default view
             ShowWorldMap();
+            //LoadZone(new Point(0,0));
         }
 
-        /// <summary>
-        /// Will fast travel to the designated zone.
-        /// <br>If the zone is known and explored in the past 4 in-game hours it will load a cached version.</br>
-        /// <br>If the zone was not known, or not visited in the past 4 in-game hour it will generate a new procedural zone.</br>
-        /// </summary>
-        /// <param name="zone"></param>
-        internal void TravelToZone(Zone zone)
+        internal void LoadZone(Point position)
         {
-            if (CurrentZone == zone) return;
-
-            zone.GetFromCacheOrGenerate();
-            CurrentZone = zone;
-
-            // Render the zone
+            CurrentZone = Zone.LoadZone(position);
             ShowCurrentZone();
         }
 
@@ -53,6 +67,8 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         internal void ShowWorldMap()
         {
+            // Worldmap has a regular fontsize
+            RootScreen.Instance.RenderingSurface.ResizeToFitFontSize(1f, true);
             WorldMap.Tilemap.Render(RootScreen.Instance.RenderingSurface);
         }
 
@@ -61,6 +77,8 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         internal void ShowCurrentZone()
         {
+            // Zone has a larger fontsize
+            RootScreen.Instance.RenderingSurface.ResizeToFitFontSize(2f, true);
             CurrentZone.Tilemap.Render(RootScreen.Instance.RenderingSurface);
         }
     }
