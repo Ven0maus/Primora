@@ -25,7 +25,7 @@ namespace Primora
                 .IsStartingScreenFocused(true)
                 .ConfigureFonts((fc, gh) =>
                 {
-                    fc.UseCustomFont("Assets/font_12x12.font");
+                    fc.UseCustomFont("Assets/font_16x16.font");
                 });
 
             // Setup the engine and start the game

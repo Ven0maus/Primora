@@ -14,10 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Assets\font_12x12.font">
+    <None Update="Assets\font_16x16.font">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\font_12x12.png">
+    <None Update="Assets\font_16x16.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="GameData\Biomes.json">

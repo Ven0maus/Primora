@@ -1,5 +1,6 @@
 ﻿using Primora.Core.Procedural.Common;
 using Primora.Core.Procedural.Objects;
+using Primora.Extensions;
 using SadConsole;
 using SadRogue.Primitives;
 using System;
@@ -137,7 +138,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 var tile = Tilemap.GetTile(coordinate);
                 tile.Glyph = glyph;
-                tile.Foreground = Color.Gray;
+                tile.Foreground = GetBiomeGlyphColor("#BFC2C3".HexToColor(), Biome.Woodland, random);
             }
 
             foreach (var pos in cityPositions)
