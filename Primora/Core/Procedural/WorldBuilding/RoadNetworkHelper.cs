@@ -5,54 +5,8 @@ using System.Linq;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
-    internal static class PathCarver
+    internal static class RoadNetworkHelper
     {
-        /// <summary>
-        /// Defines the correct box-line style glyphs for the entire path.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public static List<(Point coordinate, int glyph)> DefineGlyphs(HashSet<Point> path)
-        {
-            var glyphs = new List<(Point coordinate, int glyph)>();
-            foreach (var point in path)
-            {
-                // Check each neighbor to define the correct glyph for this point
-                bool left = path.Contains(new Point(point.X - 1, point.Y));
-                bool right = path.Contains(new Point(point.X + 1, point.Y));
-                bool up = path.Contains(new Point(point.X, point.Y - 1));
-                bool down = path.Contains(new Point(point.X, point.Y + 1));
-
-                int glyph;
-
-                // Decide glyph based on neighbors
-                if (left && right && up && down) glyph = 197;        // ┼
-                else if (left && right && up) glyph = 193;           // ┴
-                else if (left && right && down) glyph = 194;         // ┬
-                else if (up && down && left) glyph = 180;            // ┤
-                else if (up && down && right) glyph = 195;           // ├
-                else if (left && right) glyph = 196;                 // ─
-                else if (up && down) glyph = 179;                    // │
-                else if (down && right) glyph = 218;                 // ┌
-                else if (down && left) glyph = 191;                  // ┐
-                else if (up && right) glyph = 192;                   // └
-                else if (up && left) glyph = 217;                    // ┘
-                else if (left) glyph = 196;                          // lone horizontal
-                else if (right) glyph = 196;
-                else if (up) glyph = 179;
-                else if (down) glyph = 179;
-                else glyph = 250; // middle dot for isolated tile
-
-                glyphs.Add((point, glyph));
-            }
-            return glyphs;
-        }
-
-        internal static void CarveRiver(Point start, float[] heightmap, int width, int height)
-        {
-            // Height based river carving
-        }
-
         public static HashSet<Point> BuildRoadNetwork(List<Point> cities, float[] heightMap, int width, int height, Random random)
         {
             var roadPoints = new HashSet<Point>();

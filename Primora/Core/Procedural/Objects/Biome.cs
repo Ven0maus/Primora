@@ -8,5 +8,7 @@
         Hills,
         Mountains,
         River,
+        Road,
+        Settlement
     }
 }

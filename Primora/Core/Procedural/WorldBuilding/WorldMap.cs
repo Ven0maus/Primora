@@ -6,8 +6,6 @@ using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Microsoft.Xna.Framework.Graphics.SpriteFont;
-using static SadConsole.Readers.Playscii;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -130,22 +128,27 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // Collect random city locations and roads
             var cityPositions = GetCityPositions(random, heightMap, _width, _height);
-            var roadPoints = PathCarver.BuildRoadNetwork(cityPositions, heightMap, _width, _height, random);
+            var roadPoints = RoadNetworkHelper.BuildRoadNetwork(cityPositions, heightMap, _width, _height, random);
 
             // Draw roads between cities
-            var glyphPositions = PathCarver.DefineGlyphs(roadPoints);
+            var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
             foreach (var (coordinate, glyph) in glyphPositions)
             {
                 var tile = Tilemap.GetTile(coordinate);
                 tile.Glyph = glyph;
-                tile.Foreground = GetBiomeGlyphColor("#BFC2C3".HexToColor(), Biome.Woodland, random);
+                tile.Foreground = GetBiomeGlyphColor("#A1866F".HexToColor(), Biome.Road, random);
+
+                _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.Road;
             }
 
-            foreach (var pos in cityPositions)
+            // Set cities
+            foreach (var coordinate in cityPositions)
             {
-                var tile = Tilemap.GetTile(pos);
-                tile.Glyph = 'X';
-                tile.Foreground = Color.Magenta;
+                var tile = Tilemap.GetTile(coordinate);
+                tile.Glyph = 127;
+                tile.Foreground = Color.White;
+
+                _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.Settlement;
             }
         }
 
@@ -200,8 +203,6 @@ namespace Primora.Core.Procedural.WorldBuilding
             int dy = a.Y - b.Y;
             return dx * dx + dy * dy;
         }
-
-
         #endregion
 
         #region Noise Map Generators
@@ -555,6 +556,17 @@ namespace Primora.Core.Procedural.WorldBuilding
                     l = 0.30f + (float)rand.NextDouble() * 0.08f;
                     break;
 
+                case Biome.Road:
+                    // Slight hue variation ±3%
+                    h += (float)(rand.NextDouble() * 0.06 - 0.03);
+
+                    // Slight desaturation
+                    s = Math.Clamp(s * (0.85f + (float)rand.NextDouble() * 0.1f), 0f, 1f);
+
+                    // Slight lightness variation
+                    l = 0.28f + (float)rand.NextDouble() * 0.10f;
+                    break;
+
                 default:
                     l = 0.30f + (float)rand.NextDouble() * 0.08f;
                     break;
@@ -668,14 +680,55 @@ namespace Primora.Core.Procedural.WorldBuilding
         #endregion
 
         #region Utility Functions
+        /// <summary>
+        /// Defines the correct box-line style glyphs for the entire path.
+        /// </summary>
+        /// <param name="positions"></param>
+        /// <returns></returns>
+        public static List<(Point coordinate, int glyph)> DefineLineGlyphsByPositions(HashSet<Point> positions)
+        {
+            var glyphs = new List<(Point coordinate, int glyph)>();
+            foreach (var point in positions)
+            {
+                // Check each neighbor to define the correct glyph for this point
+                bool left = positions.Contains(new Point(point.X - 1, point.Y));
+                bool right = positions.Contains(new Point(point.X + 1, point.Y));
+                bool up = positions.Contains(new Point(point.X, point.Y - 1));
+                bool down = positions.Contains(new Point(point.X, point.Y + 1));
+
+                int glyph;
+
+                // Decide glyph based on neighbors
+                if (left && right && up && down) glyph = 197;        // ┼
+                else if (left && right && up) glyph = 193;           // ┴
+                else if (left && right && down) glyph = 194;         // ┬
+                else if (up && down && left) glyph = 180;            // ┤
+                else if (up && down && right) glyph = 195;           // ├
+                else if (left && right) glyph = 196;                 // ─
+                else if (up && down) glyph = 179;                    // │
+                else if (down && right) glyph = 218;                 // ┌
+                else if (down && left) glyph = 191;                  // ┐
+                else if (up && right) glyph = 192;                   // └
+                else if (up && left) glyph = 217;                    // ┘
+                else if (left) glyph = 196;                          // lone horizontal
+                else if (right) glyph = 196;
+                else if (up) glyph = 179;
+                else if (down) glyph = 179;
+                else glyph = 250; // middle dot for isolated tile
+
+                glyphs.Add((point, glyph));
+            }
+            return glyphs;
+        }
+
         private static Biome SelectOrganicBiome(
-    int seed,
-    float height,
-    float temperature,
-    float moisture,
-    int x, int y,
-    ICollection<BiomeDefinition> biomeRanges,
-    Random rand)
+            int seed,
+            float height,
+            float temperature,
+            float moisture,
+            int x, int y,
+            ICollection<BiomeDefinition> biomeRanges,
+            Random rand)
         {
             float edgeNoise = (float)OpenSimplex.Noise2(seed, x * 0.05f, y * 0.05f);
             float adjustedHeight = height + edgeNoise * 0.05f;
