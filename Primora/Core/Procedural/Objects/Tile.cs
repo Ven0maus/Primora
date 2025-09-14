@@ -1,7 +1,9 @@
 ﻿namespace Primora.Core.Procedural.Objects
 {
-    internal enum Tile
+    internal class Tile
     {
-        None = 0
+        internal Biome Biome { get; set; }
+        internal bool HasTreeResource { get; set; }
+        internal bool HasWaterResource { get; set; }
     }
 }

@@ -39,7 +39,7 @@ namespace Primora.Screens
 
             // Setup the world elements
             World = new World(RenderingSurface.Width, RenderingSurface.Height);
-            Debug.WriteLine("Seed: " + Constants.General.Seed);
+            Debug.WriteLine("Seed: " + Constants.General.GameSeed);
 #if DEBUG
             // Add a glyph selector popup for development purposes
             SadConsole.UI.Windows.GlyphSelectPopup.AddRootComponent(SadConsole.Input.Keys.F11);

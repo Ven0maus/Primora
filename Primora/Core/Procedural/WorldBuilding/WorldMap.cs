@@ -16,7 +16,7 @@ namespace Primora.Core.Procedural.WorldBuilding
     {
         private readonly int _width, _height;
         private readonly Dictionary<Point, Zone> _zones;
-        private readonly Biome[] _biomes;
+        private readonly Tile[] _tiles;
 
         internal readonly Tilemap Tilemap;
 
@@ -25,8 +25,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             _width = width;
             _height = height;
             _zones = [];
-            _biomes = new Biome[width * height];
-
+            _tiles = new Tile[width * height];
             Tilemap = new Tilemap(width, height);
         }
 
@@ -34,9 +33,9 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         internal void Generate()
         {
-            var random = Constants.General.Random;
+            var random = new Random(Constants.General.GameSeed);
 
-            // Define the biomes op the world
+            // Define the biomes of the world
             GenerateBiomes(random, out var heightmap);
 
             // Define the details of the biomes of the world
@@ -44,23 +43,18 @@ namespace Primora.Core.Procedural.WorldBuilding
         }
 
         /// <summary>
-        /// Returns the biome at the specified coordinate.
+        /// Returns the tile information at the specified coordinate on the world map.
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <returns></returns>
-        internal Biome GetBiome(int x, int y)
+        internal Tile GetTileInfo(int x, int y)
         {
-            return _biomes[Point.ToIndex(x, y, _width)];
+            return _tiles[Point.ToIndex(x, y, _width)];
         }
 
-        /// <summary>
-        /// Returns the biome at the specified coordinate.
-        /// </summary>
-        /// <param name="position"></param>
-        /// <returns></returns>
-        internal Biome GetBiome(Point position)
-            => GetBiome(position.X, position.Y);
+        internal Tile GetTileInfo(Point position)
+            => GetTileInfo(position.X, position.Y);
 
         private void GenerateBiomes(Random random, out float[] heightmap)
         {
@@ -99,19 +93,21 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             bool[,] treeMask = CreateTreeMask(random);
 
-            // Step 3: Write results back to the map
+            // Step 3: Set base biome glyphs
             var grassTiles = new[] { ';', '.', ',', '"', '\'', ':' };
             for (int x = 0; x < _width; x++)
             {
                 for (int y = 0; y < _height; y++)
                 {
                     var tile = Tilemap.GetTile(x, y);
-                    var biome = GetBiome(x, y);
+                    var tileInfo = GetTileInfo(x, y);
+                    var biome = tileInfo.Biome;
 
                     if (treeMask[x, y])
                     {
                         tile.Glyph = 6;
                         tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                        tileInfo.HasTreeResource = true;
                     }
                     else if ((biome == Biome.Hills || biome == Biome.Mountains) && random.Next(100) < 20)
                     {
@@ -148,7 +144,9 @@ namespace Primora.Core.Procedural.WorldBuilding
                 float blend = 0.35f;
                 tile.Background = Color.Lerp(biome, river, blend);
 
-                _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.River;
+                var tileInfo = GetTileInfo(coordinate);
+                tileInfo.Biome = Biome.River;
+                tileInfo.HasWaterResource = true;
             }
         }
 
@@ -166,10 +164,11 @@ namespace Primora.Core.Procedural.WorldBuilding
                 tile.Glyph = glyph;
                 tile.Foreground = GetBiomeGlyphColor("#A1866F".HexToColor(), Biome.Road, random);
 
-                if (GetBiome(coordinate) == Biome.River)
-                    _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.Bridge;
+                var tileInfo = GetTileInfo(coordinate);
+                if (tileInfo.Biome == Biome.River)
+                    tileInfo.Biome = Biome.Bridge;
                 else
-                    _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.Road;
+                    tileInfo.Biome = Biome.Road;
             }
 
             // Set cities
@@ -179,7 +178,8 @@ namespace Primora.Core.Procedural.WorldBuilding
                 tile.Glyph = 127;
                 tile.Foreground = Color.White;
 
-                _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.Settlement;
+                var tileInfo = GetTileInfo(coordinate);
+                tileInfo.Biome = Biome.Settlement;
             }
         }
 
@@ -199,7 +199,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     float h = heightMap[Point.ToIndex(x, y, width)];
 
                     // realistic city terrain: avoid extremes
-                    if (h >= 0.25f && h <= 0.7f && GetBiome(x, y) != Biome.River)
+                    if (h >= 0.25f && h <= 0.7f && GetTileInfo(x, y).Biome != Biome.River)
                         candidates.Add(new Point(x, y));
                 }
             }
@@ -288,7 +288,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 {
                     int i = Point.ToIndex(x, y, _width);
                     biomeMap[x, y] = SelectOrganicBiome(
-                        Constants.General.Seed,
+                        Constants.General.GameSeed,
                         heightmap[i],
                         tempMap[i],
                         moistureMap[i],
@@ -343,7 +343,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 for (int y=0; y < _height; y++)
                 {
-                    _biomes[Point.ToIndex(x, y, _width)] = biomeMap[x, y];
+                    _tiles[Point.ToIndex(x, y, _width)] = new Tile { Biome = biomeMap[x, y] };
                 }
             }
         }
@@ -514,7 +514,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 for (int x = 0; x < _width; x++)
                 {
-                    var appearance = BiomeRegistry.Get(_biomes[Point.ToIndex(x, y, _width)]).Appearance.Clone();
+                    var appearance = BiomeRegistry.Get(GetTileInfo(x, y).Biome).Appearance.Clone();
                     appearance.Background = colorMap[x, y]; // Adjust biome coloring to be more accurate
                     Tilemap.SetTile(x, y, (ColoredGlyph)appearance);
                 }
@@ -533,7 +533,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 for (int y = 0; y < _height; y++)
                 {
-                    var biome = GetBiome(x, y);
+                    var biome = GetTileInfo(x, y).Biome;
                     if (biome == Biome.Woodland || biome == Biome.Forest)
                     {
                         // Small random chance to seed a new forest
@@ -693,7 +693,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                     if (mask[nx, ny]) continue; // already forest
 
-                    var biome = GetBiome(nx, ny);
+                    var biome = GetTileInfo(nx, ny).Biome;
 
                     // Random growth chance
                     if ((biome == Biome.Woodland || biome == Biome.Forest) && rand.NextDouble() < 0.45) // 45% chance to expand here
