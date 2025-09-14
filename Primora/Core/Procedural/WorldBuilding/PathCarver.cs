@@ -1,7 +1,6 @@
 ﻿using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Primora.Core.Procedural.WorldBuilding
@@ -64,144 +63,70 @@ namespace Primora.Core.Procedural.WorldBuilding
             var connectedCities = new HashSet<Point> { startCity };
             remainingCities.Remove(startCity);
 
+            // Connect each remaining city to the network
             while (remainingCities.Count > 0)
             {
                 Point cityToConnect = remainingCities[random.Next(remainingCities.Count)];
-                Point? closestConnectedCity = FindClosestCity(cityToConnect, connectedCities);
-                if (closestConnectedCity == null)
-                    throw new Exception("No closest city found");
+                Point closestConnectedCity = FindClosestCity(cityToConnect, connectedCities).Value;
 
-                BuildRoad(cityToConnect, closestConnectedCity.Value, cities, roadPoints, heightMap, width, height);
+                BuildRoad(cityToConnect, closestConnectedCity, cities, roadPoints, heightMap, width, height);
+
                 connectedCities.Add(cityToConnect);
                 remainingCities.Remove(cityToConnect);
             }
 
-            // --- Ensure full connectivity ---
+            // Ensure full connectivity of all cities
+            ConnectDisconnectedComponents(roadPoints, cities, width, height, heightMap);
 
-            // Step 1: Find connected components
-            var components = GetConnectedComponents(roadPoints, width, height);
-            if (components.Count > 1)
-            {
-                // Step 2: Designate the largest component as main
-                var mainComponent = components.OrderByDescending(c => c.Count).First();
-                var otherComponents = components.Where(c => c != mainComponent).ToArray();
+            // Remove dead-end roads safely
+            RemoveDeadEnds(roadPoints, cities, width, height);
 
-                // Step 3: Connect each other component to the main
-                foreach (var component in otherComponents)
-                {
-                    (Point pA, Point pB) = FindClosestPointBetweenSets(component, mainComponent);
-
-                    BuildRoad(pA, pB, cities, roadPoints, heightMap, width, height);
-                }
-            }
-
-            // Removes dead-end points
-            var deadEnds = roadPoints.Where(a => IsDeadEnd(cities, a, roadPoints));
-            foreach (var deadEnd in deadEnds)
-                roadPoints.Remove(deadEnd);
-
-            // Remove boxes (roads that create box like roads)
-            RemoveRedundantRoads(roadPoints, cities, width, height);
+            // Remove redundant roads while preserving connectivity
+            RemoveRedundantRoadsSafe(roadPoints, cities, width, height);
 
             return roadPoints;
         }
 
-        private static void RemoveRedundantRoads(HashSet<Point> roadPoints, List<Point> cities, int width, int height)
+        // Ensures any disconnected component is linked to the main network
+        private static void ConnectDisconnectedComponents(HashSet<Point> roadPoints, List<Point> cities, int width, int height, float[] heightMap)
         {
-            // Start with all non-city tiles as candidates
-            var candidates = new Queue<Point>(roadPoints.Where(p => !cities.Contains(p)));
-            var directions = new (int dx, int dy)[] { (-1, 0), (1, 0), (0, -1), (0, 1) };
+            var components = GetConnectedComponentsIncludingCities(roadPoints, cities, width, height);
+            if (components.Count <= 1) return;
 
-            while (candidates.Count > 0)
+            var mainComponent = components.OrderByDescending(c => c.Count).First();
+            foreach (var component in components.Where(c => c != mainComponent))
             {
-                var p = candidates.Dequeue();
-
-                // Skip if already removed
-                if (!roadPoints.Contains(p)) continue;
-
-                // Count neighbors
-                var neighbors = directions
-                    .Select(d => new Point(p.X + d.dx, p.Y + d.dy))
-                    .Where(n => roadPoints.Contains(n))
-                    .ToList();
-
-                // Temporarily remove
-                roadPoints.Remove(p);
-
-                if (AllCitiesConnected(roadPoints, cities, width, height))
-                {
-                    // Tile removed successfully
-                    // Add its neighbors as new candidates in case new redundancies appeared
-                    foreach (var n in neighbors)
-                    {
-                        if (!cities.Contains(n))
-                            candidates.Enqueue(n);
-                    }
-                }
-                else
-                {
-                    // Restore if removing breaks connectivity
-                    roadPoints.Add(p);
-                }
+                var (pA, pB) = FindClosestPointBetweenSets(component, mainComponent);
+                BuildRoad(pA, pB, cities, roadPoints, heightMap, width, height);
             }
         }
 
-        /// <summary>
-        /// Checks if all cities are connected via the road network.
-        /// </summary>
-        private static bool AllCitiesConnected(HashSet<Point> roadPoints, List<Point> cities, int width, int height)
+        // BFS that includes cities
+        private static List<HashSet<Point>> GetConnectedComponentsIncludingCities(HashSet<Point> roadPoints, List<Point> cities, int width, int height)
         {
-            if (cities.Count == 0) return true;
-
             var visited = new HashSet<Point>();
-            var queue = new Queue<Point>();
-
-            // Start BFS from the first city
-            queue.Enqueue(cities[0]);
-            visited.Add(cities[0]);
-
-            while (queue.Count > 0)
-            {
-                var current = queue.Dequeue();
-                foreach (var neighbor in GetNeighbors(current, width, height))
-                {
-                    // Only traverse through road points
-                    if ((roadPoints.Contains(neighbor) || cities.Contains(neighbor)) && !visited.Contains(neighbor))
-                    {
-                        visited.Add(neighbor);
-                        queue.Enqueue(neighbor);
-                    }
-                }
-            }
-
-            // Check if all cities are visited
-            return cities.All(city => visited.Contains(city));
-        }
-
-        // Helper: find all connected components
-        private static List<HashSet<Point>> GetConnectedComponents(HashSet<Point> roadPoints, int width, int height)
-        {
-            var remaining = new HashSet<Point>(roadPoints);
+            var allPoints = new HashSet<Point>(roadPoints.Concat(cities));
             var components = new List<HashSet<Point>>();
 
-            while (remaining.Count > 0)
+            foreach (var start in allPoints)
             {
-                var start = remaining.First();
+                if (visited.Contains(start)) continue;
+
                 var queue = new Queue<Point>();
                 var component = new HashSet<Point>();
 
                 queue.Enqueue(start);
                 component.Add(start);
-                remaining.Remove(start);
+                visited.Add(start);
 
                 while (queue.Count > 0)
                 {
                     var current = queue.Dequeue();
                     foreach (var neighbor in GetNeighbors(current, width, height))
                     {
-                        if (remaining.Contains(neighbor))
+                        if (allPoints.Contains(neighbor) && !visited.Contains(neighbor))
                         {
-                            remaining.Remove(neighbor);
+                            visited.Add(neighbor);
                             component.Add(neighbor);
                             queue.Enqueue(neighbor);
                         }
@@ -214,6 +139,68 @@ namespace Primora.Core.Procedural.WorldBuilding
             return components;
         }
 
+        // Remove dead ends but preserve city connections
+        private static void RemoveDeadEnds(HashSet<Point> roadPoints, List<Point> cities, int width, int height)
+        {
+            bool removed;
+            do
+            {
+                removed = false;
+                var deadEnds = roadPoints
+                    .Where(p => !cities.Contains(p) && IsDeadEnd(cities, p, roadPoints))
+                    .ToList();
+
+                foreach (var deadEnd in deadEnds)
+                {
+                    roadPoints.Remove(deadEnd);
+                    removed = true;
+                }
+            } while (removed);
+        }
+
+        // Safe redundant road removal using BFS
+        private static void RemoveRedundantRoadsSafe(HashSet<Point> roadPoints, List<Point> cities, int width, int height)
+        {
+            var candidates = new Queue<Point>(roadPoints.Where(p => !cities.Contains(p)));
+            while (candidates.Count > 0)
+            {
+                var p = candidates.Dequeue();
+                if (!roadPoints.Contains(p)) continue;
+
+                roadPoints.Remove(p);
+                if (!AllCitiesConnected(roadPoints, cities, width, height))
+                {
+                    roadPoints.Add(p); // restore if removal breaks connectivity
+                }
+            }
+        }
+
+        // Updated BFS to traverse through roads and cities
+        private static bool AllCitiesConnected(HashSet<Point> roadPoints, List<Point> cities, int width, int height)
+        {
+            if (!cities.Any()) return true;
+
+            var visited = new HashSet<Point>();
+            var queue = new Queue<Point>();
+            queue.Enqueue(cities[0]);
+            visited.Add(cities[0]);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                foreach (var neighbor in GetNeighbors(current, width, height))
+                {
+                    if (!visited.Contains(neighbor) && (roadPoints.Contains(neighbor) || cities.Contains(neighbor)))
+                    {
+                        visited.Add(neighbor);
+                        queue.Enqueue(neighbor);
+                    }
+                }
+            }
+
+            return cities.All(c => visited.Contains(c));
+        }
+       
         // Helper: find closest point between two sets
         private static (Point a, Point b) FindClosestPointBetweenSets(HashSet<Point> setA, HashSet<Point> setB)
         {
