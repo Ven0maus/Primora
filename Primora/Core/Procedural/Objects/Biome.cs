@@ -9,6 +9,7 @@
         Mountains,
         River,
         Road,
+        Bridge,
         Settlement
     }
 }

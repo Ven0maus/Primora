@@ -26,15 +26,44 @@ internal static class RiverNetworkHelper
             Point outlet = PickFarOutlet(source, width, height, random);
 
             // 3. Trace river
-            TraceMajorRiver(source, outlet, heightMap, width, height, random, river);
+            var endpoint = TraceMajorRiver(source, outlet, heightMap, width, height, river);
 
-            // 4. Accept only if long enough
+            // Always add a pond/lake at the end
+            var lakes = new HashSet<Point>();
+            MakeLake(endpoint, lakes, heightMap, width, height, random);
+
+            // Combine river + lake if you want them in one set
+            river.UnionWith(lakes);
+
             if (river.Count >= minLength)
                 return river;
         }
 
         // fallback: return empty if no good river found
         return [];
+    }
+
+    private static void MakeLake(Point center, HashSet<Point> lakes,
+        float[] heightMap, int width, int height, Random random)
+    {
+        var queue = new Queue<Point>();
+        queue.Enqueue(center);
+        lakes.Add(center);
+
+        int maxTiles = random.Next(10, 40); // lake size
+        while (queue.Count > 0 && lakes.Count < maxTiles)
+        {
+            var current = queue.Dequeue();
+            foreach (var n in GetNeighbors(current, width, height))
+            {
+                float h = heightMap[n.Y * width + n.X];
+                if (!lakes.Contains(n) && h < 0.55f && random.NextDouble() < 0.6)
+                {
+                    lakes.Add(n);
+                    queue.Enqueue(n);
+                }
+            }
+        }
     }
 
     private static Point PickFarOutlet(Point source, int width, int height, Random random)
@@ -59,19 +88,18 @@ internal static class RiverNetworkHelper
             .ElementAt(random.Next(5));
     }
 
-    private static void TraceMajorRiver(
+    private static Point TraceMajorRiver(
         Point start,
         Point outlet,
         float[] heightMap,
         int width,
         int height,
-        Random random,
         HashSet<Point> river)
     {
         Point current = start;
         var visited = new HashSet<Point>();
 
-        for (int steps = 0; steps < width + height; steps++) // cutoff
+        for (int steps = 0; steps < width + height; steps++)
         {
             if (!visited.Add(current)) break;
             river.Add(current);
@@ -81,26 +109,23 @@ internal static class RiverNetworkHelper
                 current.X == width - 1 || current.Y == height - 1)
                 break; // reached destination
 
-            // Bias next step toward outlet but also downhill
             var neighbors = GetNeighbors(current, width, height).ToList();
 
-            // Sort neighbors by two factors:
-            // 1. Height (lower = better)
-            // 2. Distance to outlet (closer = better)
-            neighbors = neighbors
+            neighbors = [.. neighbors
                 .OrderBy(n =>
                 {
                     float h = heightMap[n.Y * width + n.X];
                     float dist = DistanceSquared(n, outlet);
-                    return h * 2 + dist * 0.001f; // tweak weights
-                })
-                .ToList();
+                    return h * 2 + dist * 0.001f;
+                })];
 
             Point next = neighbors.First();
-
             current = next;
         }
+
+        return current; // final river tile
     }
+
 
     private static float DistanceSquared(Point a, Point b)
     {
@@ -111,8 +136,8 @@ internal static class RiverNetworkHelper
 
     private static IEnumerable<Point> GetNeighbors(Point p, int width, int height)
     {
-        int[] dx = { -1, 1, 0, 0 };
-        int[] dy = { 0, 0, -1, 1 };
+        int[] dx = [-1, 1, 0, 0];
+        int[] dy = [0, 0, -1, 1];
 
         for (int i = 0; i < dx.Length; i++)
         {

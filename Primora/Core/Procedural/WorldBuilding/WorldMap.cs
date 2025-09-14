@@ -137,11 +137,16 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // Draw roads between cities
             var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
-            foreach (var (coordinate, glyph) in glyphPositions)
+            foreach (var (coordinate, _) in glyphPositions)
             {
                 var tile = Tilemap.GetTile(coordinate);
-                tile.Glyph = glyph;
-                tile.Foreground = GetBiomeGlyphColor("#2011c2".HexToColor(), Biome.River, random);
+                tile.Glyph = 0;
+                Color biome = tile.Background;   // biome color
+                Color river = Color.Blue;        // base river color
+
+                // Blend factor (0.3 = 30% river color, 70% biome color)
+                float blend = 0.35f;
+                tile.Background = Color.Lerp(biome, river, blend);
 
                 _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.River;
             }
@@ -161,7 +166,10 @@ namespace Primora.Core.Procedural.WorldBuilding
                 tile.Glyph = glyph;
                 tile.Foreground = GetBiomeGlyphColor("#A1866F".HexToColor(), Biome.Road, random);
 
-                _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.Road;
+                if (GetBiome(coordinate) == Biome.River)
+                    _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.Bridge;
+                else
+                    _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.Road;
             }
 
             // Set cities
@@ -175,7 +183,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
         }
 
-        private static List<Point> GetCityPositions(Random random,
+        private List<Point> GetCityPositions(Random random,
              float[] heightMap, int width, int height,
              int cityCount = 8, int minDistance = 30,
              int borderMargin = 10) // new parameter for border margin
@@ -191,7 +199,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     float h = heightMap[Point.ToIndex(x, y, width)];
 
                     // realistic city terrain: avoid extremes
-                    if (h >= 0.25f && h <= 0.7f)
+                    if (h >= 0.25f && h <= 0.7f && GetBiome(x, y) != Biome.River)
                         candidates.Add(new Point(x, y));
                 }
             }
@@ -231,29 +239,27 @@ namespace Primora.Core.Procedural.WorldBuilding
         #region Noise Map Generators
 
         private float[] GenerateHeightMap(Random rand) =>
-            OpenSimplex.GenerateNoiseMap(
+            [.. OpenSimplex.GenerateNoiseMap(
                 _width, _height,
                 seed: rand.Next(),
                 scale: 200f,          // ↑ slightly bigger scale → smoother continents
                 octaves: 5,
                 persistance: 0.55f,
                 lacunarity: 1.9f
-            ).Select(h => Math.Clamp(h * 0.85f + 0.1f, 0f, 1f)) // squash extremes
-             .ToArray();
+            ).Select(h => Math.Clamp(h * 0.85f + 0.1f, 0f, 1f))];
 
         private float[] GenerateTemperatureMap(Random rand) =>
             OpenSimplex.GenerateNoiseMap(_width, _height, seed: rand.Next(), scale: 300f, octaves: 2, persistance: 0.6f, lacunarity: 2f);
 
         private float[] GenerateMoistureMap(Random rand) =>
-            OpenSimplex.GenerateNoiseMap(
+            [.. OpenSimplex.GenerateNoiseMap(
                 _width, _height,
                 seed: rand.Next(),
                 scale: 180f,
                 octaves: 4,
                 persistance: 0.55f,
                 lacunarity: 2f
-            ).Select(m => Math.Clamp(m * 0.7f + 0.3f, 0f, 1f)) // push upward
-             .ToArray();
+            ).Select(m => Math.Clamp(m * 0.7f + 0.3f, 0f, 1f))];
 
         private void ApplyLatitudeAdjustment(float[] tempMap)
         {
@@ -558,7 +564,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         private static Color GetBiomeGlyphColor(Color biomeColor, Biome biome, Random rand)
         {
             // Convert biome color to HSL
-            RgbToHsl(biomeColor.R, biomeColor.G, biomeColor.B, out var h, out var s, out var l);
+            RgbToHsl(biomeColor.R, biomeColor.G, biomeColor.B, out var h, out var s, out _);
 
             // Very subtle hue variation ±2%
             h += (float)(rand.NextDouble() * 0.04 - 0.02);
@@ -566,6 +572,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             // Slight saturation variation ±5%
             s = Math.Clamp(s * (0.95f + (float)rand.NextDouble() * 0.1f), 0f, 1f);
 
+            float l;
             // Lightness based on biome
             switch (biome)
             {
@@ -600,7 +607,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             return new Color(r, g, b);
         }
 
-        private bool[,] SmoothForest(bool[,] mask, int iterations = 2)
+        private static bool[,] SmoothForest(bool[,] mask, int iterations = 2)
         {
             int width = mask.GetLength(0);
             int height = mask.GetLength(1);
@@ -786,13 +793,13 @@ namespace Primora.Core.Procedural.WorldBuilding
             // 3. Apply forest bias before weighted random
             for (int ci = 0; ci < candidates.Count; ci++)
             {
-                var c = candidates[ci];
+                var (biome, weight) = candidates[ci];
                 float bias = 1f;
 
-                if (c.biome == Biome.Forest || c.biome == Biome.Woodland || c.biome == Biome.Grassland)  // or explicit check: (c.biome == Biome.Forest || c.biome == Biome.TropicalForest)
+                if (biome == Biome.Forest || biome == Biome.Woodland || biome == Biome.Grassland)  // or explicit check: (c.biome == Biome.Forest || c.biome == Biome.TropicalForest)
                     bias = 2.2f; // forests ~2x more likely
 
-                candidates[ci] = (c.biome, c.weight * bias);
+                candidates[ci] = (biome, weight * bias);
             }
 
             // 3. Pick biome using weighted random
@@ -861,9 +868,6 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             float max = Math.Max(rf, Math.Max(gf, bf));
             float min = Math.Min(rf, Math.Min(gf, bf));
-
-            h = 0f;
-            s = 0f;
             l = (max + min) / 2f;
 
             if (Math.Abs(max - min) < 0.0001f)
@@ -923,8 +927,8 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                     if (!neighborInfo.ContainsKey(nb))
                     {
-                        var bc = bcolors.First(b => b.biome == nb);
-                        neighborInfo[nb] = (bc.min, bc.max, bc.color);
+                        var (min, max, biome, color) = bcolors.First(b => b.biome == nb);
+                        neighborInfo[nb] = (min, max, color);
                     }
                 }
             }
@@ -943,9 +947,9 @@ namespace Primora.Core.Procedural.WorldBuilding
                 int count = kv.Value;
                 float neighborFraction = (float)count / (float)availableNeighbors; // 0..1
 
-                var info = neighborInfo[nbBiome];
-                float center = (info.min + info.max) * 0.5f;
-                float halfRange = Math.Max((info.max - info.min) * 0.5f, 0.0001f);
+                var (min, max, color) = neighborInfo[nbBiome];
+                float center = (min + max) * 0.5f;
+                float halfRange = Math.Max((max - min) * 0.5f, 0.0001f);
                 // 1.0 when near center, 0.0 when >= one half-range away
                 float heightSimilarity = 1f - Math.Clamp(Math.Abs(h - center) / halfRange, 0f, 1f);
 
@@ -958,7 +962,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 {
                     bestWeight = weight;
                     bestBiome = nbBiome;
-                    bestColor = info.color;
+                    bestColor = color;
                 }
             }
 

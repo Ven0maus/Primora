@@ -23,7 +23,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 Point cityToConnect = remainingCities[random.Next(remainingCities.Count)];
                 Point closestConnectedCity = FindClosestCity(cityToConnect, connectedCities).Value;
 
-                BuildRoad(cityToConnect, closestConnectedCity, cities, roadPoints, heightMap, width, height, random);
+                BuildRoad(cityToConnect, closestConnectedCity, roadPoints, heightMap, width, height, random);
 
                 connectedCities.Add(cityToConnect);
                 remainingCities.Remove(cityToConnect);
@@ -33,7 +33,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             ConnectDisconnectedComponents(roadPoints, cities, width, height, heightMap, random);
 
             // Remove dead-end roads safely
-            RemoveDeadEnds(roadPoints, cities, width, height);
+            RemoveDeadEnds(roadPoints, cities);
 
             // Remove redundant roads while preserving connectivity
             RemoveRedundantRoadsSafe(roadPoints, cities, width, height);
@@ -51,7 +51,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             foreach (var component in components.Where(c => c != mainComponent))
             {
                 var (pA, pB) = FindClosestPointBetweenSets(component, mainComponent);
-                BuildRoad(pA, pB, cities, roadPoints, heightMap, width, height, random);
+                BuildRoad(pA, pB, roadPoints, heightMap, width, height, random);
             }
         }
 
@@ -94,7 +94,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         }
 
         // Remove dead ends but preserve city connections
-        private static void RemoveDeadEnds(HashSet<Point> roadPoints, List<Point> cities, int width, int height)
+        private static void RemoveDeadEnds(HashSet<Point> roadPoints, List<Point> cities)
         {
             bool removed;
             do
@@ -132,7 +132,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         // Updated BFS to traverse through roads and cities
         private static bool AllCitiesConnected(HashSet<Point> roadPoints, List<Point> cities, int width, int height)
         {
-            if (!cities.Any()) return true;
+            if (cities.Count == 0) return true;
 
             var visited = new HashSet<Point>();
             var queue = new Queue<Point>();
@@ -201,7 +201,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             return closest;
         }
 
-        private static void BuildRoad(Point start, Point end, List<Point> cities, HashSet<Point> roadPoints, float[] heightMap, int width, int height, Random random)
+        private static void BuildRoad(Point start, Point end, HashSet<Point> roadPoints, float[] heightMap, int width, int height, Random random)
         {
             Point current = start;
 
@@ -262,8 +262,8 @@ namespace Primora.Core.Procedural.WorldBuilding
         // Cardinal neighbors only
         private static IEnumerable<Point> GetNeighbors(Point p, int width, int height)
         {
-            int[] dx = { -1, 1, 0, 0 };
-            int[] dy = { 0, 0, -1, 1 };
+            int[] dx = [-1, 1, 0, 0];
+            int[] dy = [0, 0, -1, 1];
 
             for (int i = 0; i < dx.Length; i++)
             {

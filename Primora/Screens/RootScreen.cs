@@ -45,16 +45,8 @@ namespace Primora.Screens
             SadConsole.UI.Windows.GlyphSelectPopup.AddRootComponent(SadConsole.Input.Keys.F11);
 #endif
 
-            RenderingSurface.MouseButtonClicked += RenderingSurface_MouseButtonClicked;
-
             // Testing:
             StartGame();
-        }
-
-        private void RenderingSurface_MouseButtonClicked(object sender, SadConsole.Input.MouseScreenObjectState e)
-        {
-            var cell = e.Cell;
-            Debug.WriteLine(e.Cell.Glyph + ": " + e.CellPosition);
         }
 
         /// <summary>
