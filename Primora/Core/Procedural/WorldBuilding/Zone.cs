@@ -55,6 +55,8 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
 
             // TODO: Additionally generate areas of interest (chests, barrels, lost items, quests)
+
+            // TODO: Generate NPCS
         }
 
         internal static Zone LoadZone(Point point)
