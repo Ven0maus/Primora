@@ -15,14 +15,14 @@ namespace Primora.Core.Procedural.WorldBuilding
     internal class WorldMap
     {
         private readonly int _width, _height;
-        private readonly Tile[] _tiles;
+        private readonly TileInfo[] _tiles;
         internal readonly Tilemap Tilemap;
 
         internal WorldMap(int width, int height)
         {
             _width = width;
             _height = height;
-            _tiles = new Tile[width * height];
+            _tiles = new TileInfo[width * height];
             Tilemap = new Tilemap(width, height);
         }
 
@@ -33,12 +33,12 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <returns></returns>
-        internal Tile GetTileInfo(int x, int y)
+        internal TileInfo GetTileInfo(int x, int y)
         {
             return _tiles[Point.ToIndex(x, y, _width)];
         }
 
-        internal Tile GetTileInfo(Point position)
+        internal TileInfo GetTileInfo(Point position)
             => GetTileInfo(position.X, position.Y);
         #endregion
 
@@ -235,7 +235,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 for (int y=0; y < _height; y++)
                 {
-                    _tiles[Point.ToIndex(x, y, _width)] = new Tile { Biome = biomeMap[x, y] };
+                    _tiles[Point.ToIndex(x, y, _width)] = new TileInfo { Biome = biomeMap[x, y] };
                 }
             }
         }

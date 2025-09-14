@@ -1,6 +1,5 @@
 ﻿using Primora.Core.Procedural.Common;
 using Primora.Core.Procedural.Objects;
-using SadConsole.Entities;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -28,8 +27,8 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         internal void Generate()
         {
-            var zoneInfo = World.Instance.WorldMap.GetTileInfo(_zonePosition);
-            var biome = zoneInfo.Biome;
+            var tileInfo = World.Instance.WorldMap.GetTileInfo(_zonePosition);
+            var biome = tileInfo.Biome;
 
             // Setup initial tiles
             for (int y = 0; y < _height; y++)
@@ -46,6 +45,16 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
 
             // Add biome stuff
+            // TODO: How to handle biomes like woodland, forest when there are no trees?
+            // Should we change these biomes to "Grassland" after generation to avoid confusion?
+            switch (biome)
+            {
+                case Biome.Grassland:
+                    ZoneGenerator.GenerateGrassland(Tilemap, tileInfo, _width, _height);
+                    break;
+            }
+
+            // TODO: Additionally generate areas of interest (chests, barrels, lost items, quests)
         }
 
         internal static Zone LoadZone(Point point)

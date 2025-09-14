@@ -1,6 +1,6 @@
 ﻿namespace Primora.Core.Procedural.Objects
 {
-    internal class Tile
+    internal class TileInfo
     {
         internal Biome Biome { get; set; }
         internal bool HasTreeResource { get; set; }
