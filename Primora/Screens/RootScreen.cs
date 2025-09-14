@@ -2,6 +2,7 @@
 using Primora.Extensions;
 using SadConsole;
 using System;
+using System.Diagnostics;
 
 namespace Primora.Screens
 {
@@ -38,14 +39,22 @@ namespace Primora.Screens
 
             // Setup the world elements
             World = new World(RenderingSurface.Width, RenderingSurface.Height);
-
+            Debug.WriteLine("Seed: " + Constants.General.Seed);
 #if DEBUG
             // Add a glyph selector popup for development purposes
             SadConsole.UI.Windows.GlyphSelectPopup.AddRootComponent(SadConsole.Input.Keys.F11);
 #endif
 
+            RenderingSurface.MouseButtonClicked += RenderingSurface_MouseButtonClicked;
+
             // Testing:
             StartGame();
+        }
+
+        private void RenderingSurface_MouseButtonClicked(object sender, SadConsole.Input.MouseScreenObjectState e)
+        {
+            var cell = e.Cell;
+            Debug.WriteLine(e.Cell.Glyph + ": " + e.CellPosition);
         }
 
         /// <summary>

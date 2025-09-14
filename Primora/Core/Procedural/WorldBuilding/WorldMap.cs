@@ -128,7 +128,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
 
             // Collect random city locations and roads
-            var cityPositions = GetCityPositions(heightMap, _width, _height);
+            var cityPositions = GetCityPositions(random, heightMap, _width, _height);
             var roadPoints = PathCarver.BuildRoadNetwork(cityPositions, heightMap, _width, _height, random);
 
             // Draw roads between cities
@@ -148,13 +148,12 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
         }
 
-        private static List<Point> GetCityPositions(
+        private static List<Point> GetCityPositions(Random random,
              float[] heightMap, int width, int height,
              int cityCount = 8, int minDistance = 30,
              int borderMargin = 10) // new parameter for border margin
         {
             var cities = new List<Point>();
-            var random = new Random();
 
             // Step 1: Collect candidate points based on height (avoid mountains and water)
             var candidates = new List<Point>();

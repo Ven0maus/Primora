@@ -251,19 +251,14 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             var openSet = new PriorityQueue<Point, float>();
             var cameFrom = new Dictionary<Point, Point>();
-            var gScore = new Dictionary<Point, float> { [start] = 0 };
+            var gScore = new Dictionary<Point, float> { [start] = 0f };
             var fScore = new Dictionary<Point, float> { [start] = Heuristic(start, end) };
-            var openSetPoints = new HashSet<Point> { start };
 
             openSet.Enqueue(start, fScore[start]);
 
-            int maxIterations = width * height * 10;
-            int iterations = 0;
-
-            while (openSet.Count > 0 && iterations++ < maxIterations)
+            while (openSet.Count > 0)
             {
                 var current = openSet.Dequeue();
-                openSetPoints.Remove(current);
 
                 if (current == end)
                 {
@@ -271,35 +266,49 @@ namespace Primora.Core.Procedural.WorldBuilding
                     return;
                 }
 
-                foreach (var neighbor in GetNeighbors(current, width, height)) // cardinal only
+                foreach (var neighbor in GetNeighbors(current, width, height))
                 {
-                    bool isCity = cities.Contains(neighbor);
+                    if (neighbor == current) continue; // Prevent self-loop
+
+                    // Compute movement cost
                     float heightCost = HeightCost(neighbor, heightMap, width);
-                    float tentativeG = gScore[current] + Math.Max(1f, heightCost); // always at least 1
+                    if (!cities.Contains(neighbor) && roadPoints.Contains(neighbor))
+                        heightCost *= 0.9f;
+                    float tentativeG = gScore[current] + Math.Max(1f, heightCost);
 
-                    if (!isCity && roadPoints.Contains(neighbor))
-                        tentativeG *= 0.9f; // prefer existing roads
-
-                    if (!gScore.ContainsKey(neighbor) || tentativeG < gScore[neighbor])
+                    // If neighbor not yet visited OR we found a better path
+                    if (!gScore.TryGetValue(neighbor, out var oldG) || tentativeG < oldG - 1e-6f)
                     {
-                        cameFrom[neighbor] = current;
+                        cameFrom[neighbor] = current; // Safe, no cycles
                         gScore[neighbor] = tentativeG;
-                        float f = tentativeG + Heuristic(neighbor, end); // normal A* heuristic
-                        fScore[neighbor] = f;
-
-                        if (!openSetPoints.Contains(neighbor))
-                        {
-                            openSet.Enqueue(neighbor, f);
-                            openSetPoints.Add(neighbor);
-                        }
+                        float f = tentativeG + Heuristic(neighbor, end);
+                        openSet.Enqueue(neighbor, f);
                     }
                 }
             }
 
-            // Always fallback if path not found
+            // Fallback: guaranteed straight-line path if A* fails
             StraightLinePath(start, end, roadPoints);
         }
 
+        private static void StraightLinePath(Point start, Point end, HashSet<Point> roadPoints)
+        {
+            Point current = start;
+
+            while (current.X != end.X)
+            {
+                roadPoints.Add(current);
+                current = new Point(current.X + Math.Sign(end.X - current.X), current.Y);
+            }
+
+            while (current.Y != end.Y)
+            {
+                roadPoints.Add(current);
+                current = new Point(current.X, current.Y + Math.Sign(end.Y - current.Y));
+            }
+
+            roadPoints.Add(end); // Ensure city is included
+        }
 
         // Cardinal neighbors only
         private static IEnumerable<Point> GetNeighbors(Point p, int width, int height)
@@ -321,26 +330,6 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             float h = heightMap[p.Y * width + p.X];
             return 1 + Math.Max(0, (h - 0.7f) * 10);
-        }
-
-        // Fallback straight-line path
-        private static void StraightLinePath(Point start, Point end, HashSet<Point> roadPoints)
-        {
-            Point current = start;
-
-            while (current.X != end.X)
-            {
-                roadPoints.Add(current);
-                current = new Point(current.X + Math.Sign(end.X - current.X), current.Y);
-            }
-
-            while (current.Y != end.Y)
-            {
-                roadPoints.Add(current);
-                current = new Point(current.X, current.Y + Math.Sign(end.Y - current.Y));
-            }
-
-            roadPoints.Add(end);
         }
 
         // Squared Euclidean distance heuristic
@@ -378,16 +367,19 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private static void ReconstructPath(Dictionary<Point, Point> cameFrom, Point current, HashSet<Point> roadPoints)
         {
-            var visited = new HashSet<Point>(); // prevent cycles
+            var path = new Stack<Point>();
+            path.Push(current);
 
-            while (cameFrom.ContainsKey(current) && !visited.Contains(current))
+            // Walk backward from end to start
+            while (cameFrom.ContainsKey(current))
             {
-                roadPoints.Add(current);
-                visited.Add(current);
                 current = cameFrom[current];
+                path.Push(current);
             }
 
-            roadPoints.Add(current); // include the start point
+            // Add all points to roadPoints
+            while (path.Count > 0)
+                roadPoints.Add(path.Pop());
         }
     }
 }
