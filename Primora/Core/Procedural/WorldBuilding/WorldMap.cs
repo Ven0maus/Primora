@@ -126,6 +126,29 @@ namespace Primora.Core.Procedural.WorldBuilding
                 }
             }
 
+            CreateRivers(random, heightMap);
+            CreateSettlementsAndRoads(random, heightMap);
+        }
+
+        private void CreateRivers(Random random, float[] heightMap)
+        {
+            // Collect random city locations and roads
+            var roadPoints = RiverNetworkHelper.BuildMajorRiver(heightMap, _width, _height, random);
+
+            // Draw roads between cities
+            var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
+            foreach (var (coordinate, glyph) in glyphPositions)
+            {
+                var tile = Tilemap.GetTile(coordinate);
+                tile.Glyph = glyph;
+                tile.Foreground = GetBiomeGlyphColor("#2011c2".HexToColor(), Biome.River, random);
+
+                _biomes[Point.ToIndex(coordinate.X, coordinate.Y, _width)] = Biome.River;
+            }
+        }
+
+        private void CreateSettlementsAndRoads(Random random, float[] heightMap)
+        {
             // Collect random city locations and roads
             var cityPositions = GetCityPositions(random, heightMap, _width, _height);
             var roadPoints = RoadNetworkHelper.BuildRoadNetwork(cityPositions, heightMap, _width, _height, random);
