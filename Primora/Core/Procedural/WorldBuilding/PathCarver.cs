@@ -69,14 +69,14 @@ namespace Primora.Core.Procedural.WorldBuilding
                 Point cityToConnect = remainingCities[random.Next(remainingCities.Count)];
                 Point closestConnectedCity = FindClosestCity(cityToConnect, connectedCities).Value;
 
-                BuildRoad(cityToConnect, closestConnectedCity, cities, roadPoints, heightMap, width, height);
+                BuildRoad(cityToConnect, closestConnectedCity, cities, roadPoints, heightMap, width, height, random);
 
                 connectedCities.Add(cityToConnect);
                 remainingCities.Remove(cityToConnect);
             }
 
             // Ensure full connectivity of all cities
-            ConnectDisconnectedComponents(roadPoints, cities, width, height, heightMap);
+            ConnectDisconnectedComponents(roadPoints, cities, width, height, heightMap, random);
 
             // Remove dead-end roads safely
             RemoveDeadEnds(roadPoints, cities, width, height);
@@ -88,7 +88,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         }
 
         // Ensures any disconnected component is linked to the main network
-        private static void ConnectDisconnectedComponents(HashSet<Point> roadPoints, List<Point> cities, int width, int height, float[] heightMap)
+        private static void ConnectDisconnectedComponents(HashSet<Point> roadPoints, List<Point> cities, int width, int height, float[] heightMap, Random random)
         {
             var components = GetConnectedComponentsIncludingCities(roadPoints, cities, width, height);
             if (components.Count <= 1) return;
@@ -97,7 +97,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             foreach (var component in components.Where(c => c != mainComponent))
             {
                 var (pA, pB) = FindClosestPointBetweenSets(component, mainComponent);
-                BuildRoad(pA, pB, cities, roadPoints, heightMap, width, height);
+                BuildRoad(pA, pB, cities, roadPoints, heightMap, width, height, random);
             }
         }
 
@@ -247,67 +247,62 @@ namespace Primora.Core.Procedural.WorldBuilding
             return closest;
         }
 
-        private static void BuildRoad(Point start, Point end, List<Point> cities, HashSet<Point> roadPoints, float[] heightMap, int width, int height)
-        {
-            var openSet = new PriorityQueue<Point, float>();
-            var cameFrom = new Dictionary<Point, Point>();
-            var gScore = new Dictionary<Point, float> { [start] = 0f };
-            var fScore = new Dictionary<Point, float> { [start] = Heuristic(start, end) };
-
-            openSet.Enqueue(start, fScore[start]);
-
-            while (openSet.Count > 0)
-            {
-                var current = openSet.Dequeue();
-
-                if (current == end)
-                {
-                    ReconstructPath(cameFrom, current, roadPoints);
-                    return;
-                }
-
-                foreach (var neighbor in GetNeighbors(current, width, height))
-                {
-                    if (neighbor == current) continue; // Prevent self-loop
-
-                    // Compute movement cost
-                    float heightCost = HeightCost(neighbor, heightMap, width);
-                    if (!cities.Contains(neighbor) && roadPoints.Contains(neighbor))
-                        heightCost *= 0.9f;
-                    float tentativeG = gScore[current] + Math.Max(1f, heightCost);
-
-                    // If neighbor not yet visited OR we found a better path
-                    if (!gScore.TryGetValue(neighbor, out var oldG) || tentativeG < oldG - 1e-6f)
-                    {
-                        cameFrom[neighbor] = current; // Safe, no cycles
-                        gScore[neighbor] = tentativeG;
-                        float f = tentativeG + Heuristic(neighbor, end);
-                        openSet.Enqueue(neighbor, f);
-                    }
-                }
-            }
-
-            // Fallback: guaranteed straight-line path if A* fails
-            StraightLinePath(start, end, roadPoints);
-        }
-
-        private static void StraightLinePath(Point start, Point end, HashSet<Point> roadPoints)
+        private static void BuildRoad(Point start, Point end, List<Point> cities, HashSet<Point> roadPoints, float[] heightMap, int width, int height, Random random)
         {
             Point current = start;
 
-            while (current.X != end.X)
+            while (current != end)
             {
                 roadPoints.Add(current);
-                current = new Point(current.X + Math.Sign(end.X - current.X), current.Y);
+
+                int dx = end.X - current.X;
+                int dy = end.Y - current.Y;
+
+                // Decide primary direction based on larger delta
+                bool moveHorizontal = Math.Abs(dx) > Math.Abs(dy);
+
+                // Small variation: occasionally swap axes to prevent L-shape rigidity
+                if (random.NextDouble() < 0.1)
+                    moveHorizontal = !moveHorizontal;
+
+                Point next;
+
+                if (moveHorizontal && dx != 0)
+                    next = new Point(current.X + Math.Sign(dx), current.Y);
+                else if (!moveHorizontal && dy != 0)
+                    next = new Point(current.X, current.Y + Math.Sign(dy));
+                else
+                {
+                    // Axis exhausted, move along remaining direction
+                    if (dx != 0)
+                        next = new Point(current.X + Math.Sign(dx), current.Y);
+                    else if (dy != 0)
+                        next = new Point(current.X, current.Y + Math.Sign(dy));
+                    else
+                        break; // should not happen, but safety
+                }
+
+                // Check bounds
+                if (next.X < 0 || next.X >= width || next.Y < 0 || next.Y >= height)
+                    break;
+
+                // Optional: skip high-cost terrain
+                float heightCost = HeightCost(next, heightMap, width);
+                if (heightCost > 5f) // tweak threshold if needed
+                {
+                    // Minor variation: try switching axis
+                    moveHorizontal = !moveHorizontal;
+                    if (moveHorizontal && dx != 0)
+                        next = new Point(current.X + Math.Sign(dx), current.Y);
+                    else if (!moveHorizontal && dy != 0)
+                        next = new Point(current.X, current.Y + Math.Sign(dy));
+                }
+
+                current = next;
             }
 
-            while (current.Y != end.Y)
-            {
-                roadPoints.Add(current);
-                current = new Point(current.X, current.Y + Math.Sign(end.Y - current.Y));
-            }
-
-            roadPoints.Add(end); // Ensure city is included
+            // Ensure the end city is included
+            roadPoints.Add(end);
         }
 
         // Cardinal neighbors only
@@ -332,15 +327,6 @@ namespace Primora.Core.Procedural.WorldBuilding
             return 1 + Math.Max(0, (h - 0.7f) * 10);
         }
 
-        // Squared Euclidean distance heuristic
-        private static float Heuristic(Point a, Point b)
-        {
-            float dx = a.X - b.X;
-            float dy = a.Y - b.Y;
-            return dx * dx + dy * dy;
-        }
-
-
         private static bool IsDeadEnd(List<Point> cityPoints, Point position, HashSet<Point> road)
         {
             int neighborCount = 0;
@@ -363,23 +349,6 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // A dead-end has exactly one connected neighbor
             return neighborCount == 1 && !hasCity;
-        }
-
-        private static void ReconstructPath(Dictionary<Point, Point> cameFrom, Point current, HashSet<Point> roadPoints)
-        {
-            var path = new Stack<Point>();
-            path.Push(current);
-
-            // Walk backward from end to start
-            while (cameFrom.ContainsKey(current))
-            {
-                current = cameFrom[current];
-                path.Push(current);
-            }
-
-            // Add all points to roadPoints
-            while (path.Count > 0)
-                roadPoints.Add(path.Pop());
         }
     }
 }
