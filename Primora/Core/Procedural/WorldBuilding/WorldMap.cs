@@ -1,12 +1,12 @@
 ﻿using Primora.Core.Procedural.Common;
 using Primora.Core.Procedural.Objects;
-using Primora.Extensions;
 using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
+using static Microsoft.Xna.Framework.Graphics.SpriteFont;
+using static SadConsole.Readers.Playscii;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -54,6 +54,14 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             return _biomes[Point.ToIndex(x, y, _width)];
         }
+
+        /// <summary>
+        /// Returns the biome at the specified coordinate.
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        internal Biome GetBiome(Point position)
+            => GetBiome(position.X, position.Y);
 
         private void GenerateBiomes(Random random, out float[] heightmap)
         {
@@ -118,179 +126,81 @@ namespace Primora.Core.Procedural.WorldBuilding
                     }
                 }
             }
+
+            // Collect random city locations and roads
+            var cityPositions = GetCityPositions(heightMap, _width, _height);
+            var roadPoints = PathCarver.BuildRoadNetwork(cityPositions, heightMap, _width, _height, random);
+
+            // Draw roads between cities
+            var glyphPositions = PathCarver.DefineGlyphs(roadPoints);
+            foreach (var (coordinate, glyph) in glyphPositions)
+            {
+                var tile = Tilemap.GetTile(coordinate);
+                tile.Glyph = glyph;
+                tile.Foreground = Color.Gray;
+            }
+
+            foreach (var pos in cityPositions)
+            {
+                var tile = Tilemap.GetTile(pos);
+                tile.Glyph = 'X';
+                tile.Foreground = Color.Magenta;
+            }
         }
 
-        private bool[,] CreateTreeMask(Random random)
+        private static List<Point> GetCityPositions(
+             float[] heightMap, int width, int height,
+             int cityCount = 8, int minDistance = 30,
+             int borderMargin = 10) // new parameter for border margin
         {
-            // Step 1: Build a mask of where forests should be
-            bool[,] forestMask = new bool[_width, _height];
+            var cities = new List<Point>();
+            var random = new Random();
 
-            for (int x = 0; x < _width; x++)
+            // Step 1: Collect candidate points based on height (avoid mountains and water)
+            var candidates = new List<Point>();
+            for (int y = borderMargin; y < height - borderMargin; y++) // exclude border rows
             {
-                for (int y = 0; y < _height; y++)
+                for (int x = borderMargin; x < width - borderMargin; x++) // exclude border columns
                 {
-                    var biome = GetBiome(x, y);
-                    if (biome == Biome.Woodland || biome == Biome.Forest)
-                    {
-                        // Small random chance to seed a new forest
-                        if (random.Next(100) < 1 && !forestMask[x, y])
-                        {
-                            // Grow a forest from this seed
-                            var localForest = GrowForestFromSeed(new Point(x, y), random, 50);
+                    float h = heightMap[Point.ToIndex(x, y, width)];
 
-                            // Merge into main forest mask
-                            for (int xx = 0; xx < _width; xx++)
-                            {
-                                for (int yy = 0; yy < _height; yy++)
-                                {
-                                    if (localForest[xx, yy])
-                                        forestMask[xx, yy] = true;
-                                }
-                            }
-                        }
-                    }
+                    // realistic city terrain: avoid extremes
+                    if (h >= 0.25f && h <= 0.7f)
+                        candidates.Add(new Point(x, y));
                 }
             }
 
-            // Step 2: Apply smoothing with CA
-            forestMask = SmoothForest(forestMask, iterations: 3);
-            return forestMask;
-        }
+            if (candidates.Count == 0)
+                return cities; // no valid terrain
 
-        private static Color GetBiomeGlyphColor(Color biomeColor, Biome biome, Random rand)
-        {
-            // Convert biome color to HSL
-            RgbToHsl(biomeColor.R, biomeColor.G, biomeColor.B, out var h, out var s, out var l);
-
-            // Very subtle hue variation ±2%
-            h += (float)(rand.NextDouble() * 0.04 - 0.02);
-
-            // Slight saturation variation ±5%
-            s = Math.Clamp(s * (0.95f + (float)rand.NextDouble() * 0.1f), 0f, 1f);
-
-            // Lightness based on biome
-            switch (biome)
+            // Step 2: Pick cities one by one
+            while (cities.Count < cityCount && candidates.Count > 0)
             {
-                case Biome.Forest:
-                    // Base lightness 0.25–0.35 (slightly lighter than before)
-                    l = 0.25f + (float)rand.NextDouble() * 0.1f;
-                    break;
+                // Random candidate
+                var candidate = candidates[random.Next(candidates.Count)];
 
-                case Biome.Woodland:
-                    // Base lightness 0.30–0.38 (slightly lighter than forest)
-                    l = 0.30f + (float)rand.NextDouble() * 0.08f;
-                    break;
-
-                default:
-                    l = 0.30f + (float)rand.NextDouble() * 0.08f;
-                    break;
-            }
-
-            // Convert back to RGB
-            var (r, g, b) = HslToRgb(h, s, l);
-            return new Color(r, g, b);
-        }
-
-        private bool[,] SmoothForest(bool[,] mask, int iterations = 2)
-        {
-            int width = mask.GetLength(0);
-            int height = mask.GetLength(1);
-
-            for (int it = 0; it < iterations; it++)
-            {
-                var newMask = new bool[width, height];
-
-                for (int x = 0; x < width; x++)
+                // Check minimum distance from existing cities
+                bool tooClose = cities.Any(c => EuclideanDistanceSquared(c, candidate) < minDistance * minDistance);
+                if (!tooClose)
                 {
-                    for (int y = 0; y < height; y++)
-                    {
-                        int neighbors = CountTreeNeighbors(mask, x, y);
-
-                        if (mask[x, y])
-                        {
-                            // Tree survives if enough neighbors
-                            newMask[x, y] = neighbors >= 3;
-                        }
-                        else
-                        {
-                            // Empty grows a tree if surrounded by many
-                            newMask[x, y] = neighbors >= 5;
-                        }
-                    }
+                    cities.Add(candidate);
                 }
 
-                mask = newMask;
+                // Remove candidate to avoid repeated selection
+                candidates.Remove(candidate);
             }
 
-            return mask;
+            return cities;
         }
 
-        private static int CountTreeNeighbors(bool[,] mask, int cx, int cy)
+        // Distance helper (squared to avoid sqrt)
+        private static int EuclideanDistanceSquared(Point a, Point b)
         {
-            int width = mask.GetLength(0);
-            int height = mask.GetLength(1);
-            int count = 0;
-
-            for (int dx = -1; dx <= 1; dx++)
-            {
-                for (int dy = -1; dy <= 1; dy++)
-                {
-                    if (dx == 0 && dy == 0) continue;
-
-                    int nx = cx + dx;
-                    int ny = cy + dy;
-
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
-                    {
-                        if (mask[nx, ny]) count++;
-                    }
-                }
-            }
-
-            return count;
+            int dx = a.X - b.X;
+            int dy = a.Y - b.Y;
+            return dx * dx + dy * dy;
         }
 
-
-        private bool[,] GrowForestFromSeed(Point seed, Random rand, int maxSize = 200)
-        {
-            var mask = new bool[_width, _height];
-            var queue = new Queue<Point>();
-
-            queue.Enqueue(seed);
-            mask[seed.X, seed.Y] = true;
-
-            int size = 1;
-
-            while (queue.Count > 0 && size < maxSize)
-            {
-                var current = queue.Dequeue();
-
-                // Explore neighbors (4 directions, can use 8 for more organic shapes)
-                foreach (var dir in new[] { new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1) })
-                {
-                    int nx = current.X + dir.X;
-                    int ny = current.Y + dir.Y;
-
-                    // Stay inside bounds
-                    if (nx < 0 || ny < 0 || nx >= _width || ny >= _height)
-                        continue;
-
-                    if (mask[nx, ny]) continue; // already forest
-
-                    var biome = GetBiome(nx, ny);
-
-                    // Random growth chance
-                    if ((biome == Biome.Woodland || biome == Biome.Forest) && rand.NextDouble() < 0.45) // 45% chance to expand here
-                    {
-                        mask[nx, ny] = true;
-                        queue.Enqueue(new Point(nx, ny));
-                        size++;
-                    }
-                }
-            }
-
-            return mask;
-        }
 
         #endregion
 
@@ -581,6 +491,180 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
         }
 
+        #endregion
+
+        #region Tree Generation
+        private bool[,] CreateTreeMask(Random random)
+        {
+            // Step 1: Build a mask of where forests should be
+            bool[,] forestMask = new bool[_width, _height];
+
+            for (int x = 0; x < _width; x++)
+            {
+                for (int y = 0; y < _height; y++)
+                {
+                    var biome = GetBiome(x, y);
+                    if (biome == Biome.Woodland || biome == Biome.Forest)
+                    {
+                        // Small random chance to seed a new forest
+                        if (random.Next(100) < 1 && !forestMask[x, y])
+                        {
+                            // Grow a forest from this seed
+                            var localForest = GrowForestFromSeed(new Point(x, y), random, 50);
+
+                            // Merge into main forest mask
+                            for (int xx = 0; xx < _width; xx++)
+                            {
+                                for (int yy = 0; yy < _height; yy++)
+                                {
+                                    if (localForest[xx, yy])
+                                        forestMask[xx, yy] = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Step 2: Apply smoothing with CA
+            forestMask = SmoothForest(forestMask, iterations: 3);
+            return forestMask;
+        }
+
+        private static Color GetBiomeGlyphColor(Color biomeColor, Biome biome, Random rand)
+        {
+            // Convert biome color to HSL
+            RgbToHsl(biomeColor.R, biomeColor.G, biomeColor.B, out var h, out var s, out var l);
+
+            // Very subtle hue variation ±2%
+            h += (float)(rand.NextDouble() * 0.04 - 0.02);
+
+            // Slight saturation variation ±5%
+            s = Math.Clamp(s * (0.95f + (float)rand.NextDouble() * 0.1f), 0f, 1f);
+
+            // Lightness based on biome
+            switch (biome)
+            {
+                case Biome.Forest:
+                    // Base lightness 0.25–0.35 (slightly lighter than before)
+                    l = 0.25f + (float)rand.NextDouble() * 0.1f;
+                    break;
+
+                case Biome.Woodland:
+                    // Base lightness 0.30–0.38 (slightly lighter than forest)
+                    l = 0.30f + (float)rand.NextDouble() * 0.08f;
+                    break;
+
+                default:
+                    l = 0.30f + (float)rand.NextDouble() * 0.08f;
+                    break;
+            }
+
+            // Convert back to RGB
+            var (r, g, b) = HslToRgb(h, s, l);
+            return new Color(r, g, b);
+        }
+
+        private bool[,] SmoothForest(bool[,] mask, int iterations = 2)
+        {
+            int width = mask.GetLength(0);
+            int height = mask.GetLength(1);
+
+            for (int it = 0; it < iterations; it++)
+            {
+                var newMask = new bool[width, height];
+
+                for (int x = 0; x < width; x++)
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        int neighbors = CountTreeNeighbors(mask, x, y);
+
+                        if (mask[x, y])
+                        {
+                            // Tree survives if enough neighbors
+                            newMask[x, y] = neighbors >= 3;
+                        }
+                        else
+                        {
+                            // Empty grows a tree if surrounded by many
+                            newMask[x, y] = neighbors >= 5;
+                        }
+                    }
+                }
+
+                mask = newMask;
+            }
+
+            return mask;
+        }
+
+        private static int CountTreeNeighbors(bool[,] mask, int cx, int cy)
+        {
+            int width = mask.GetLength(0);
+            int height = mask.GetLength(1);
+            int count = 0;
+
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+
+                    int nx = cx + dx;
+                    int ny = cy + dy;
+
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                    {
+                        if (mask[nx, ny]) count++;
+                    }
+                }
+            }
+
+            return count;
+        }
+
+
+        private bool[,] GrowForestFromSeed(Point seed, Random rand, int maxSize = 200)
+        {
+            var mask = new bool[_width, _height];
+            var queue = new Queue<Point>();
+
+            queue.Enqueue(seed);
+            mask[seed.X, seed.Y] = true;
+
+            int size = 1;
+
+            while (queue.Count > 0 && size < maxSize)
+            {
+                var current = queue.Dequeue();
+
+                // Explore neighbors (4 directions, can use 8 for more organic shapes)
+                foreach (var dir in new[] { new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1) })
+                {
+                    int nx = current.X + dir.X;
+                    int ny = current.Y + dir.Y;
+
+                    // Stay inside bounds
+                    if (nx < 0 || ny < 0 || nx >= _width || ny >= _height)
+                        continue;
+
+                    if (mask[nx, ny]) continue; // already forest
+
+                    var biome = GetBiome(nx, ny);
+
+                    // Random growth chance
+                    if ((biome == Biome.Woodland || biome == Biome.Forest) && rand.NextDouble() < 0.45) // 45% chance to expand here
+                    {
+                        mask[nx, ny] = true;
+                        queue.Enqueue(new Point(nx, ny));
+                        size++;
+                    }
+                }
+            }
+
+            return mask;
+        }
         #endregion
 
         #region Utility Functions
