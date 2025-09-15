@@ -15,14 +15,15 @@ namespace Primora.Core.Procedural.WorldBuilding
     internal class WorldMap
     {
         private readonly int _width, _height;
-        private readonly TileInfo[] _tiles;
+        private readonly TileInfo[] _tileInfo;
+
         internal readonly Tilemap Tilemap;
 
         internal WorldMap(int width, int height)
         {
             _width = width;
             _height = height;
-            _tiles = new TileInfo[width * height];
+            _tileInfo = new TileInfo[width * height];
             Tilemap = new Tilemap(width, height);
         }
 
@@ -35,7 +36,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// <returns></returns>
         internal TileInfo GetTileInfo(int x, int y)
         {
-            return _tiles[Point.ToIndex(x, y, _width)];
+            return _tileInfo[Point.ToIndex(x, y, _width)];
         }
 
         internal TileInfo GetTileInfo(Point position)
@@ -100,44 +101,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             CreateSettlementsAndRoads(random, heightMap);
         }
 
-        private void SetupBasicBiomeDetailGlyphs(Random random)
-        {
-            // Define where trees should be available
-            bool[,] treeMask = CreateTreeMask(random);
-
-            var grassTiles = new[] { ';', '.', ',', '"', '\'', ':' };
-            for (int x = 0; x < _width; x++)
-            {
-                for (int y = 0; y < _height; y++)
-                {
-                    var tile = Tilemap.GetTile(x, y);
-                    var tileInfo = GetTileInfo(x, y);
-                    var biome = tileInfo.Biome;
-
-                    if (treeMask[x, y])
-                    {
-                        tile.Glyph = 6; // Tree glyph
-                        tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
-                        tileInfo.Biome = Biome.Forest; // Turn into forest, regardless of biome
-                        tileInfo.HasTreeResource = true;
-                    }
-                    else if ((biome == Biome.Hills || biome == Biome.Mountains) && random.Next(100) < 20)
-                    {
-                        tile.Glyph = random.Next(2) == 0 ? 94 : 30;
-                        tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
-                    }
-                    else if ((biome == Biome.Grassland || biome == Biome.Woodland || biome == Biome.Forest) && random.Next(100) < 20)
-                    {
-                        tile.Glyph = grassTiles[random.Next(grassTiles.Length)];
-                        tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
-                        tileInfo.Biome = Biome.Grassland; // When no trees, woodland and forest becomes grassland
-                    }
-                }
-            }
-        }
-
         #endregion
-
 
         #region Noise Map Generators
 
@@ -246,7 +210,43 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 for (int y=0; y < _height; y++)
                 {
-                    _tiles[Point.ToIndex(x, y, _width)] = new TileInfo { Biome = biomeMap[x, y] };
+                    _tileInfo[Point.ToIndex(x, y, _width)] = new TileInfo { Biome = biomeMap[x, y] };
+                }
+            }
+        }
+
+        private void SetupBasicBiomeDetailGlyphs(Random random)
+        {
+            // Define where trees should be available
+            bool[,] treeMask = CreateTreeMask(random);
+
+            var grassTiles = new[] { ';', '.', ',', '"', '\'', ':' };
+            for (int x = 0; x < _width; x++)
+            {
+                for (int y = 0; y < _height; y++)
+                {
+                    var tile = Tilemap.GetTile(x, y);
+                    var tileInfo = GetTileInfo(x, y);
+                    var biome = tileInfo.Biome;
+
+                    if (treeMask[x, y])
+                    {
+                        tile.Glyph = 6; // Tree glyph
+                        tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                        tileInfo.Biome = Biome.Forest; // Turn into forest, regardless of biome
+                        tileInfo.HasTreeResource = true;
+                    }
+                    else if ((biome == Biome.Hills || biome == Biome.Mountains) && random.Next(100) < 20)
+                    {
+                        tile.Glyph = random.Next(2) == 0 ? 94 : 30;
+                        tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                    }
+                    else if ((biome == Biome.Grassland || biome == Biome.Woodland || biome == Biome.Forest) && random.Next(100) < 20)
+                    {
+                        tile.Glyph = grassTiles[random.Next(grassTiles.Length)];
+                        tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                        tileInfo.Biome = Biome.Grassland; // When no trees, woodland and forest becomes grassland
+                    }
                 }
             }
         }

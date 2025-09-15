@@ -1,5 +1,4 @@
 ﻿using Primora.Core.Procedural.Common;
-using Primora.Core.Procedural.Objects;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -28,35 +27,32 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal void Generate()
         {
             var tileInfo = World.Instance.WorldMap.GetTileInfo(_zonePosition);
-            var biome = tileInfo.Biome;
 
-            // Setup initial tiles
-            for (int y = 0; y < _height; y++)
-            {
-                for (int x = 0; x < _width; x++)
-                {
-                    Tilemap.SetTile(x, y, new SadConsole.ColoredGlyph 
-                    { 
-                        Glyph = 0, 
-                        Foreground = Color.White, 
-                        Background = Color.Black 
-                    });
-                }
-            }
+            // Setup initial tilemap tiles
+            InitTilemap();
 
-            // Add biome stuff
-            // TODO: How to handle biomes like woodland, forest when there are no trees?
-            // Should we change these biomes to "Grassland" after generation to avoid confusion?
-            switch (biome)
-            {
-                case Biome.Grassland:
-                    ZoneGenerator.GenerateGrassland(Tilemap, tileInfo, _width, _height);
-                    break;
-            }
+            // Initial zone layout generation
+            ZoneGenerator.Generate(Tilemap, tileInfo, _width, _height, _random);
 
             // TODO: Additionally generate areas of interest (chests, barrels, lost items, quests)
 
             // TODO: Generate NPCS
+        }
+
+        private void InitTilemap()
+        {
+            for (int y = 0; y < _height; y++)
+            {
+                for (int x = 0; x < _width; x++)
+                {
+                    Tilemap.SetTile(x, y, new SadConsole.ColoredGlyph
+                    {
+                        Glyph = 0,
+                        Foreground = Color.White,
+                        Background = Color.Black
+                    });
+                }
+            }
         }
 
         internal static Zone LoadZone(Point point)
