@@ -1,5 +1,4 @@
-﻿using Primora.Core.Procedural.Common;
-using SadRogue.Primitives;
+﻿using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +7,14 @@ namespace Primora.Core.Procedural.WorldBuilding
 {
     internal static class RoadNetworkHelper
     {
+        private static readonly Point[] _cardinalDirections =
+        {
+            new Point(-1, 0),
+            new Point(1, 0),
+            new Point(0, -1),
+            new Point(0, 1)
+        };
+
         public static HashSet<Point> BuildRoadNetwork(List<Point> cities, float[] heightMap, int width, int height, Random random)
         {
             var roadPoints = new HashSet<Point>();
@@ -34,10 +41,11 @@ namespace Primora.Core.Procedural.WorldBuilding
             ConnectDisconnectedComponents(roadPoints, cities, width, height, heightMap, random);
 
             // Remove dead-end roads safely
-            RemoveDeadEnds(roadPoints, cities);
+            var hashSetCities = cities.ToHashSet();
+            RemoveDeadEnds(roadPoints, hashSetCities);
 
             // Remove redundant roads while preserving connectivity
-            RemoveRedundantRoadsSafe(roadPoints, cities, width, height);
+            RemoveRedundantRoadsSafe(roadPoints, hashSetCities, width, height);
 
             return roadPoints;
         }
@@ -95,7 +103,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         }
 
         // Remove dead ends but preserve city connections
-        private static void RemoveDeadEnds(HashSet<Point> roadPoints, List<Point> cities)
+        private static void RemoveDeadEnds(HashSet<Point> roadPoints, HashSet<Point> cities)
         {
             bool removed;
             do
@@ -114,7 +122,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         }
 
         // Safe redundant road removal using BFS
-        private static void RemoveRedundantRoadsSafe(HashSet<Point> roadPoints, List<Point> cities, int width, int height)
+        private static void RemoveRedundantRoadsSafe(HashSet<Point> roadPoints, HashSet<Point> cities, int width, int height)
         {
             var candidates = new Queue<Point>(roadPoints.Where(p => !cities.Contains(p)));
             while (candidates.Count > 0)
@@ -131,14 +139,15 @@ namespace Primora.Core.Procedural.WorldBuilding
         }
 
         // Updated BFS to traverse through roads and cities
-        private static bool AllCitiesConnected(HashSet<Point> roadPoints, List<Point> cities, int width, int height)
+        private static bool AllCitiesConnected(HashSet<Point> roadPoints, HashSet<Point> cities, int width, int height)
         {
             if (cities.Count == 0) return true;
 
             var visited = new HashSet<Point>();
             var queue = new Queue<Point>();
-            queue.Enqueue(cities[0]);
-            visited.Add(cities[0]);
+            var firstCity = cities.First();
+            queue.Enqueue(firstCity);
+            visited.Add(firstCity);
 
             while (queue.Count > 0)
             {
@@ -208,6 +217,11 @@ namespace Primora.Core.Procedural.WorldBuilding
             var cameFrom = new Dictionary<Point, Point>();
             var gScore = new Dictionary<Point, float> { [start] = 0f };
 
+            float[] terrainCosts = new float[width * height];
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    terrainCosts[y * width + x] = HeightCost(new Point(x, y), heightMap, width);
+
             openSet.Enqueue(start, 0f);
 
             while (openSet.Count > 0)
@@ -220,7 +234,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 foreach (var neighbor in GetNeighbors(current, width, height))
                 {
                     // Use enhanced cost function that prefers existing roads & avoids rivers
-                    float cost = GetTileCostWithBridges(current, neighbor, heightMap, width, height, roadPoints, random);
+                    float cost = GetTileCostWithBridges(current, neighbor, heightMap, width, height, roadPoints, terrainCosts, random);
 
                     // Turn penalty for organic curves
                     if (cameFrom.TryGetValue(current, out var prev))
@@ -266,14 +280,17 @@ namespace Primora.Core.Procedural.WorldBuilding
         private static float Heuristic(Point a, Point b) => Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
 
         // Cost function that prefers land but allows bridges
-        private static float GetTileCostWithBridges(Point from, Point to, float[] heightMap, int width, int height, HashSet<Point> existingRoads, Random random)
+        private static float GetTileCostWithBridges(Point from, Point to, float[] heightMap, int width, int height, HashSet<Point> existingRoads, float[] terrainCosts, Random random)
         {
             float baseCost;
+
+            float toHeightCost = HeightCost(to, heightMap, width);
+            float fromHeightCost = HeightCost(from, heightMap, width);
 
             // --- 1. River / bridge ---
             if (IsRiver(to))
             {
-                var bridgeEnd = FindBestBridge(to, from, width, height, heightMap);
+                var bridgeEnd = FindBestBridge(to, from, width, height, heightMap, terrainCosts);
                 if (bridgeEnd != null)
                     baseCost = 1.5f;  // bridge crossing is cheap
                 else
@@ -281,15 +298,15 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
             else
             {
-                baseCost = HeightCost(to, heightMap, width);
+                baseCost = toHeightCost;
             }
 
             // --- 2. Terrain & slope ---
-            float slope = Math.Abs(HeightCost(to, heightMap, width) - HeightCost(from, heightMap, width));
+            float slope = Math.Abs(toHeightCost - fromHeightCost);
             float valleyBonus = 0.5f + 0.5f * (float)Math.Exp(-slope);
             baseCost /= valleyBonus;
 
-            float terrainPreference = 1 - Math.Max(0, (HeightCost(to, heightMap, width) - 1) * 0.5f);
+            float terrainPreference = 1 - Math.Max(0, (toHeightCost - 1) * 0.5f);
             baseCost /= terrainPreference;
 
             // --- 3. Road-following / clustering ---
@@ -299,8 +316,10 @@ namespace Primora.Core.Procedural.WorldBuilding
             int nearbyRoads = GetNearbyRoadCount(to, existingRoads, width, height, 5);
             baseCost *= 1f - Math.Clamp(0.15f * nearbyRoads, 0, 0.6f);  // stronger attraction
 
-            float nearestRoadDist = DistanceToNearestRoad(to, existingRoads);
-            float roadBonus = Math.Clamp(1f / ((nearestRoadDist + 1) * (nearestRoadDist + 1)), 0, 0.5f);
+            float nearestRoadDistSq = DistanceToNearestRoadSquared(to, existingRoads, width, height, 5);
+            float roadBonus = nearestRoadDistSq == float.MaxValue
+                ? 0f
+                : Math.Clamp(1f / (nearestRoadDistSq + 1), 0, 0.5f);
             baseCost *= 1f - roadBonus;
 
             // Border cost
@@ -352,40 +371,41 @@ namespace Primora.Core.Procedural.WorldBuilding
             return count;
         }
 
-        private static float DistanceToNearestRoad(Point p, HashSet<Point> existingRoads)
+        private static float DistanceToNearestRoadSquared(Point p, HashSet<Point> existingRoads, int width, int height, int maxRadius)
         {
-            if (existingRoads.Count == 0)
-                return float.MaxValue; // no roads yet
+            int closestSq = int.MaxValue;
 
-            float minDistSq = float.MaxValue;
-
-            foreach (var roadPoint in existingRoads)
+            for (int dx = -maxRadius; dx <= maxRadius; dx++)
             {
-                // Squared distance for efficiency
-                float dx = p.X - roadPoint.X;
-                float dy = p.Y - roadPoint.Y;
-                float distSq = dx * dx + dy * dy;
-
-                if (distSq < minDistSq)
-                    minDistSq = distSq;
+                for (int dy = -maxRadius; dy <= maxRadius; dy++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+                    int nx = p.X + dx;
+                    int ny = p.Y + dy;
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                    {
+                        if (existingRoads.Contains(new Point(nx, ny)))
+                        {
+                            int distSq = dx * dx + dy * dy;
+                            if (distSq < closestSq) closestSq = distSq;
+                        }
+                    }
+                }
             }
 
-            // Return Euclidean distance
-            return (float)Math.Sqrt(minDistSq);
+            return closestSq == int.MaxValue ? float.MaxValue : closestSq; // **return squared distance**
         }
+
 
         private static bool IsRiver(Point p) => World.Instance.WorldMap.GetTileInfo(p).Biome == Objects.Biome.River;
 
         // Cardinal neighbors only
         private static IEnumerable<Point> GetNeighbors(Point p, int width, int height)
         {
-            int[] dx = [-1, 1, 0, 0];
-            int[] dy = [0, 0, -1, 1];
-
-            for (int i = 0; i < dx.Length; i++)
+            foreach (var dir in _cardinalDirections)
             {
-                int nx = p.X + dx[i];
-                int ny = p.Y + dy[i];
+                int nx = p.X + dir.X;
+                int ny = p.Y + dir.Y;
                 if (nx >= 0 && nx < width && ny >= 0 && ny < height)
                     yield return new Point(nx, ny);
             }
@@ -398,7 +418,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             return 1 + Math.Max(0, (h - 0.7f) * 10);
         }
 
-        private static bool IsDeadEnd(List<Point> cityPoints, Point position, HashSet<Point> road)
+        private static bool IsDeadEnd(HashSet<Point> cityPoints, Point position, HashSet<Point> road)
         {
             int neighborCount = 0;
 
@@ -422,7 +442,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             return neighborCount == 1 && !hasCity;
         }
 
-        private static Point? FindBestBridge(Point start, Point end, int width, int height, float[] heightMap)
+        private static Point? FindBestBridge(Point start, Point end, int width, int height, float[] heightMap, float[] terrainCosts)
         {
             var candidates = new List<(Point endTile, float totalCost)>();
 
@@ -442,7 +462,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 if (x >= 0 && x < width)
                 {
                     // Add land cost on opposite bank
-                    cost += HeightCost(new Point(x, y), heightMap, width);
+                    cost += terrainCosts[Point.ToIndex(x, y, width)];
                     candidates.Add((new Point(x, y), cost));
                 }
             }
@@ -462,7 +482,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                 if (y >= 0 && y < height)
                 {
-                    cost += HeightCost(new Point(x, y), heightMap, width);
+                    cost += terrainCosts[Point.ToIndex(x, y, width)];
                     candidates.Add((new Point(x, y), cost));
                 }
             }
