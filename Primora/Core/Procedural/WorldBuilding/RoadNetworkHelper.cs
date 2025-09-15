@@ -154,7 +154,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             return cities.All(c => visited.Contains(c));
         }
-       
+
         // Helper: find closest point between two sets
         private static (Point a, Point b) FindClosestPointBetweenSets(HashSet<Point> setA, HashSet<Point> setB)
         {
@@ -209,55 +209,51 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 roadPoints.Add(current);
 
-                int dx = end.X - current.X;
-                int dy = end.Y - current.Y;
-
-                // Decide primary direction based on larger delta
-                bool moveHorizontal = Math.Abs(dx) > Math.Abs(dy);
-
-                // Small variation: occasionally swap axes to prevent L-shape rigidity
-                if (random.NextDouble() < 0.1)
-                    moveHorizontal = !moveHorizontal;
-
-                Point next;
-
-                if (moveHorizontal && dx != 0)
-                    next = new Point(current.X + Math.Sign(dx), current.Y);
-                else if (!moveHorizontal && dy != 0)
-                    next = new Point(current.X, current.Y + Math.Sign(dy));
-                else
+                // Bridge logic
+                if (IsRiver(current))
                 {
-                    // Axis exhausted, move along remaining direction
-                    if (dx != 0)
-                        next = new Point(current.X + Math.Sign(dx), current.Y);
-                    else if (dy != 0)
-                        next = new Point(current.X, current.Y + Math.Sign(dy));
-                    else
-                        break; // should not happen, but safety
+                    var bridgeEnd = FindBestBridge(current, end, width, height);
+                    if (bridgeEnd != null && bridgeEnd.Value != current)
+                    {
+                        foreach (var tile in WalkStraight(current, bridgeEnd.Value))
+                        {
+                            roadPoints.Add(tile);
+                            current = tile;
+                        }
+                        continue;
+                    }
                 }
 
-                // Check bounds
-                if (next.X < 0 || next.X >= width || next.Y < 0 || next.Y >= height)
-                    break;
+                Point next = ChooseNextTileWithCostVariation(current, end, heightMap, width, random);
 
-                // Optional: skip high-cost terrain
-                float heightCost = HeightCost(next, heightMap, width);
-                if (heightCost > 5f) // tweak threshold if needed
-                {
-                    // Minor variation: try switching axis
-                    moveHorizontal = !moveHorizontal;
-                    if (moveHorizontal && dx != 0)
-                        next = new Point(current.X + Math.Sign(dx), current.Y);
-                    else if (!moveHorizontal && dy != 0)
-                        next = new Point(current.X, current.Y + Math.Sign(dy));
-                }
+                // Safety check
+                if (next == current) break;
 
                 current = next;
             }
 
-            // Ensure the end city is included
             roadPoints.Add(end);
         }
+
+        private static IEnumerable<Point> WalkStraight(Point start, Point end)
+        {
+            int dx = Math.Sign(end.X - start.X);
+            int dy = Math.Sign(end.Y - start.Y);
+
+            // Only horizontal or vertical allowed
+            if (dx != 0 && dy != 0)
+                throw new InvalidOperationException("Bridge must be straight along one axis");
+
+            Point current = start;
+
+            while (current != end)
+            {
+                current = new Point(current.X + dx, current.Y + dy);
+                yield return current;
+            }
+        }
+
+        private static bool IsRiver(Point p) => World.Instance.WorldMap.GetTileInfo(p).Biome == Objects.Biome.River;
 
         // Cardinal neighbors only
         private static IEnumerable<Point> GetNeighbors(Point p, int width, int height)
@@ -303,6 +299,98 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // A dead-end has exactly one connected neighbor
             return neighborCount == 1 && !hasCity;
+        }
+
+        private static Point? FindBestBridge(Point current, Point end, int width, int height)
+        {
+            var candidates = new List<(Point endTile, int length)>();
+
+            // Horizontal bridge
+            int y = current.Y;
+            int dirX = Math.Sign(end.X - current.X);
+            if (dirX != 0)
+            {
+                int x = current.X;
+                int length = 0;
+                // Move along river tiles
+                while (x >= 0 && x < width && IsRiver(new Point(x, y)))
+                {
+                    length++;
+                    x += dirX;
+                }
+
+                // x is now first land tile after river (opposite bank)
+                if (length > 0 && x >= 0 && x < width)
+                    candidates.Add((new Point(x, y), length));
+            }
+
+            // Vertical bridge
+            int x2 = current.X;
+            int dirY = Math.Sign(end.Y - current.Y);
+            if (dirY != 0)
+            {
+                int y2 = current.Y;
+                int length = 0;
+                while (y2 >= 0 && y2 < height && IsRiver(new Point(x2, y2)))
+                {
+                    length++;
+                    y2 += dirY;
+                }
+
+                if (length > 0 && y2 >= 0 && y2 < height)
+                    candidates.Add((new Point(x2, y2), length));
+            }
+
+            if (candidates.Count == 0)
+                return null;
+
+            // Choose the shortest bridge
+            var best = candidates.OrderBy(c => c.length).First();
+
+            // Make sure it actually moves forward
+            if (best.endTile == current) return null;
+
+            return best.endTile; // now guaranteed to be the first land tile on opposite bank
+        }
+
+        private static Point ChooseNextTileWithCostVariation(Point current, Point end, float[] heightMap, int width, Random random)
+        {
+            var neighbors = new List<Point>();
+
+            int dx = end.X - current.X;
+            int dy = end.Y - current.Y;
+
+            if (dx != 0) neighbors.Add(new Point(current.X + Math.Sign(dx), current.Y));
+            if (dy != 0) neighbors.Add(new Point(current.X, current.Y + Math.Sign(dy)));
+
+            var weightedNeighbors = new List<(Point point, float weight)>();
+            foreach (var n in neighbors)
+            {
+                float cost = GetTileCost(n, heightMap, width);
+                float variation = (float)(random.NextDouble() * 0.2); // small random tweak
+                float weight = (float)Math.Exp(-cost) * (1 + variation); // cheaper tiles get exponentially higher weight
+                weightedNeighbors.Add((n, weight));
+            }
+
+            float totalWeight = weightedNeighbors.Sum(w => w.weight);
+            float pick = (float)(random.NextDouble() * totalWeight);
+
+            float cumulative = 0f;
+            foreach (var w in weightedNeighbors)
+            {
+                cumulative += w.weight;
+                if (pick <= cumulative)
+                    return w.point;
+            }
+
+            return current; // fallback
+        }
+
+        private static float GetTileCost(Point p, float[] heightMap, int width)
+        {
+            float cost = HeightCost(p, heightMap, width);
+            if (IsRiver(p)) cost *= 5f; // penalize river tiles heavily
+            return cost;
         }
     }
 }
