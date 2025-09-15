@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Primora.Core.Procedural.Common
 {
@@ -87,6 +88,22 @@ namespace Primora.Core.Procedural.Common
                         OnExpire?.Invoke(this, new ExpireArgs(key, container.Value));
                 }
             }
+        }
+
+        /// <summary>
+        /// Removes the first encountered kvp with the lowest TTL out of all kvps.
+        /// </summary>
+        public void RemoveLowestTTL()
+        {
+            if (_cache.Count == 0) return;
+            if (_cache.Count == 1)
+            {
+                Clear();
+                return;
+            }
+
+            TKey key = _cache.OrderBy(a => a.Value.TicksLeft).First().Key;
+            Remove(key);
         }
 
         /// <summary>

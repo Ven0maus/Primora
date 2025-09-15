@@ -12,10 +12,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// Generate the correct zone layout based on the biome of the tile info.
         /// </summary>
         /// <param name="zone"></param>
-        /// <param name="width"></param>
-        /// <param name="height"></param>
-        /// <param name="random"></param>
-        internal static void Generate(Zone zone, int width, int height, Random random)
+        internal static void Generate(Zone zone)
         {
             var worldTileInfo = World.Instance.WorldMap.GetTileInfo(zone.WorldPosition);
             switch (worldTileInfo.Biome)

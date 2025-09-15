@@ -41,7 +41,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             InitTilemap();
 
             // Initial zone layout generation
-            ZoneGenerator.Generate(this, Width, Height, Random);
+            ZoneGenerator.Generate(this);
 
             // TODO: Additionally generate areas of interest (chests, barrels, lost items, quests)
 
@@ -72,12 +72,12 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
         }
 
-        internal static Zone LoadZone(Point point)
+        internal static Zone LoadZone(Point worldPosition)
         {
-            if (_zoneCache.TryGetValue(point, out var zone))
+            if (_zoneCache.TryGetValue(worldPosition, out var zone))
                 return zone;
             else
-                return GenerateZone(point);
+                return GenerateZone(worldPosition);
         }
 
         private static Zone GenerateZone(Point point)
