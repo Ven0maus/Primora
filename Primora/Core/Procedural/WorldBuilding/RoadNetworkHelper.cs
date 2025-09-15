@@ -1,4 +1,5 @@
-﻿using SadRogue.Primitives;
+﻿using Primora.Core.Procedural.Common;
+using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -238,7 +239,8 @@ namespace Primora.Core.Procedural.WorldBuilding
                     {
                         cameFrom[neighbor] = current;
                         gScore[neighbor] = tentativeG;
-                        float priority = tentativeG + Heuristic(neighbor, end);
+                        float heuristic = Heuristic(neighbor, end) * (1 + (float)(random.NextDouble() * 0.3 - 0.15));
+                        float priority = tentativeG + heuristic;
                         openSet.Enqueue(neighbor, priority);
                     }
                 }
@@ -283,28 +285,13 @@ namespace Primora.Core.Procedural.WorldBuilding
                 }
             }
 
+            float terrainPreference = 1 - Math.Max(0, (HeightCost(to, heightMap, width) - 1) * 0.5f);
+            baseCost /= terrainPreference;
+
             // Slight random variation for organic paths
             baseCost *= 1 + (float)(random.NextDouble() * 0.2 - 0.1);
 
             return baseCost;
-        }
-
-        private static IEnumerable<Point> WalkStraight(Point start, Point end)
-        {
-            int dx = Math.Sign(end.X - start.X);
-            int dy = Math.Sign(end.Y - start.Y);
-
-            // Only horizontal or vertical allowed
-            if (dx != 0 && dy != 0)
-                throw new InvalidOperationException("Bridge must be straight along one axis");
-
-            Point current = start;
-
-            while (current != end)
-            {
-                current = new Point(current.X + dx, current.Y + dy);
-                yield return current;
-            }
         }
 
         private static bool IsRiver(Point p) => World.Instance.WorldMap.GetTileInfo(p).Biome == Objects.Biome.River;
@@ -404,16 +391,9 @@ namespace Primora.Core.Procedural.WorldBuilding
                 return null;
 
             // Choose the bridge with **lowest total cost**, favoring land
-            var best = candidates.OrderBy(c => c.totalCost).First();
+            var (endTile, totalCost) = candidates.OrderBy(c => c.totalCost).First();
 
-            return best.endTile;
-        }
-
-        private static float GetTileCost(Point p, float[] heightMap, int width)
-        {
-            float cost = HeightCost(p, heightMap, width);
-            if (IsRiver(p)) cost *= 5f; // penalize river tiles heavily
-            return cost;
+            return endTile;
         }
     }
 }
