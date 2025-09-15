@@ -104,8 +104,9 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                     if (treeMask[x, y])
                     {
-                        tile.Glyph = 6;
+                        tile.Glyph = 6; // Tree glyph
                         tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                        tileInfo.Biome = Biome.Forest; // Turn into forest, regardless of biome
                         tileInfo.HasTreeResource = true;
                     }
                     else if ((biome == Biome.Hills || biome == Biome.Mountains) && random.Next(100) < 20)
@@ -117,6 +118,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     {
                         tile.Glyph = grassTiles[random.Next(grassTiles.Length)];
                         tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                        tileInfo.Biome = Biome.Grassland; // When no trees, woodland and forest becomes grassland
                     }
                 }
             }
