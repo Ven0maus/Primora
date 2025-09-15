@@ -25,20 +25,25 @@ namespace Primora.Core.Procedural.WorldBuilding
             var connectedCities = new HashSet<Point> { startCity };
             remainingCities.Remove(startCity);
 
+            float[] terrainCosts = new float[width * height];
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    terrainCosts[y * width + x] = HeightCost(new Point(x, y), heightMap, width);
+
             // Connect each remaining city to the network
             while (remainingCities.Count > 0)
             {
                 Point cityToConnect = remainingCities[random.Next(remainingCities.Count)];
                 Point closestConnectedCity = FindClosestCity(cityToConnect, connectedCities).Value;
 
-                BuildRoad(cityToConnect, closestConnectedCity, roadPoints, heightMap, width, height, random);
+                BuildRoad(cityToConnect, closestConnectedCity, roadPoints, heightMap, terrainCosts, width, height, random);
 
                 connectedCities.Add(cityToConnect);
                 remainingCities.Remove(cityToConnect);
             }
 
             // Ensure full connectivity of all cities
-            ConnectDisconnectedComponents(roadPoints, cities, width, height, heightMap, random);
+            ConnectDisconnectedComponents(roadPoints, cities, width, height, heightMap, terrainCosts, random);
 
             // Remove dead-end roads safely
             var hashSetCities = cities.ToHashSet();
@@ -51,7 +56,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         }
 
         // Ensures any disconnected component is linked to the main network
-        private static void ConnectDisconnectedComponents(HashSet<Point> roadPoints, List<Point> cities, int width, int height, float[] heightMap, Random random)
+        private static void ConnectDisconnectedComponents(HashSet<Point> roadPoints, List<Point> cities, int width, int height, float[] heightMap, float[] terrainCosts, Random random)
         {
             var components = GetConnectedComponentsIncludingCities(roadPoints, cities, width, height);
             if (components.Count <= 1) return;
@@ -60,7 +65,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             foreach (var component in components.Where(c => c != mainComponent))
             {
                 var (pA, pB) = FindClosestPointBetweenSets(component, mainComponent);
-                BuildRoad(pA, pB, roadPoints, heightMap, width, height, random);
+                BuildRoad(pA, pB, roadPoints, heightMap, terrainCosts, width, height, random);
             }
         }
 
@@ -109,9 +114,12 @@ namespace Primora.Core.Procedural.WorldBuilding
             do
             {
                 removed = false;
-                var deadEnds = roadPoints
-                    .Where(p => !cities.Contains(p) && IsDeadEnd(cities, p, roadPoints))
-                    .ToList();
+                var deadEnds = new List<Point>();
+                foreach (var p in roadPoints)
+                {
+                    if (!cities.Contains(p) && IsDeadEnd(cities, p, roadPoints))
+                        deadEnds.Add(p);
+                }
 
                 foreach (var deadEnd in deadEnds)
                 {
@@ -211,16 +219,11 @@ namespace Primora.Core.Procedural.WorldBuilding
             return closest;
         }
 
-        private static void BuildRoad(Point start, Point end, HashSet<Point> roadPoints, float[] heightMap, int width, int height, Random random)
+        private static void BuildRoad(Point start, Point end, HashSet<Point> roadPoints, float[] heightMap, float[] terrainCosts, int width, int height, Random random)
         {
             var openSet = new PriorityQueue<Point, float>();
             var cameFrom = new Dictionary<Point, Point>();
             var gScore = new Dictionary<Point, float> { [start] = 0f };
-
-            float[] terrainCosts = new float[width * height];
-            for (int y = 0; y < height; y++)
-                for (int x = 0; x < width; x++)
-                    terrainCosts[y * width + x] = HeightCost(new Point(x, y), heightMap, width);
 
             openSet.Enqueue(start, 0f);
 
@@ -266,11 +269,10 @@ namespace Primora.Core.Procedural.WorldBuilding
             var temp = end;
             while (temp != start)
             {
-                path.Add(temp);
+                path.Insert(0, temp); // O(n) but path is usually short
                 if (!cameFrom.TryGetValue(temp, out temp)) break; // safety
             }
-            path.Add(start);
-            path.Reverse();
+            path.Insert(0, start);
 
             foreach (var p in path)
                 roadPoints.Add(p);
@@ -284,8 +286,8 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             float baseCost;
 
-            float toHeightCost = HeightCost(to, heightMap, width);
-            float fromHeightCost = HeightCost(from, heightMap, width);
+            float toHeightCost = terrainCosts[Point.ToIndex(to.X, to.Y, width)];
+            float fromHeightCost = terrainCosts[Point.ToIndex(from.X, from.Y, width)];
 
             // --- 1. River / bridge ---
             if (IsRiver(to))
@@ -357,15 +359,18 @@ namespace Primora.Core.Procedural.WorldBuilding
             int count = 0;
             for (int dx = -radius; dx <= radius; dx++)
             {
+                int nx = p.X + dx;
+                if (nx < 0 || nx >= width) continue;
+
                 for (int dy = -radius; dy <= radius; dy++)
                 {
-                    if (dx == 0 && dy == 0) continue;
-                    int nx = p.X + dx;
                     int ny = p.Y + dy;
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
-                    {
-                        if (existingRoads.Contains(new Point(nx, ny))) count++;
-                    }
+                    if (ny < 0 || ny >= height) continue;
+                    if (dx == 0 && dy == 0) continue;
+
+                    // Use Point struct without allocation
+                    if (existingRoads.Contains(new Point(nx, ny)))
+                        count++;
                 }
             }
             return count;
