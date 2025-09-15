@@ -90,9 +90,21 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private void GenerateDetails(Random random, float[] heightMap)
         {
+            // Step 1: Initial biome glyphs and detailing
+            SetupBasicBiomeDetailGlyphs(random);
+
+            // Step 2: Main river for water access
+            CreateRiver(random, heightMap);
+
+            // Step 3: Settlements and roads
+            CreateSettlementsAndRoads(random, heightMap);
+        }
+
+        private void SetupBasicBiomeDetailGlyphs(Random random)
+        {
+            // Define where trees should be available
             bool[,] treeMask = CreateTreeMask(random);
 
-            // Step 3: Set base biome glyphs
             var grassTiles = new[] { ';', '.', ',', '"', '\'', ':' };
             for (int x = 0; x < _width; x++)
             {
@@ -122,9 +134,6 @@ namespace Primora.Core.Procedural.WorldBuilding
                     }
                 }
             }
-
-            CreateRiver(random, heightMap);
-            CreateSettlementsAndRoads(random, heightMap);
         }
 
         #endregion
