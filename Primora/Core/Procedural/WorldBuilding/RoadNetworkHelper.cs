@@ -220,7 +220,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 foreach (var neighbor in GetNeighbors(current, width, height))
                 {
                     // Use enhanced cost function that prefers existing roads & avoids rivers
-                    float cost = GetTileCostWithBridges(current, neighbor, heightMap, width, height, roadPoints, end, random);
+                    float cost = GetTileCostWithBridges(current, neighbor, heightMap, width, height, roadPoints, random);
 
                     // Turn penalty for organic curves
                     if (cameFrom.TryGetValue(current, out var prev))
@@ -266,64 +266,90 @@ namespace Primora.Core.Procedural.WorldBuilding
         private static float Heuristic(Point a, Point b) => Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
 
         // Cost function that prefers land but allows bridges
-        private static float GetTileCostWithBridges(
-            Point from,
-            Point to,
-            float[] heightMap,
-            int width,
-            int height,
-            HashSet<Point> existingRoads,
-            Point goal,
-            Random random)
+        private static float GetTileCostWithBridges(Point from, Point to, float[] heightMap, int width, int height, HashSet<Point> existingRoads, Random random)
         {
-            // 1️⃣ Base terrain cost
-            float baseCost = HeightCost(to, heightMap, width);
+            float baseCost;
 
-            // 2️⃣ River avoidance first
+            // --- 1. River / bridge ---
             if (IsRiver(to))
             {
-                var bridgeEnd = FindBestBridge(to, goal, width, height, heightMap);
+                var bridgeEnd = FindBestBridge(to, from, width, height, heightMap);
                 if (bridgeEnd != null)
-                {
-                    // Crossing via bridge is allowed, cheaper than swimming
-                    baseCost = Math.Min(baseCost * 5f, 1.5f);
-                }
+                    baseCost = 1.5f;  // bridge crossing is cheap
                 else
-                {
-                    // No bridge, very expensive
-                    baseCost *= 10f;
-                }
+                    baseCost = 10f;   // swimming through river is very expensive
+            }
+            else
+            {
+                baseCost = HeightCost(to, heightMap, width);
             }
 
-            // 3️⃣ Gentle slope preference (valleys)
+            // --- 2. Terrain & slope ---
             float slope = Math.Abs(HeightCost(to, heightMap, width) - HeightCost(from, heightMap, width));
             float valleyBonus = 0.5f + 0.5f * (float)Math.Exp(-slope);
             baseCost /= valleyBonus;
 
-            // 4️⃣ Terrain preference (lowlands preferred)
             float terrainPreference = 1 - Math.Max(0, (HeightCost(to, heightMap, width) - 1) * 0.5f);
             baseCost /= terrainPreference;
 
-            // 5️⃣ Existing road bonus
-            if (existingRoads.Contains(to))
-                baseCost *= 0.5f; // stepping on road is cheaper
-            if (existingRoads.Contains(from) && !existingRoads.Contains(to))
-                baseCost += 0.25f; // leaving road is slightly more expensive
+            // --- 3. Road-following / clustering ---
+            if (existingRoads.Contains(to)) baseCost *= 0.5f;
+            if (existingRoads.Contains(from) && !existingRoads.Contains(to)) baseCost += 0.25f;
 
-            // 6️⃣ Proximity to existing roads
+            int nearbyRoads = GetNearbyRoadCount(to, existingRoads, width, height, 5);
+            baseCost *= 1f - Math.Clamp(0.15f * nearbyRoads, 0, 0.6f);  // stronger attraction
+
             float nearestRoadDist = DistanceToNearestRoad(to, existingRoads);
-            baseCost *= 1f - Math.Clamp(0.5f / (nearestRoadDist + 1), 0, 0.5f);
+            float roadBonus = Math.Clamp(1f / ((nearestRoadDist + 1) * (nearestRoadDist + 1)), 0, 0.5f);
+            baseCost *= 1f - roadBonus;
 
-            // 7️⃣ Directional bias toward goal
-            float dx = Math.Abs(to.X - goal.X);
-            float dy = Math.Abs(to.Y - goal.Y);
-            float distToGoal = dx + dy;
-            baseCost *= 1 + distToGoal * 0.01f; // small bias to encourage forward progress
+            // Border cost
+            baseCost *= BorderPenalty(to, width, height, 5);
 
-            // 8️⃣ Slight random variation for organic look
-            baseCost *= 1 + (float)(random.NextDouble() * 0.1 - 0.05);
+            // --- 4. Organic randomness ---
+            baseCost *= 1 + (float)(random.NextDouble() * 0.2 - 0.1);
 
             return baseCost;
+        }
+
+        private static float BorderPenalty(Point p, int width, int height, int radius = 5)
+        {
+            int distLeft = p.X;
+            int distRight = width - 1 - p.X;
+            int distTop = p.Y;
+            int distBottom = height - 1 - p.Y;
+
+            int minDist = Math.Min(Math.Min(distLeft, distRight), Math.Min(distTop, distBottom));
+
+            if (minDist >= radius)
+                return 1f; // no penalty
+            else
+            {
+                // Linear penalty: closer to edge → higher multiplier
+                float factor = 1f + (radius - minDist) * 0.5f; // adjust 0.5f for strength
+                return factor;
+            }
+        }
+
+
+        // Count how many existing road tiles are within a given radius
+        private static int GetNearbyRoadCount(Point p, HashSet<Point> existingRoads, int width, int height, int radius)
+        {
+            int count = 0;
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                for (int dy = -radius; dy <= radius; dy++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+                    int nx = p.X + dx;
+                    int ny = p.Y + dy;
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                    {
+                        if (existingRoads.Contains(new Point(nx, ny))) count++;
+                    }
+                }
+            }
+            return count;
         }
 
         private static float DistanceToNearestRoad(Point p, HashSet<Point> existingRoads)
