@@ -10,12 +10,14 @@ internal static class RiverNetworkHelper
         int width,
         int height,
         Random random,
+        out Dictionary<Point, int> riverDistances,
         int minLength = 50,
         int maxAttempts = 10)
     {
         for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
             var river = new HashSet<Point>();
+            riverDistances = [];
 
             // 1. Pick a source (highland)
             var highCandidates = GetPointsAbove(heightMap, width, height, 0.75f);
@@ -26,7 +28,7 @@ internal static class RiverNetworkHelper
             Point outlet = PickFarOutlet(source, width, height, random);
 
             // 3. Trace river
-            var endpoint = TraceMajorRiver(source, outlet, heightMap, width, height, river);
+            var endpoint = TraceMajorRiver(source, outlet, heightMap, width, height, river, riverDistances);
 
             // Always add a pond/lake at the end
             var lakes = new HashSet<Point>();
@@ -40,6 +42,7 @@ internal static class RiverNetworkHelper
         }
 
         // fallback: return empty if no good river found
+        riverDistances = [];
         return [];
     }
 
@@ -94,7 +97,8 @@ internal static class RiverNetworkHelper
         float[] heightMap,
         int width,
         int height,
-        HashSet<Point> river)
+        HashSet<Point> river,
+        Dictionary<Point, int> riverDistances)
     {
         Point current = start;
         var visited = new HashSet<Point>();
@@ -103,7 +107,7 @@ internal static class RiverNetworkHelper
         {
             if (!visited.Add(current)) break;
 
-            AddThickRiverPoint(river, current, width, height, radius: 1);
+            AddThickRiverPoint(river, riverDistances, current, width, height, radius: 1);
 
             if (current == outlet ||
                 current.X == 0 || current.Y == 0 ||
@@ -127,7 +131,13 @@ internal static class RiverNetworkHelper
         return current; // final river tile
     }
 
-    private static void AddThickRiverPoint(HashSet<Point> river, Point center, int width, int height, int radius)
+    private static void AddThickRiverPoint(
+        HashSet<Point> river,
+        Dictionary<Point, int> riverDistances,
+        Point center,
+        int width,
+        int height,
+        int radius)
     {
         for (int dx = -radius; dx <= radius; dx++)
         {
@@ -139,9 +149,16 @@ internal static class RiverNetworkHelper
                 if (nx < 0 || nx >= width || ny < 0 || ny >= height)
                     continue;
 
-                // Euclidean distance check = more circular
-                if (dx * dx + dy * dy <= radius * radius)
-                    river.Add(new Point(nx, ny));
+                int dist = dx * dx + dy * dy; // squared distance from center
+                if (dist <= radius * radius)
+                {
+                    var p = new Point(nx, ny);
+                    river.Add(p);
+
+                    // keep minimum distance (closer to center = deeper)
+                    if (!riverDistances.TryGetValue(p, out int existing) || dist < existing)
+                        riverDistances[p] = dist;
+                }
             }
         }
     }

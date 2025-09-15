@@ -605,7 +605,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         private void CreateRiver(Random random, float[] heightMap)
         {
             // Collect random city locations and roads
-            var roadPoints = RiverNetworkHelper.BuildMajorRiver(heightMap, _width, _height, random);
+            var roadPoints = RiverNetworkHelper.BuildMajorRiver(heightMap, _width, _height, random, out var riverDistances);
 
             // Draw roads between cities
             var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
@@ -613,12 +613,25 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 var tile = Tilemap.GetTile(coordinate);
                 tile.Glyph = 0;
-                Color biome = tile.Background;   // biome color
-                Color river = Color.Blue;        // base river color
 
-                // Blend factor (0.3 = 30% river color, 70% biome color)
-                float blend = 0.35f;
-                tile.Background = Color.Lerp(biome, river, blend);
+                Color biome = tile.Background;
+                Color deepBlue = "#061558".HexToColor();
+                Color shallowBlue = "#102373".HexToColor();
+
+                // Look up distance
+                int distSq = riverDistances.TryGetValue(coordinate, out var d) ? d : 0;
+                float dist = MathF.Sqrt(distSq);
+
+                // Map distance → blend
+                // 0 = center (deep), radius = edge (light)
+                float t = Math.Clamp(dist / 2f, 0f, 1f); // if radius=2
+
+                // Interpolate between deep blue and shallow blue
+                Color riverColor = Color.Lerp(deepBlue, shallowBlue, t);
+
+                // Blend with biome color
+                float blend = 0.45f;
+                tile.Background = Color.Lerp(riverColor, biome, blend);
 
                 var tileInfo = GetTileInfo(coordinate);
                 tileInfo.Biome = Biome.River;
