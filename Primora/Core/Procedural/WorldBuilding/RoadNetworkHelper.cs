@@ -47,7 +47,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // Remove dead-end roads safely
             var hashSetCities = cities.ToHashSet();
-            RemoveDeadEnds(roadPoints, hashSetCities);
+            RemoveDeadEnds(roadPoints, hashSetCities, width, height);
 
             // Remove redundant roads while preserving connectivity
             RemoveRedundantRoadsSafe(roadPoints, hashSetCities, width, height);
@@ -108,13 +108,18 @@ namespace Primora.Core.Procedural.WorldBuilding
         }
 
         // Remove dead ends but preserve city connections
-        private static void RemoveDeadEnds(HashSet<Point> roadPoints, HashSet<Point> cities)
+        private static void RemoveDeadEnds(HashSet<Point> roadPoints, HashSet<Point> cities, int width, int height)
         {
+            int deadEndIterations = 0;
+            int maxDeadEndIterations = width * height;
             bool removed;
             do
             {
+                deadEndIterations++;
+                if (deadEndIterations > maxDeadEndIterations) break;
+
                 removed = false;
-                var deadEnds = new List<Point>();
+                var deadEnds = new HashSet<Point>();
                 foreach (var p in roadPoints)
                 {
                     if (!cities.Contains(p) && IsDeadEnd(cities, p, roadPoints))
@@ -224,11 +229,17 @@ namespace Primora.Core.Procedural.WorldBuilding
             var openSet = new PriorityQueue<Point, float>();
             var cameFrom = new Dictionary<Point, Point>();
             var gScore = new Dictionary<Point, float> { [start] = 0f };
+            int maxIterations = width * height * 10; // or any large enough number
+            int iterations = 0;
 
             openSet.Enqueue(start, 0f);
 
             while (openSet.Count > 0)
             {
+                iterations++;
+                if (iterations > maxIterations)
+                    break; // safety exit
+
                 var current = openSet.Dequeue();
 
                 if (current == end)
@@ -325,7 +336,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             baseCost *= 1f - roadBonus;
 
             // Border cost
-            baseCost *= BorderPenalty(to, width, height, 5);
+            baseCost *= BorderPenalty(to, width, height, 10);
 
             // --- 4. Organic randomness ---
             baseCost *= 1 + (float)(random.NextDouble() * 0.2 - 0.1);
