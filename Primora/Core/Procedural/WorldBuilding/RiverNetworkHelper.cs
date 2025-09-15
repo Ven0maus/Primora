@@ -102,7 +102,8 @@ internal static class RiverNetworkHelper
         for (int steps = 0; steps < width + height; steps++)
         {
             if (!visited.Add(current)) break;
-            river.Add(current);
+
+            AddThickRiverPoint(river, current, width, height, radius: 1);
 
             if (current == outlet ||
                 current.X == 0 || current.Y == 0 ||
@@ -126,6 +127,24 @@ internal static class RiverNetworkHelper
         return current; // final river tile
     }
 
+    private static void AddThickRiverPoint(HashSet<Point> river, Point center, int width, int height, int radius)
+    {
+        for (int dx = -radius; dx <= radius; dx++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                int nx = center.X + dx;
+                int ny = center.Y + dy;
+
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+                    continue;
+
+                // Euclidean distance check = more circular
+                if (dx * dx + dy * dy <= radius * radius)
+                    river.Add(new Point(nx, ny));
+            }
+        }
+    }
 
     private static float DistanceSquared(Point a, Point b)
     {

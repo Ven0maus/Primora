@@ -121,7 +121,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 }
             }
 
-            CreateRivers(random, heightMap);
+            CreateRiver(random, heightMap);
             CreateSettlementsAndRoads(random, heightMap);
         }
 
@@ -602,7 +602,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         #endregion
 
         #region Rivers
-        private void CreateRivers(Random random, float[] heightMap)
+        private void CreateRiver(Random random, float[] heightMap)
         {
             // Collect random city locations and roads
             var roadPoints = RiverNetworkHelper.BuildMajorRiver(heightMap, _width, _height, random);
