@@ -1,4 +1,5 @@
 ﻿using Primora.Core.Procedural.Common;
+using Primora.Core.Procedural.Objects;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -7,43 +8,59 @@ namespace Primora.Core.Procedural.WorldBuilding
 {
     internal class Zone
     {
-        private readonly int _width, _height;
-        private readonly Point _zonePosition;
-        private readonly Random _random; 
+        private readonly ZoneTileInfo[] _zoneTileInfo;
 
+        internal readonly int Width, Height;
+        internal readonly Point WorldPosition;
+        internal readonly Random Random; 
         internal readonly Tilemap Tilemap;
 
-        private static readonly Dictionary<Point, Zone> _zoneCache = [];
+        private static readonly TickDictionary<Point, Zone> _zoneCache = [];
+        private static readonly Dictionary<Point, int> _zoneLoadCount = [];
 
         internal Zone(Point zonePosition, int width, int height)
         {
-            _zonePosition = zonePosition;
-            _width = width;
-            _height = height;
-            _random = new Random(HashCode.Combine(Constants.General.GameSeed, _zonePosition.X, _zonePosition.Y));
+            WorldPosition = zonePosition;
+            _zoneTileInfo = new ZoneTileInfo[width * height];
+
+            // Generate the random based on times we visited this zone (completely regenerated, not from cache)
+            Random = new Random(HashCode.Combine(Constants.General.GameSeed, WorldPosition.X, WorldPosition.Y,
+                _zoneLoadCount.TryGetValue(zonePosition, out var count) ? count : 0));
+
+            Width = width;
+            Height = height;
             Tilemap = new Tilemap(width, height);
         }
 
         internal void Generate()
         {
-            var tileInfo = World.Instance.WorldMap.GetTileInfo(_zonePosition);
+            _zoneLoadCount.TryGetValue(WorldPosition, out var count);
+            _zoneLoadCount[WorldPosition] = ++count;
 
             // Setup initial tilemap tiles
             InitTilemap();
 
             // Initial zone layout generation
-            ZoneGenerator.Generate(Tilemap, tileInfo, _width, _height, _random);
+            ZoneGenerator.Generate(this, Width, Height, Random);
 
             // TODO: Additionally generate areas of interest (chests, barrels, lost items, quests)
 
             // TODO: Generate NPCS
         }
 
+        internal ZoneTileInfo GetTileInfo(int x, int y)
+        {
+            return _zoneTileInfo[Point.ToIndex(x, y, Width)];
+        }
+
+        internal ZoneTileInfo GetTileInfo(Point position)
+            => GetTileInfo(position.X, position.Y);
+
         private void InitTilemap()
         {
-            for (int y = 0; y < _height; y++)
+            for (int y = 0; y < Height; y++)
             {
-                for (int x = 0; x < _width; x++)
+                for (int x = 0; x < Width; x++)
                 {
                     Tilemap.SetTile(x, y, new SadConsole.ColoredGlyph
                     {
@@ -65,11 +82,12 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private static Zone GenerateZone(Point point)
         {
+            // Create a complete new zone and generate it
             var zone = new Zone(point, World.DefaultZoneWidth, World.DefaultZoneHeight);
             zone.Generate();
 
-            // Add zone to the cache
-            _zoneCache[point] = zone;
+            // Add zone to the cache for 120 turns
+            _zoneCache[point, 120] = zone;
             return zone;
         }
     }

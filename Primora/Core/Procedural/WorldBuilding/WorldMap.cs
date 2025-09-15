@@ -14,16 +14,16 @@ namespace Primora.Core.Procedural.WorldBuilding
     /// </summary>
     internal class WorldMap
     {
-        private readonly int _width, _height;
-        private readonly TileInfo[] _tileInfo;
+        private readonly WorldTileInfo[] _tileInfo;
 
         internal readonly Tilemap Tilemap;
+        internal readonly int Width, Height;
 
         internal WorldMap(int width, int height)
         {
-            _width = width;
-            _height = height;
-            _tileInfo = new TileInfo[width * height];
+            Width = width;
+            Height = height;
+            _tileInfo = new WorldTileInfo[width * height];
             Tilemap = new Tilemap(width, height);
         }
 
@@ -34,13 +34,45 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <returns></returns>
-        internal TileInfo GetTileInfo(int x, int y)
+        internal WorldTileInfo GetTileInfo(int x, int y)
         {
-            return _tileInfo[Point.ToIndex(x, y, _width)];
+            return _tileInfo[Point.ToIndex(x, y, Width)];
         }
 
-        internal TileInfo GetTileInfo(Point position)
+        /// <summary>
+        /// Returns the tile information at the specified coordinate on the world map.
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        internal WorldTileInfo GetTileInfo(Point position)
             => GetTileInfo(position.X, position.Y);
+
+        /// <summary>
+        /// Gets the tile in the tilemap of the worldmap.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        internal ColoredGlyph GetTile(int x, int y)
+        {
+            return Tilemap.GetTile(x, y);
+        }
+
+        /// <summary>
+        /// Gets the tile in the tilemap of the worldmap.
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        internal ColoredGlyph GetTile(Point position)
+            => Tilemap.GetTile(position.X, position.Y);
+
+        internal bool InBounds(int x, int y)
+        {
+            return x >= 0 && y >= 0 && x < Width && y < Height;
+        }
+
+        internal bool InBounds(Point position)
+            => InBounds(position.X, position.Y);
         #endregion
 
         #region World Generation
@@ -107,7 +139,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private float[] GenerateHeightMap(Random rand) =>
             [.. OpenSimplex.GenerateNoiseMap(
-                _width, _height,
+                Width, Height,
                 seed: rand.Next(),
                 scale: 200f,          // ↑ slightly bigger scale → smoother continents
                 octaves: 5,
@@ -116,11 +148,11 @@ namespace Primora.Core.Procedural.WorldBuilding
             ).Select(h => Math.Clamp(h * 0.85f + 0.1f, 0f, 1f))];
 
         private float[] GenerateTemperatureMap(Random rand) =>
-            OpenSimplex.GenerateNoiseMap(_width, _height, seed: rand.Next(), scale: 300f, octaves: 2, persistance: 0.6f, lacunarity: 2f);
+            OpenSimplex.GenerateNoiseMap(Width, Height, seed: rand.Next(), scale: 300f, octaves: 2, persistance: 0.6f, lacunarity: 2f);
 
         private float[] GenerateMoistureMap(Random rand) =>
             [.. OpenSimplex.GenerateNoiseMap(
-                _width, _height,
+                Width, Height,
                 seed: rand.Next(),
                 scale: 180f,
                 octaves: 4,
@@ -130,12 +162,12 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private void ApplyLatitudeAdjustment(float[] tempMap)
         {
-            for (int x = 0; x < _width; x++)
+            for (int x = 0; x < Width; x++)
             {
-                for (int y = 0; y < _height; y++)
+                for (int y = 0; y < Height; y++)
                 {
-                    int i = Point.ToIndex(x, y, _width);
-                    float latitude = (float)y / _height;
+                    int i = Point.ToIndex(x, y, Width);
+                    float latitude = (float)y / Height;
                     tempMap[i] = tempMap[i] * 0.7f + (1f - Math.Abs(latitude - 0.5f) * 2f) * 0.3f;
                 }
             }
@@ -147,13 +179,13 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private Biome[,] GenerateBiomeMap(float[] heightmap, float[] tempMap, float[] moistureMap, ICollection<BiomeDefinition> biomes, Random rand)
         {
-            var biomeMap = new Biome[_width, _height];
+            var biomeMap = new Biome[Width, Height];
 
-            for (int y = 0; y < _height; y++)
+            for (int y = 0; y < Height; y++)
             {
-                for (int x = 0; x < _width; x++)
+                for (int x = 0; x < Width; x++)
                 {
-                    int i = Point.ToIndex(x, y, _width);
+                    int i = Point.ToIndex(x, y, Width);
                     biomeMap[x, y] = SelectOrganicBiome(
                         Constants.General.GameSeed,
                         heightmap[i],
@@ -173,11 +205,11 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             for (int pass = 0; pass < 2; pass++)
             {
-                var newBiomes = new Biome[_width, _height];
+                var newBiomes = new Biome[Width, Height];
 
-                for (int y = 0; y < _height; y++)
+                for (int y = 0; y < Height; y++)
                 {
-                    for (int x = 0; x < _width; x++)
+                    for (int x = 0; x < Width; x++)
                     {
                         var counts = new Dictionary<Biome, int>();
 
@@ -186,7 +218,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                             for (int dx = -1; dx <= 1; dx++)
                             {
                                 int nx = x + dx, ny = y + dy;
-                                if (nx < 0 || ny < 0 || nx >= _width || ny >= _height) continue;
+                                if (nx < 0 || ny < 0 || nx >= Width || ny >= Height) continue;
 
                                 var b = biomeMap[nx, ny];
                                 if (!counts.ContainsKey(b)) counts[b] = 0;
@@ -206,11 +238,11 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         public void RecordBiomesIntoWorldMap(Biome[,] biomeMap)
         {
-            for (int x = 0; x < _width; x++)
+            for (int x = 0; x < Width; x++)
             {
-                for (int y=0; y < _height; y++)
+                for (int y=0; y < Height; y++)
                 {
-                    _tileInfo[Point.ToIndex(x, y, _width)] = new TileInfo { Biome = biomeMap[x, y] };
+                    _tileInfo[Point.ToIndex(x, y, Width)] = new WorldTileInfo { Origin = new Point(x, y), Biome = biomeMap[x, y] };
                 }
             }
         }
@@ -221,9 +253,9 @@ namespace Primora.Core.Procedural.WorldBuilding
             bool[,] treeMask = CreateTreeMask(random);
 
             var grassTiles = new[] { ';', '.', ',', '"', '\'', ':' };
-            for (int x = 0; x < _width; x++)
+            for (int x = 0; x < Width; x++)
             {
-                for (int y = 0; y < _height; y++)
+                for (int y = 0; y < Height; y++)
                 {
                     var tile = Tilemap.GetTile(x, y);
                     var tileInfo = GetTileInfo(x, y);
@@ -257,20 +289,20 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private int[,] GenerateVariationMap(Random rand)
         {
-            var variationMap = new int[_width, _height];
+            var variationMap = new int[Width, Height];
 
-            for (int y = 0; y < _height; y++)
-                for (int x = 0; x < _width; x++)
+            for (int y = 0; y < Height; y++)
+                for (int x = 0; x < Width; x++)
                     variationMap[x, y] = rand.Next(-30, 31);
 
             // Smooth variation
             for (int pass = 0; pass < 3; pass++)
             {
-                var newMap = new int[_width, _height];
+                var newMap = new int[Width, Height];
 
-                for (int y = 0; y < _height; y++)
+                for (int y = 0; y < Height; y++)
                 {
-                    for (int x = 0; x < _width; x++)
+                    for (int x = 0; x < Width; x++)
                     {
                         int sum = 0, count = 0;
 
@@ -279,7 +311,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                             for (int dx = -1; dx <= 1; dx++)
                             {
                                 int nx = x + dx, ny = y + dy;
-                                if (nx < 0 || ny < 0 || nx >= _width || ny >= _height) continue;
+                                if (nx < 0 || ny < 0 || nx >= Width || ny >= Height) continue;
                                 sum += variationMap[nx, ny];
                                 count++;
                             }
@@ -302,16 +334,16 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private Color[,] GenerateColorMap(float[] heightmap, Biome[,] biomeMap, ICollection<BiomeDefinition> biomes, int[,] variationMap)
         {
-            var colorMap = new Color[_width, _height];
+            var colorMap = new Color[Width, Height];
             var biomeColors = biomes
                 .Select(a => (a.MinHeight, a.MaxHeight, a.Biome, color: BiomeRegistry.Get(a.Biome).Color))
                 .ToList();
 
-            for (int y = 0; y < _height; y++)
+            for (int y = 0; y < Height; y++)
             {
-                for (int x = 0; x < _width; x++)
+                for (int x = 0; x < Width; x++)
                 {
-                    int i = Point.ToIndex(x, y, _width);
+                    int i = Point.ToIndex(x, y, Width);
                     float height = heightmap[i];
 
                     int heightVariation = (int)((height - 0.5f) * 60f);
@@ -322,7 +354,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     var baseColor = biomeColors[currentIndex].color;
 
                     var neighborBlended = BlendTowardBestNeighbor(
-                        x, y, baseColor, biomeMap, biomeColors, heightmap, _width, _height, maxBlend: 0.4f, radius: 2
+                        x, y, baseColor, biomeMap, biomeColors, heightmap, Width, Height, maxBlend: 0.4f, radius: 2
                     );
 
                     int r = Math.Clamp(neighborBlended.R + totalVariation, 0, 255);
@@ -342,12 +374,12 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private void ApplyDirectionalShading(Color[,] colorMap, float[] heightmap)
         {
-            for (int y = 0; y < _height; y++)
+            for (int y = 0; y < Height; y++)
             {
-                for (int x = 1; x < _width; x++)
+                for (int x = 1; x < Width; x++)
                 {
-                    int i = Point.ToIndex(x, y, _width);
-                    int leftIndex = Point.ToIndex(x - 1, y, _width);
+                    int i = Point.ToIndex(x, y, Width);
+                    int leftIndex = Point.ToIndex(x - 1, y, Width);
 
                     float h = heightmap[i];
                     float hLeft = heightmap[leftIndex];
@@ -366,12 +398,12 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private Color[,] SmoothColors(Color[,] colorMap)
         {
-            var smoothed = new Color[_width, _height];
+            var smoothed = new Color[Width, Height];
             float smoothingFactor = 0.3f;
 
-            for (int y = 0; y < _height; y++)
+            for (int y = 0; y < Height; y++)
             {
-                for (int x = 0; x < _width; x++)
+                for (int x = 0; x < Width; x++)
                 {
                     int sumR = 0, sumG = 0, sumB = 0, count = 0;
 
@@ -380,7 +412,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                         for (int dx = -1; dx <= 1; dx++)
                         {
                             int nx = x + dx, ny = y + dy;
-                            if (nx < 0 || ny < 0 || nx >= _width || ny >= _height) continue;
+                            if (nx < 0 || ny < 0 || nx >= Width || ny >= Height) continue;
 
                             var nc = colorMap[nx, ny];
                             sumR += nc.R;
@@ -413,9 +445,9 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private void ApplyColorsToTilemap(Color[,] colorMap)
         {
-            for (int y = 0; y < _height; y++)
+            for (int y = 0; y < Height; y++)
             {
-                for (int x = 0; x < _width; x++)
+                for (int x = 0; x < Width; x++)
                 {
                     var appearance = BiomeRegistry.Get(GetTileInfo(x, y).Biome).Appearance.Clone();
                     appearance.Background = colorMap[x, y]; // Adjust biome coloring to be more accurate
@@ -430,11 +462,11 @@ namespace Primora.Core.Procedural.WorldBuilding
         private bool[,] CreateTreeMask(Random random)
         {
             // Step 1: Build a mask of where forests should be
-            bool[,] forestMask = new bool[_width, _height];
+            bool[,] forestMask = new bool[Width, Height];
 
-            for (int x = 0; x < _width; x++)
+            for (int x = 0; x < Width; x++)
             {
-                for (int y = 0; y < _height; y++)
+                for (int y = 0; y < Height; y++)
                 {
                     var biome = GetTileInfo(x, y).Biome;
                     if (biome == Biome.Woodland || biome == Biome.Forest)
@@ -446,9 +478,9 @@ namespace Primora.Core.Procedural.WorldBuilding
                             var localForest = GrowForestFromSeed(new Point(x, y), random, 50);
 
                             // Merge into main forest mask
-                            for (int xx = 0; xx < _width; xx++)
+                            for (int xx = 0; xx < Width; xx++)
                             {
-                                for (int yy = 0; yy < _height; yy++)
+                                for (int yy = 0; yy < Height; yy++)
                                 {
                                     if (localForest[xx, yy])
                                         forestMask[xx, yy] = true;
@@ -572,7 +604,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private bool[,] GrowForestFromSeed(Point seed, Random rand, int maxSize = 200)
         {
-            var mask = new bool[_width, _height];
+            var mask = new bool[Width, Height];
             var queue = new Queue<Point>();
 
             queue.Enqueue(seed);
@@ -591,7 +623,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     int ny = current.Y + dir.Y;
 
                     // Stay inside bounds
-                    if (nx < 0 || ny < 0 || nx >= _width || ny >= _height)
+                    if (nx < 0 || ny < 0 || nx >= Width || ny >= Height)
                         continue;
 
                     if (mask[nx, ny]) continue; // already forest
@@ -616,7 +648,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         private void CreateRiver(Random random, float[] heightMap)
         {
             // Collect random city locations and roads
-            var roadPoints = RiverNetworkHelper.BuildMajorRiver(heightMap, _width, _height, random, out var riverDistances);
+            var roadPoints = RiverNetworkHelper.BuildMajorRiver(heightMap, Width, Height, random, out var riverDistances);
 
             // Draw roads between cities
             var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
@@ -647,6 +679,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 var tileInfo = GetTileInfo(coordinate);
                 tileInfo.Biome = Biome.River;
                 tileInfo.HasWaterResource = true;
+                tileInfo.Walkable = false;
             }
         }
         #endregion
@@ -655,8 +688,8 @@ namespace Primora.Core.Procedural.WorldBuilding
         private void CreateSettlementsAndRoads(Random random, float[] heightMap)
         {
             // Collect random city locations and roads
-            var cityPositions = GetCityPositions(random, heightMap, _width, _height);
-            var roadPoints = RoadNetworkHelper.BuildRoadNetwork(cityPositions, heightMap, _width, _height, random);
+            var cityPositions = GetCityPositions(random, heightMap, Width, Height);
+            var roadPoints = RoadNetworkHelper.BuildRoadNetwork(cityPositions, heightMap, Width, Height, random);
 
             // Draw roads between cities
             var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
@@ -668,9 +701,14 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                 var tileInfo = GetTileInfo(coordinate);
                 if (tileInfo.Biome == Biome.River)
+                {
                     tileInfo.Biome = Biome.Bridge;
+                    tileInfo.Walkable = true;
+                }
                 else
+                {
                     tileInfo.Biome = Biome.Road;
+                }
             }
 
             // Set cities
@@ -682,6 +720,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                 var tileInfo = GetTileInfo(coordinate);
                 tileInfo.Biome = Biome.Settlement;
+                tileInfo.Walkable = true;
             }
         }
 

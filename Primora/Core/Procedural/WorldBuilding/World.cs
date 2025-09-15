@@ -1,4 +1,5 @@
-﻿using Primora.Extensions;
+﻿using Primora.Core.Procedural.Objects;
+using Primora.Extensions;
 using Primora.Screens;
 using SadConsole;
 using SadRogue.Primitives;
@@ -52,8 +53,21 @@ namespace Primora.Core.Procedural.WorldBuilding
             WorldMap.Generate();
 
             // Show the world map as default view
-            ShowWorldMap();
-            //LoadZone(new Point(0,0));
+            //ShowWorldMap();
+            LoadZone(FindBiomeTile(Biome.Grassland));
+        }
+
+        internal Point FindBiomeTile(Biome biome)
+        {
+            for (int x = 0; x < WorldMap.Width; x++)
+            {
+                for (int y = 0; y < WorldMap.Height; y++)
+                {
+                    if (WorldMap.GetTileInfo(x, y).Biome == biome)
+                        return new Point(x, y);
+                }
+            }
+            throw new Exception($"No \"{biome}\" biome was generated in the world.");
         }
 
         internal void LoadZone(Point position)
