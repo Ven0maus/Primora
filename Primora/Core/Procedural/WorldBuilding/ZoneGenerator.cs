@@ -25,6 +25,28 @@ namespace Primora.Core.Procedural.WorldBuilding
                 case Biome.Forest:
                     GenerateForest(tilemap, tileInfo, width, height, random);
                     break;
+
+                case Biome.Bridge:
+                    GenerateBridge(tilemap, tileInfo, width, height, random);
+                    break;
+
+                case Biome.Road:
+                    GenerateRoad(tilemap, tileInfo, width, height, random);
+                    break;
+
+                case Biome.Hills:
+                case Biome.Mountains:
+                    GenerateMountains(tilemap, tileInfo, width, height, random);
+                    break;
+
+                case Biome.Settlement:
+                    GenerateSettlement(tilemap, tileInfo, width, height, random);
+                    break;
+
+                default:
+                    // Fallback to grassland, if biome unknown or unhandled
+                    GenerateGrassland(tilemap, tileInfo, width, height, random);
+                    break;
             }
         }
 
@@ -38,6 +60,26 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             // Generate scattered grass glyphs, bushes, twigs, flowers
             // Generate also patches of tall grass that cannot be tresspassed and blocks view
+        }
+
+        private static void GenerateSettlement(Tilemap tilemap, TileInfo tileInfo, int width, int height, Random random)
+        {
+
+        }
+
+        private static void GenerateMountains(Tilemap tilemap, TileInfo tileInfo, int width, int height, Random random)
+        {
+
+        }
+
+        private static void GenerateRoad(Tilemap tilemap, TileInfo tileInfo, int width, int height, Random random)
+        {
+
+        }
+
+        private static void GenerateBridge(Tilemap tilemap, TileInfo tileInfo, int width, int height, Random random)
+        {
+
         }
     }
 }
