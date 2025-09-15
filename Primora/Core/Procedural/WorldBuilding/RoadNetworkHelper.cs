@@ -203,36 +203,90 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private static void BuildRoad(Point start, Point end, HashSet<Point> roadPoints, float[] heightMap, int width, int height, Random random)
         {
-            Point current = start;
+            var openSet = new PriorityQueue<Point, float>();
+            var cameFrom = new Dictionary<Point, Point>();
+            var gScore = new Dictionary<Point, float> { [start] = 0f };
 
-            while (current != end)
+            openSet.Enqueue(start, 0f);
+
+            while (openSet.Count > 0)
             {
-                roadPoints.Add(current);
+                var current = openSet.Dequeue();
 
-                // Bridge logic
-                if (IsRiver(current))
+                if (current == end)
+                    break;
+
+                foreach (var neighbor in GetNeighbors(current, width, height))
                 {
-                    var bridgeEnd = FindBestBridge(current, end, width, height);
-                    if (bridgeEnd != null && bridgeEnd.Value != current)
+                    float cost = GetTileCostWithBridges(current, neighbor, heightMap, width, height, random);
+
+                    // Turn penalty for organic curves
+                    if (cameFrom.TryGetValue(current, out var prev))
                     {
-                        foreach (var tile in WalkStraight(current, bridgeEnd.Value))
-                        {
-                            roadPoints.Add(tile);
-                            current = tile;
-                        }
-                        continue;
+                        int dirX1 = current.X - prev.X;
+                        int dirY1 = current.Y - prev.Y;
+                        int dirX2 = neighbor.X - current.X;
+                        int dirY2 = neighbor.Y - current.Y;
+
+                        if (dirX1 != dirX2 || dirY1 != dirY2)
+                            cost += 0.3f; // small turn penalty
+                    }
+
+                    float tentativeG = gScore[current] + cost;
+
+                    if (!gScore.TryGetValue(neighbor, out var existingG) || tentativeG < existingG)
+                    {
+                        cameFrom[neighbor] = current;
+                        gScore[neighbor] = tentativeG;
+                        float priority = tentativeG + Heuristic(neighbor, end);
+                        openSet.Enqueue(neighbor, priority);
                     }
                 }
-
-                Point next = ChooseNextTileWithCostVariation(current, end, heightMap, width, random);
-
-                // Safety check
-                if (next == current) break;
-
-                current = next;
             }
 
-            roadPoints.Add(end);
+            // Reconstruct path
+            var path = new List<Point>();
+            var temp = end;
+            while (temp != start)
+            {
+                path.Add(temp);
+                if (!cameFrom.TryGetValue(temp, out temp)) break; // safety
+            }
+            path.Add(start);
+            path.Reverse();
+
+            foreach (var p in path)
+                roadPoints.Add(p);
+        }
+
+        // Heuristic: Manhattan distance
+        private static float Heuristic(Point a, Point b) => Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
+
+        // Cost function that prefers land but allows bridges
+        private static float GetTileCostWithBridges(Point from, Point to, float[] heightMap, int width, int height, Random random)
+        {
+            float baseCost = HeightCost(to, heightMap, width);
+
+            if (IsRiver(to))
+            {
+                // Check if a bridge can be placed
+                var bridgeEnd = FindBestBridge(to, from, width, height, heightMap);
+                if (bridgeEnd != null)
+                {
+                    // Crossing river via bridge is cheaper than swimming through river
+                    baseCost = Math.Min(baseCost * 5f, 1.5f);
+                }
+                else
+                {
+                    // No bridge, very high cost
+                    baseCost *= 10f;
+                }
+            }
+
+            // Slight random variation for organic paths
+            baseCost *= 1 + (float)(random.NextDouble() * 0.2 - 0.1);
+
+            return baseCost;
         }
 
         private static IEnumerable<Point> WalkStraight(Point start, Point end)
@@ -301,89 +355,58 @@ namespace Primora.Core.Procedural.WorldBuilding
             return neighborCount == 1 && !hasCity;
         }
 
-        private static Point? FindBestBridge(Point current, Point end, int width, int height)
+        private static Point? FindBestBridge(Point start, Point end, int width, int height, float[] heightMap)
         {
-            var candidates = new List<(Point endTile, int length)>();
+            var candidates = new List<(Point endTile, float totalCost)>();
 
-            // Horizontal bridge
-            int y = current.Y;
-            int dirX = Math.Sign(end.X - current.X);
+            // Try horizontal bridge
+            int dirX = Math.Sign(end.X - start.X);
             if (dirX != 0)
             {
-                int x = current.X;
-                int length = 0;
-                // Move along river tiles
+                int x = start.X;
+                int y = start.Y;
+                float cost = 0;
                 while (x >= 0 && x < width && IsRiver(new Point(x, y)))
                 {
-                    length++;
+                    cost += 1f; // base river crossing cost
                     x += dirX;
                 }
 
-                // x is now first land tile after river (opposite bank)
-                if (length > 0 && x >= 0 && x < width)
-                    candidates.Add((new Point(x, y), length));
+                if (x >= 0 && x < width)
+                {
+                    // Add land cost on opposite bank
+                    cost += HeightCost(new Point(x, y), heightMap, width);
+                    candidates.Add((new Point(x, y), cost));
+                }
             }
 
-            // Vertical bridge
-            int x2 = current.X;
-            int dirY = Math.Sign(end.Y - current.Y);
+            // Try vertical bridge
+            int dirY = Math.Sign(end.Y - start.Y);
             if (dirY != 0)
             {
-                int y2 = current.Y;
-                int length = 0;
-                while (y2 >= 0 && y2 < height && IsRiver(new Point(x2, y2)))
+                int x = start.X;
+                int y = start.Y;
+                float cost = 0;
+                while (y >= 0 && y < height && IsRiver(new Point(x, y)))
                 {
-                    length++;
-                    y2 += dirY;
+                    cost += 1f;
+                    y += dirY;
                 }
 
-                if (length > 0 && y2 >= 0 && y2 < height)
-                    candidates.Add((new Point(x2, y2), length));
+                if (y >= 0 && y < height)
+                {
+                    cost += HeightCost(new Point(x, y), heightMap, width);
+                    candidates.Add((new Point(x, y), cost));
+                }
             }
 
             if (candidates.Count == 0)
                 return null;
 
-            // Choose the shortest bridge
-            var best = candidates.OrderBy(c => c.length).First();
+            // Choose the bridge with **lowest total cost**, favoring land
+            var best = candidates.OrderBy(c => c.totalCost).First();
 
-            // Make sure it actually moves forward
-            if (best.endTile == current) return null;
-
-            return best.endTile; // now guaranteed to be the first land tile on opposite bank
-        }
-
-        private static Point ChooseNextTileWithCostVariation(Point current, Point end, float[] heightMap, int width, Random random)
-        {
-            var neighbors = new List<Point>();
-
-            int dx = end.X - current.X;
-            int dy = end.Y - current.Y;
-
-            if (dx != 0) neighbors.Add(new Point(current.X + Math.Sign(dx), current.Y));
-            if (dy != 0) neighbors.Add(new Point(current.X, current.Y + Math.Sign(dy)));
-
-            var weightedNeighbors = new List<(Point point, float weight)>();
-            foreach (var n in neighbors)
-            {
-                float cost = GetTileCost(n, heightMap, width);
-                float variation = (float)(random.NextDouble() * 0.2); // small random tweak
-                float weight = (float)Math.Exp(-cost) * (1 + variation); // cheaper tiles get exponentially higher weight
-                weightedNeighbors.Add((n, weight));
-            }
-
-            float totalWeight = weightedNeighbors.Sum(w => w.weight);
-            float pick = (float)(random.NextDouble() * totalWeight);
-
-            float cumulative = 0f;
-            foreach (var w in weightedNeighbors)
-            {
-                cumulative += w.weight;
-                if (pick <= cumulative)
-                    return w.point;
-            }
-
-            return current; // fallback
+            return best.endTile;
         }
 
         private static float GetTileCost(Point p, float[] heightMap, int width)
