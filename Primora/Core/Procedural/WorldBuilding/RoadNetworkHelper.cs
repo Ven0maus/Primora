@@ -219,7 +219,8 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                 foreach (var neighbor in GetNeighbors(current, width, height))
                 {
-                    float cost = GetTileCostWithBridges(current, neighbor, heightMap, width, height, random);
+                    // Use enhanced cost function that prefers existing roads & avoids rivers
+                    float cost = GetTileCostWithBridges(current, neighbor, heightMap, width, height, roadPoints, end, random);
 
                     // Turn penalty for organic curves
                     if (cameFrom.TryGetValue(current, out var prev))
@@ -230,7 +231,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                         int dirY2 = neighbor.Y - current.Y;
 
                         if (dirX1 != dirX2 || dirY1 != dirY2)
-                            cost += 0.3f; // small turn penalty
+                            cost += 0.3f;
                     }
 
                     float tentativeG = gScore[current] + cost;
@@ -239,9 +240,9 @@ namespace Primora.Core.Procedural.WorldBuilding
                     {
                         cameFrom[neighbor] = current;
                         gScore[neighbor] = tentativeG;
-                        float heuristic = Heuristic(neighbor, end) * (1 + (float)(random.NextDouble() * 0.3 - 0.15));
-                        float priority = tentativeG + heuristic;
-                        openSet.Enqueue(neighbor, priority);
+                        // Heuristic with slight randomness for organic look
+                        float heuristic = Heuristic(neighbor, end) * (1 + (float)(random.NextDouble() * 0.2 - 0.1));
+                        openSet.Enqueue(neighbor, tentativeG + heuristic);
                     }
                 }
             }
@@ -265,33 +266,86 @@ namespace Primora.Core.Procedural.WorldBuilding
         private static float Heuristic(Point a, Point b) => Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
 
         // Cost function that prefers land but allows bridges
-        private static float GetTileCostWithBridges(Point from, Point to, float[] heightMap, int width, int height, Random random)
+        private static float GetTileCostWithBridges(
+            Point from,
+            Point to,
+            float[] heightMap,
+            int width,
+            int height,
+            HashSet<Point> existingRoads,
+            Point goal,
+            Random random)
         {
+            // 1️⃣ Base terrain cost
             float baseCost = HeightCost(to, heightMap, width);
 
+            // 2️⃣ River avoidance first
             if (IsRiver(to))
             {
-                // Check if a bridge can be placed
-                var bridgeEnd = FindBestBridge(to, from, width, height, heightMap);
+                var bridgeEnd = FindBestBridge(to, goal, width, height, heightMap);
                 if (bridgeEnd != null)
                 {
-                    // Crossing river via bridge is cheaper than swimming through river
+                    // Crossing via bridge is allowed, cheaper than swimming
                     baseCost = Math.Min(baseCost * 5f, 1.5f);
                 }
                 else
                 {
-                    // No bridge, very high cost
+                    // No bridge, very expensive
                     baseCost *= 10f;
                 }
             }
 
+            // 3️⃣ Gentle slope preference (valleys)
+            float slope = Math.Abs(HeightCost(to, heightMap, width) - HeightCost(from, heightMap, width));
+            float valleyBonus = 0.5f + 0.5f * (float)Math.Exp(-slope);
+            baseCost /= valleyBonus;
+
+            // 4️⃣ Terrain preference (lowlands preferred)
             float terrainPreference = 1 - Math.Max(0, (HeightCost(to, heightMap, width) - 1) * 0.5f);
             baseCost /= terrainPreference;
 
-            // Slight random variation for organic paths
-            baseCost *= 1 + (float)(random.NextDouble() * 0.2 - 0.1);
+            // 5️⃣ Existing road bonus
+            if (existingRoads.Contains(to))
+                baseCost *= 0.5f; // stepping on road is cheaper
+            if (existingRoads.Contains(from) && !existingRoads.Contains(to))
+                baseCost += 0.25f; // leaving road is slightly more expensive
+
+            // 6️⃣ Proximity to existing roads
+            float nearestRoadDist = DistanceToNearestRoad(to, existingRoads);
+            baseCost *= 1f - Math.Clamp(0.5f / (nearestRoadDist + 1), 0, 0.5f);
+
+            // 7️⃣ Directional bias toward goal
+            float dx = Math.Abs(to.X - goal.X);
+            float dy = Math.Abs(to.Y - goal.Y);
+            float distToGoal = dx + dy;
+            baseCost *= 1 + distToGoal * 0.01f; // small bias to encourage forward progress
+
+            // 8️⃣ Slight random variation for organic look
+            baseCost *= 1 + (float)(random.NextDouble() * 0.1 - 0.05);
 
             return baseCost;
+        }
+
+        private static float DistanceToNearestRoad(Point p, HashSet<Point> existingRoads)
+        {
+            if (existingRoads.Count == 0)
+                return float.MaxValue; // no roads yet
+
+            float minDistSq = float.MaxValue;
+
+            foreach (var roadPoint in existingRoads)
+            {
+                // Squared distance for efficiency
+                float dx = p.X - roadPoint.X;
+                float dy = p.Y - roadPoint.Y;
+                float distSq = dx * dx + dy * dy;
+
+                if (distSq < minDistSq)
+                    minDistSq = distSq;
+            }
+
+            // Return Euclidean distance
+            return (float)Math.Sqrt(minDistSq);
         }
 
         private static bool IsRiver(Point p) => World.Instance.WorldMap.GetTileInfo(p).Biome == Objects.Biome.River;
