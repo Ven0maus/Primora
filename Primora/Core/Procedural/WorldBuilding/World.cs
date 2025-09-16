@@ -67,6 +67,9 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         internal void ShowWorldMap()
         {
+            // Unloads the zone but remains in memory for X turns
+            CurrentZone = null;
+
             // Worldmap has a regular fontsize
             RootScreen.Instance.RenderingSurface.ResizeToFitFontSize(1f, true);
             WorldMap.Tilemap.Render(RootScreen.Instance.RenderingSurface);

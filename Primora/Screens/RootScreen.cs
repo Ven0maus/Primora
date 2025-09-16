@@ -90,7 +90,16 @@ namespace Primora.Screens
 
         private void RenderingSurface_MouseButtonClicked(object sender, SadConsole.Input.MouseScreenObjectState e)
         {
-            if (World.CurrentZone != null) return;
+            if (World.CurrentZone != null)
+            {
+                if (e.Mouse.RightClicked)
+                {
+                    // Go back to world map
+                    World.ShowWorldMap();
+                }
+                return;
+            }
+            if (!e.Mouse.LeftClicked) return;
 
             var pos = e.SurfaceCellPosition;
 
