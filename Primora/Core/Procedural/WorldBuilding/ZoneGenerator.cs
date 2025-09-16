@@ -1,5 +1,4 @@
-﻿using Primora.Core.Procedural.Common;
-using Primora.Core.Procedural.Objects;
+﻿using Primora.Core.Procedural.Objects;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -25,17 +24,21 @@ namespace Primora.Core.Procedural.WorldBuilding
                     GenerateForest(zone);
                     break;
 
+                case Biome.Hills:
+                case Biome.Mountains:
+                    GenerateMountains(zone);
+                    break;
+
+                case Biome.River:
+                    GenerateRiver(zone);
+                    break;
+
                 case Biome.Bridge:
                     GenerateBridge(zone);
                     break;
 
                 case Biome.Road:
                     GenerateRoad(zone);
-                    break;
-
-                case Biome.Hills:
-                case Biome.Mountains:
-                    GenerateMountains(zone);
                     break;
 
                 case Biome.Settlement:
@@ -51,11 +54,11 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private static void GenerateGrassland(Zone zone)
         {
+            SetBackgroundAsOriginBiomeColor(zone);
+
             var grassTiles = new[] { ';', '.', ',', '"', '\'', ':' };
-            var worldMap = World.Instance.WorldMap;
-            var worldTileInfo = worldMap.GetTileInfo(zone.WorldPosition);
+            var worldTileInfo = World.Instance.WorldMap.GetTileInfo(zone.WorldPosition);
             var random = zone.Random;
-            var neighborBackgrounds = CollectBiomeNeighborBackgrounds(worldMap, worldTileInfo.Origin, worldTileInfo.Biome, radius: 5);
 
             // Tall grass mask
             var tallGrassClustersMask = CreateClustersMask(random, zone.Width, zone.Height);
@@ -69,14 +72,14 @@ namespace Primora.Core.Procedural.WorldBuilding
                     var zoneTileInfo = zone.GetTileInfo(x, y);
                     var chance = random.Next(100);
 
-                    // Set background as the worldmap origin tile
-                    tile.Background = neighborBackgrounds[random.Next(neighborBackgrounds.Count)];
+                    // Set foreground as a variation on biome color
                     tile.Foreground = GetBiomeGlyphColor(tile.Background, worldTileInfo.Biome, random);
 
                     if (tallGrassClustersMask[x, y])
                     {
                         tile.Glyph = 157;
                         zoneTileInfo.Walkable = false;
+                        zoneTileInfo.ObstructView = true;
                     }
                     else if (chance < 25)
                     {
@@ -91,28 +94,140 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private static void GenerateForest(Zone zone)
         {
-            // Generate scattered grass glyphs, bushes, twigs, flowers
-            // Generate also patches of tall grass that cannot be tresspassed and blocks view
-        }
+            // Generate an initial grassland biome
+            GenerateGrassland(zone);
 
-        private static void GenerateSettlement(Zone zone)
-        {
+            var worldTileInfo = World.Instance.WorldMap.GetTileInfo(zone.WorldPosition);
+            var random = zone.Random;
 
+            // Adjust grassland and make it represent a forest
+            for (int x = 0; x < zone.Width; x++)
+            {
+                for (int y = 0; y < zone.Height; y++)
+                {
+                    var tile = zone.Tilemap.GetTile(x, y);
+                    var zoneTileInfo = zone.GetTileInfo(x, y);
+
+                    // Remove tall grass
+                    if (tile.Glyph == 157)
+                    {
+                        tile.Glyph = 0;
+                        zoneTileInfo.Walkable = true;
+                        zoneTileInfo.ObstructView = false;
+                    }
+
+                    // Random chance for a tree
+                    var chance = random.Next(100);
+                    if (chance < 10)
+                    {
+                        tile.Glyph = 6;
+                        tile.Foreground = GetBiomeGlyphColor(tile.Background, worldTileInfo.Biome, random);
+                        zoneTileInfo.Walkable = false;
+                        zoneTileInfo.ObstructView = true;
+                    }
+
+                    zone.Tilemap.SetTile(x, y, tile);
+                    zone.SetTileInfo(x, y, zoneTileInfo);
+                }
+            }
         }
 
         private static void GenerateMountains(Zone zone)
         {
+            SetBackgroundAsOriginBiomeColor(zone);
 
+            var worldTileInfo = World.Instance.WorldMap.GetTileInfo(zone.WorldPosition);
+            var random = zone.Random;
+
+            for (int x = 0; x < zone.Width; x++)
+            {
+                for (int y = 0; y < zone.Height; y++)
+                {
+                    var tile = zone.Tilemap.GetTile(x, y);
+                    var zoneTileInfo = zone.GetTileInfo(x, y);
+
+                    // Random chance for a rock
+                    var chance = random.Next(100);
+                    if (chance < 10)
+                    {
+                        tile.Glyph = 30;
+                        tile.Foreground = GetBiomeGlyphColor(tile.Background, worldTileInfo.Biome, random);
+                        zoneTileInfo.Walkable = false;
+                        zoneTileInfo.ObstructView = true;
+                    }
+
+                    zone.Tilemap.SetTile(x, y, tile);
+                    zone.SetTileInfo(x, y, zoneTileInfo);
+                }
+            }
+        }
+
+        private static void GenerateRiver(Zone zone)
+        {
+            SetBackgroundAsOriginBiomeColor(zone);
+
+            var worldTileInfo = World.Instance.WorldMap.GetTileInfo(zone.WorldPosition);
+            var random = zone.Random;
+
+            var waterGlyphs = new[] { 247, 126, 248, 249, 250 };
+            for (int x = 0; x < zone.Width; x++)
+            {
+                for (int y = 0; y < zone.Height; y++)
+                {
+                    var tile = zone.Tilemap.GetTile(x, y);
+                    var zoneTileInfo = zone.GetTileInfo(x, y);
+
+                    // Random chance for a rock
+                    var chance = random.Next(100);
+                    if (chance < 25)
+                    {
+                        tile.Glyph = waterGlyphs[random.Next(waterGlyphs.Length)];
+                        tile.Foreground = GetBiomeGlyphColor(tile.Background, worldTileInfo.Biome, random);
+                        zoneTileInfo.Walkable = false;
+                        zoneTileInfo.ObstructView = true;
+                    }
+
+                    zone.Tilemap.SetTile(x, y, tile);
+                    zone.SetTileInfo(x, y, zoneTileInfo);
+                }
+            }
+        }
+
+        private static void GenerateSettlement(Zone zone)
+        {
+            // TODO: Fix no variation because not always same biome neighbors
+            SetBackgroundAsOriginBiomeColor(zone);
         }
 
         private static void GenerateRoad(Zone zone)
         {
-
+            // TODO: Fix no variation because not always same biome neighbors
+            SetBackgroundAsOriginBiomeColor(zone);
         }
 
         private static void GenerateBridge(Zone zone)
         {
+            // TODO: Fix no variation because not always same biome neighbors
+            SetBackgroundAsOriginBiomeColor(zone);
+        }
 
+        private static void SetBackgroundAsOriginBiomeColor(Zone zone)
+        {
+            var worldMap = World.Instance.WorldMap;
+            var worldTileInfo = worldMap.GetTileInfo(zone.WorldPosition);
+            var random = zone.Random;
+            var neighborBackgrounds = CollectBiomeNeighborBackgrounds(worldMap, worldTileInfo.Origin, worldTileInfo.Biome, radius: 5);
+
+            for (int x = 0; x < zone.Width; x++)
+            {
+                for (int y = 0; y < zone.Height; y++)
+                {
+                    // Set background as the worldmap origin tile
+                    var tile = zone.Tilemap.GetTile(x, y);
+                    tile.Background = neighborBackgrounds[random.Next(neighborBackgrounds.Count)];
+                    zone.Tilemap.SetTile(x, y, tile);
+                }
+            }
         }
 
         private static bool[,] CreateClustersMask(Random random, int width, int height)

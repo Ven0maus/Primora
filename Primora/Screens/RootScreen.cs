@@ -103,7 +103,6 @@ namespace Primora.Screens
             if (!e.Mouse.LeftClicked) return;
 
             var coordinate = e.SurfaceCellPosition;
-            var worldTileInfo = World.WorldMap.GetTileInfo(coordinate);
             World.OpenZone(coordinate);
         }
 

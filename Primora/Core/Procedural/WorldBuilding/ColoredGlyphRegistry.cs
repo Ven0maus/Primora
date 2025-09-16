@@ -92,7 +92,7 @@ namespace Primora.Core.Procedural.WorldBuilding
     internal readonly struct GlyphKey(int glyph, Color fg, Color bg, Mirror mirror) : IEquatable<GlyphKey>
     {
         public int Glyph { get; } = glyph;
-        public Color Foreground { get; } = fg;
+        public Color Foreground { get; } = glyph == 0 ? Color.Transparent : fg;
         public Color Background { get; } = bg;
         public Mirror Mirror { get; } = mirror;
 
