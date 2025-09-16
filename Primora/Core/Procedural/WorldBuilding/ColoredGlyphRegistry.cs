@@ -1,5 +1,4 @@
 ﻿using SadConsole;
-using SadConsole.UI;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -19,6 +18,15 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         internal static int CachedRetrievals { get; private set; }
 
+        /// <summary>
+        /// Gets a cached ColoredGylph similar to the provided one, or creates a new one.
+        /// <br>Color values will be quantized to 256 shade range instead of 16 million for memory reduction.</br>
+        /// </summary>
+        /// <param name="glyph"></param>
+        /// <param name="foreground"></param>
+        /// <param name="background"></param>
+        /// <param name="mirror"></param>
+        /// <returns></returns>
         internal static ColoredGlyph GetOrCreate(int glyph, Color foreground, Color background, Mirror mirror = Mirror.None)
         {
             var quantizedFg = Quantize(foreground);
