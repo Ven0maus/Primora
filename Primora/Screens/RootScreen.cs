@@ -97,7 +97,7 @@ namespace Primora.Screens
                     // Go back to world map
                     World.ShowWorldMap();
                 }
-                return;
+                return; 
             }
             if (!e.Mouse.LeftClicked) return;
 

@@ -3,6 +3,7 @@ using Primora.Core.Procedural.Objects;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -75,19 +76,24 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal static Zone LoadZone(Point worldPosition)
         {
             if (_zoneCache.TryGetValue(worldPosition, out var zone))
+            {
+                Debug.WriteLine($"Retrieved zone from cache: {worldPosition}");
                 return zone;
+            }
             else
                 return GenerateZone(worldPosition);
         }
 
-        private static Zone GenerateZone(Point point)
+        private static Zone GenerateZone(Point worldPosition)
         {
             // Create a complete new zone and generate it
-            var zone = new Zone(point, World.DefaultZoneWidth, World.DefaultZoneHeight);
+            var zone = new Zone(worldPosition, World.DefaultZoneWidth, World.DefaultZoneHeight);
             zone.Generate();
 
+            Debug.WriteLine($"Generated new zone: {worldPosition}");
+
             // Add zone to the cache for 120 turns
-            _zoneCache[point, 120] = zone;
+            _zoneCache[worldPosition, 120] = zone;
             return zone;
         }
     }
