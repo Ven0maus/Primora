@@ -1,9 +1,11 @@
-﻿using Primora.Core.Procedural.Objects;
+﻿using Primora.Core.Procedural.Common;
+using Primora.Core.Procedural.Objects;
 using Primora.Extensions;
 using Primora.Screens;
 using SadConsole;
 using SadRogue.Primitives;
 using System;
+using System.Diagnostics;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -25,6 +27,8 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal Zone CurrentZone { get; private set; }
         internal static int DefaultZoneWidth { get; private set; }
         internal static int DefaultZoneHeight { get; private set; }
+
+        private static readonly TickDictionary<Point, Zone> _zoneCache = [];
 
         internal World(int width, int height)
         {
@@ -51,15 +55,6 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             // Start initial world generation
             WorldMap.Generate();
-
-            // Show the world map as default view
-            ShowWorldMap();
-        }
-
-        internal void LoadZone(Point position)
-        {
-            CurrentZone = Zone.LoadZone(position);
-            ShowCurrentZone();
         }
 
         /// <summary>
@@ -83,6 +78,29 @@ namespace Primora.Core.Procedural.WorldBuilding
             // Zone has a larger fontsize
             RootScreen.Instance.RenderingSurface.ResizeToFitFontSize(2f, true);
             CurrentZone.Tilemap.Render(RootScreen.Instance.RenderingSurface);
+        }
+
+        /// <summary>
+        /// Opens a zone, and caches it for 120 turns (starts ticking when zone is unloaded.)
+        /// <br>When TTL is reached, zone is removed from the cache. Next time the same zone is opened it generates a new one from a new seed.</br>
+        /// <br>The generated zones remain deterministic per gameseed (so generating the same zone 5 times will have different generate "different" zones, 
+        /// but when starting a new game with the same seed will guarantee the same layouts to be generated in the same order.)</br>
+        /// </summary>
+        /// <param name="worldPosition"></param>
+        internal void OpenZone(Point worldPosition)
+        {
+            const int cacheTTL = 120; // 120 turns
+            if (!_zoneCache.TryGetValue(worldPosition, out var zone))
+            {
+                // Create new zone and generate it.
+                zone = new Zone(worldPosition, DefaultZoneWidth, DefaultZoneHeight);
+                zone.Generate();
+
+                // Add to cache
+                _zoneCache[worldPosition, cacheTTL] = zone;
+            }
+            CurrentZone = zone;
+            ShowCurrentZone();
         }
     }
 }

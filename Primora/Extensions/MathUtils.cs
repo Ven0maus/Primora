@@ -1,5 +1,4 @@
-﻿using SadConsole.UI;
-using SadRogue.Primitives;
+﻿using SadRogue.Primitives;
 using System;
 using System.Text.Json;
 
@@ -7,6 +6,28 @@ namespace Primora.Extensions
 {
     internal static class MathUtils
     {
+        /// <summary>
+        /// Returns a deterministic hash value.
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        public static int Fnv1aHash(params int[] values)
+        {
+            unchecked
+            {
+                const int fnvPrime = 16777619;
+                int hash = (int)2166136261;
+
+                foreach (var v in values)
+                {
+                    hash ^= v;
+                    hash *= fnvPrime;
+                }
+
+                return hash;
+            }
+        }
+
         public static float Clamp01(float value)
         {
             if (value < 0f) return 0f;

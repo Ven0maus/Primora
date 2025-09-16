@@ -90,6 +90,7 @@ namespace Primora.Screens
 
         private void RenderingSurface_MouseButtonClicked(object sender, SadConsole.Input.MouseScreenObjectState e)
         {
+            // TODO: Rework into fast travel, properly going into zones, this is just for testing purposes at the moment.
             if (World.CurrentZone != null)
             {
                 if (e.Mouse.RightClicked)
@@ -101,11 +102,9 @@ namespace Primora.Screens
             }
             if (!e.Mouse.LeftClicked) return;
 
-            var pos = e.SurfaceCellPosition;
-
-            var worldTileInfo = World.WorldMap.GetTileInfo(pos);
-            Debug.WriteLine($"Loading zone{pos} biome({worldTileInfo.Biome})");
-            World.LoadZone(pos);
+            var coordinate = e.SurfaceCellPosition;
+            var worldTileInfo = World.WorldMap.GetTileInfo(coordinate);
+            World.OpenZone(coordinate);
         }
 
         /// <summary>
@@ -121,6 +120,7 @@ namespace Primora.Screens
         {
             // TODO: Show a fancy loading bar?
             World.Generate();
+            World.ShowWorldMap();
         }
     }
 }

@@ -1,9 +1,9 @@
 ﻿using Primora.Core.Procedural.Common;
 using Primora.Core.Procedural.Objects;
+using Primora.Extensions;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -16,7 +16,10 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal readonly Random Random; 
         internal readonly Tilemap Tilemap;
 
-        private static readonly TickDictionary<Point, Zone> _zoneCache = [];
+        /// <summary>
+        /// Keeps a counter, so each distinct generation will be unique. But still based on the game seed.
+        /// <br>This guarantees multiple games on the same seed to generate in the same order.</br>
+        /// </summary>
         private static readonly Dictionary<Point, int> _zoneLoadCount = [];
 
         internal Zone(Point zonePosition, int width, int height)
@@ -25,7 +28,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             _zoneTileInfo = new ZoneTileInfo[width * height];
 
             // Generate the random based on times we visited this zone (completely regenerated, not from cache)
-            Random = new Random(HashCode.Combine(Constants.General.GameSeed, WorldPosition.X, WorldPosition.Y,
+            Random = new Random(MathUtils.Fnv1aHash(Constants.General.GameSeed, WorldPosition.X, WorldPosition.Y,
                 _zoneLoadCount.TryGetValue(zonePosition, out var count) ? count : 0));
 
             Width = width;
@@ -83,30 +86,6 @@ namespace Primora.Core.Procedural.WorldBuilding
                     SetTileInfo(x, y, new ZoneTileInfo(new Point(x, y)));
                 }
             }
-        }
-
-        internal static Zone LoadZone(Point worldPosition)
-        {
-            if (_zoneCache.TryGetValue(worldPosition, out var zone))
-            {
-                Debug.WriteLine($"Retrieved zone from cache: {worldPosition}");
-                return zone;
-            }
-            else
-                return GenerateZone(worldPosition);
-        }
-
-        private static Zone GenerateZone(Point worldPosition)
-        {
-            // Create a complete new zone and generate it
-            var zone = new Zone(worldPosition, World.DefaultZoneWidth, World.DefaultZoneHeight);
-            zone.Generate();
-
-            Debug.WriteLine($"Generated new zone: {worldPosition}");
-
-            // Add zone to the cache for 120 turns
-            _zoneCache[worldPosition, 120] = zone;
-            return zone;
         }
     }
 }
