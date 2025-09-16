@@ -24,7 +24,6 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // Step 1: Town center
             Point townCenter = new Point(width / 2, height / 2);
-            zone.Tilemap.SetTile(townCenter.X, townCenter.Y, new ColoredGlyph { Glyph = '*', Foreground = Color.Yellow });
 
             // Step 2: Town Hall in front of plaza
             var buildings = new List<Building>();
