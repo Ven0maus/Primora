@@ -13,7 +13,7 @@ namespace Primora.Core.Procedural.Common
     {
         internal readonly int Width, Height;
 
-        private readonly ColoredGlyph[] _tiles;
+        private readonly GlyphKey[] _tiles;
 
         private static readonly Point[] _cardinalDirections =
         [
@@ -38,7 +38,7 @@ namespace Primora.Core.Procedural.Common
             Height = height;
 
             // Setup internal tiles array
-            _tiles = new ColoredGlyph[Width * Height];
+            _tiles = new GlyphKey[Width * Height];
         }
 
         /// <summary>
@@ -71,7 +71,8 @@ namespace Primora.Core.Procedural.Common
             if (!InBounds(x, y))
                 throw new Exception($"Point ({x}, {y}) is out of bounds of the world.");
 
-            return (ColoredGlyph)_tiles[Point.ToIndex(x, y, Width)].Clone();
+            // Returns a clone, so modifying it has no effect
+            return (ColoredGlyph)ColoredGlyphRegistry.GetOrCreate(_tiles[Point.ToIndex(x, y, Width)]).Clone();
         }
 
         /// <summary>
@@ -80,7 +81,7 @@ namespace Primora.Core.Procedural.Common
         /// <param name="point"></param>
         /// <returns></returns>
         internal ColoredGlyph GetTile(Point point)
-            => (ColoredGlyph)GetTile(point.X, point.Y).Clone();
+            => GetTile(point.X, point.Y);
 
         /// <summary>
         /// Sets the specified tile at the specified coordinates.
@@ -95,13 +96,14 @@ namespace Primora.Core.Procedural.Common
                 throw new Exception($"Point ({x}, {y}) is out of bounds of the world.");
 
             var index = Point.ToIndex(x, y, Width);
+            var key = ColoredGlyphRegistry.AsGlyphKey(tile);
 
             // Return when tile is not modified
             var currentTile = _tiles[index];
-            if (currentTile == tile) return;
+            if (currentTile.Equals(key)) return;
 
             // Set new tile cached from registry to reduce memory footprint
-            _tiles[index] = ColoredGlyphRegistry.GetOrCreate(tile.Glyph, tile.Foreground, tile.Background, tile.Mirror);
+            _tiles[index] = key;
         }
 
         /// <summary>
@@ -122,11 +124,9 @@ namespace Primora.Core.Procedural.Common
             {
                 for (int y = 0; y < Height; y++)
                 {
-                    var tile = GetTile(x, y);
-                    if (tile == null)
-                        surface.Clear(x, y);
-                    else
-                        surface.SetCellAppearance(x, y, tile);
+                    // Returns the non cloned unique glyph from the registry
+                    var tile = ColoredGlyphRegistry.GetOrCreate(_tiles[Point.ToIndex(x, y, Width)]);
+                    surface.SetCellAppearance(x, y, tile);
                 }
             }
         }

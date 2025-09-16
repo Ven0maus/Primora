@@ -29,20 +29,47 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// <returns></returns>
         internal static ColoredGlyph GetOrCreate(int glyph, Color foreground, Color background, Mirror mirror = Mirror.None)
         {
-            var quantizedFg = Quantize(foreground);
-            var quantizedBg = Quantize(background);
+            var key = AsGlyphKey(glyph, foreground, background, mirror);
+            return GetOrCreate(key);
+        }
 
-            var key = new GlyphKey(glyph, quantizedFg, quantizedBg, mirror);
+        /// <summary>
+        /// Gets a cached ColoredGylph similar to the provided one, or creates a new one.
+        /// <br>Color values will be quantized to 256 shade range instead of 16 million for memory reduction.</br>
+        /// </summary>
+        /// <param name="glyph"></param>
+        /// <param name="foreground"></param>
+        /// <param name="background"></param>
+        /// <param name="mirror"></param>
+        /// <returns></returns>
+        internal static ColoredGlyph GetOrCreate(GlyphKey key)
+        {
             if (!_registry.TryGetValue(key, out var coloredGlyph))
             {
                 ++NewlyCreated;
-                _registry[key] = coloredGlyph = new ColoredGlyph(quantizedFg, quantizedBg, glyph, mirror);
+                _registry[key] = coloredGlyph = new ColoredGlyph(key.Foreground, key.Background, key.Glyph, key.Mirror);
             }
             else
             {
                 ++CachedRetrievals;
             }
             return coloredGlyph;
+        }
+
+        internal static GlyphKey AsGlyphKey(int glyph, Color foreground, Color background, Mirror mirror = Mirror.None)
+        {
+            var quantizedFg = Quantize(foreground);
+            var quantizedBg = Quantize(background);
+
+            return new GlyphKey(glyph, quantizedFg, quantizedBg, mirror);
+        }
+
+        internal static GlyphKey AsGlyphKey(ColoredGlyph coloredGlyph)
+        {
+            var quantizedFg = Quantize(coloredGlyph.Foreground);
+            var quantizedBg = Quantize(coloredGlyph.Background);
+
+            return new GlyphKey(coloredGlyph.Glyph, quantizedFg, quantizedBg, coloredGlyph.Mirror);
         }
 
         /// <summary>
@@ -60,25 +87,28 @@ namespace Primora.Core.Procedural.WorldBuilding
                 (input.B / step) * step
             );
         }
+    }
 
-        readonly struct GlyphKey(int glyph, Color fg, Color bg, Mirror mirror) : IEquatable<GlyphKey>
-        {
-            public int Glyph { get; } = glyph;
-            public Color Foreground { get; } = fg;
-            public Color Background { get; } = bg;
-            public Mirror Mirror { get; } = mirror;
+    internal readonly struct GlyphKey(int glyph, Color fg, Color bg, Mirror mirror) : IEquatable<GlyphKey>
+    {
+        public int Glyph { get; } = glyph;
+        public Color Foreground { get; } = fg;
+        public Color Background { get; } = bg;
+        public Mirror Mirror { get; } = mirror;
 
-            public bool Equals(GlyphKey other) =>
-                Glyph == other.Glyph &&
-                Foreground.Equals(other.Foreground) &&
-                Background.Equals(other.Background) &&
-                Mirror == other.Mirror;
+        public GlyphKey() : this(0, Color.Transparent, Color.Black, Mirror.None)
+        { }
 
-            public override bool Equals(object? obj) =>
-                obj is GlyphKey other && Equals(other);
+        public bool Equals(GlyphKey other) =>
+            Glyph == other.Glyph &&
+            Foreground.Equals(other.Foreground) &&
+            Background.Equals(other.Background) &&
+            Mirror == other.Mirror;
 
-            public override int GetHashCode() =>
-                HashCode.Combine(Glyph, Foreground, Background, Mirror);
-        }
+        public override bool Equals(object? obj) =>
+            obj is GlyphKey other && Equals(other);
+
+        public override int GetHashCode() =>
+            HashCode.Combine(Glyph, Foreground, Background, Mirror);
     }
 }
