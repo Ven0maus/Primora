@@ -177,7 +177,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     var tile = zone.Tilemap.GetTile(x, y);
                     var zoneTileInfo = zone.GetTileInfo(x, y);
 
-                    // Random chance for a rock
+                    // Random chance for a river tile
                     var chance = random.Next(100);
                     if (chance < 25)
                     {
@@ -197,6 +197,8 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             // TODO: Fix no variation because not always same biome neighbors
             SetBackgroundAsOriginBiomeColor(zone);
+
+            SettlementHelper.GenerateSettlement(zone);
         }
 
         private static void GenerateRoad(Zone zone)

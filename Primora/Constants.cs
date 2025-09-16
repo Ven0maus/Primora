@@ -20,6 +20,7 @@ namespace Primora
 
         internal static class Zone
         {
+            internal const float ZoneSizeModifier = 1.5f; // increase by half original
             internal const int ZoneCacheTTLInTurns = 120;
         }
 

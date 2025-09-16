@@ -1,11 +1,9 @@
 ﻿using Primora.Core.Procedural.Common;
-using Primora.Core.Procedural.Objects;
 using Primora.Extensions;
 using Primora.Screens;
 using SadConsole;
 using SadRogue.Primitives;
 using System;
-using System.Diagnostics;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -42,7 +40,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // Just used as a helper to collect the zone width/height
             var surface = new ScreenSurface(width, height);
-            surface.ResizeToFitFontSize(IFont.Sizes.Two);
+            surface.ResizeToFitFontSize(Constants.Zone.ZoneSizeModifier);
 
             DefaultZoneWidth = surface.Width;
             DefaultZoneHeight = surface.Height;
@@ -65,7 +63,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             // Unloads the zone but remains in memory for X turns
             CurrentZone = null;
 
-            // Worldmap has a regular fontsize
+            // Worldmap has a regular fontsize (1 size)
             RootScreen.Instance.RenderingSurface.ResizeToFitFontSize(1f, true);
             WorldMap.Tilemap.Render(RootScreen.Instance.RenderingSurface);
         }
@@ -76,7 +74,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal void ShowCurrentZone()
         {
             // Zone has a larger fontsize
-            RootScreen.Instance.RenderingSurface.ResizeToFitFontSize(2f, true);
+            RootScreen.Instance.RenderingSurface.ResizeToFitFontSize(Constants.Zone.ZoneSizeModifier, true);
             CurrentZone.Tilemap.Render(RootScreen.Instance.RenderingSurface);
         }
 
