@@ -1,6 +1,7 @@
 ﻿using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
 using SadConsole;
+using SadRogue.Primitives;
 using System;
 using System.Diagnostics;
 
@@ -23,6 +24,8 @@ namespace Primora.Screens
         /// </summary>
         internal readonly World World;
 
+        private Point? _currentHoverTile;
+
         public RootScreen()
         {
             if (Instance != null) 
@@ -44,9 +47,56 @@ namespace Primora.Screens
             // Add a glyph selector popup for development purposes
             SadConsole.UI.Windows.GlyphSelectPopup.AddRootComponent(SadConsole.Input.Keys.F11);
 #endif
+            RenderingSurface.MouseMove += RenderingSurface_MouseMove;
+            RenderingSurface.MouseExit += RenderingSurface_MouseExit;
+            RenderingSurface.MouseButtonClicked += RenderingSurface_MouseButtonClicked;
 
             // Testing:
             StartGame();
+        }
+
+        private void RenderingSurface_MouseExit(object sender, SadConsole.Input.MouseScreenObjectState e)
+        {
+            // Clear previous
+            var prev = _currentHoverTile;
+            if (prev != null)
+            {
+                RenderingSurface.ClearDecorators(prev.Value.X, prev.Value.Y, 1);
+                _currentHoverTile = null;
+            }
+        }
+
+        private void RenderingSurface_MouseMove(object sender, SadConsole.Input.MouseScreenObjectState e)
+        {
+            var pos = e.SurfaceCellPosition;
+
+            // Clear previous
+            var prev = _currentHoverTile;
+            if (prev != null)
+            {
+                RenderingSurface.ClearDecorators(prev.Value.X, prev.Value.Y, 1);
+                _currentHoverTile = null;
+            }
+
+            if (_currentHoverTile != null && pos == _currentHoverTile) return;
+
+            if (pos.X >= 0 && pos.Y >= 0 && pos.X < RenderingSurface.Width && pos.Y < RenderingSurface.Height)
+            {
+                // Set current
+                _currentHoverTile = pos;
+                RenderingSurface.SetDecorator(pos.X, pos.Y, 1, new CellDecorator(Color.Black, 255, Mirror.None));
+            }
+        }
+
+        private void RenderingSurface_MouseButtonClicked(object sender, SadConsole.Input.MouseScreenObjectState e)
+        {
+            if (World.CurrentZone != null) return;
+
+            var pos = e.SurfaceCellPosition;
+
+            var worldTileInfo = World.WorldMap.GetTileInfo(pos);
+            Debug.WriteLine($"Loading zone{pos} biome({worldTileInfo.Biome})");
+            World.LoadZone(pos);
         }
 
         /// <summary>

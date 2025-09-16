@@ -74,7 +74,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                     if (tallGrassClustersMask[x, y])
                     {
-                        tile.Glyph = '#';
+                        tile.Glyph = 157;
 
                     }
                     else if (chance < 25)

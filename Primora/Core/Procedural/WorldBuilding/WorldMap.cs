@@ -273,10 +273,14 @@ namespace Primora.Core.Procedural.WorldBuilding
                         tile.Glyph = random.Next(2) == 0 ? 94 : 30;
                         tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
                     }
-                    else if ((biome == Biome.Grassland || biome == Biome.Woodland || biome == Biome.Forest) && random.Next(100) < 20)
+                    else if ((biome == Biome.Grassland || biome == Biome.Woodland || biome == Biome.Forest))
                     {
-                        tile.Glyph = grassTiles[random.Next(grassTiles.Length)];
-                        tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                        if (random.Next(100) < 20)
+                        {
+                            // Add some variation tiles
+                            tile.Glyph = grassTiles[random.Next(grassTiles.Length)];
+                            tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
+                        }
                         tileInfo.Biome = Biome.Grassland; // When no trees, woodland and forest becomes grassland
                     }
                 }
