@@ -53,6 +53,9 @@ namespace Primora.Screens
 
             // Testing:
             StartGame();
+
+            Debug.WriteLine("Newly Created: " + ColoredGlyphRegistry.NewlyCreated);
+            Debug.WriteLine("Cached Retrievals: " + ColoredGlyphRegistry.CachedRetrievals);
         }
 
         private void RenderingSurface_MouseExit(object sender, SadConsole.Input.MouseScreenObjectState e)
@@ -96,6 +99,9 @@ namespace Primora.Screens
                 {
                     // Go back to world map
                     World.ShowWorldMap();
+
+                    Debug.WriteLine("Newly Created: " + ColoredGlyphRegistry.NewlyCreated);
+                    Debug.WriteLine("Cached Retrievals: " + ColoredGlyphRegistry.CachedRetrievals);
                 }
                 return; 
             }
@@ -106,6 +112,9 @@ namespace Primora.Screens
             var worldTileInfo = World.WorldMap.GetTileInfo(pos);
             Debug.WriteLine($"Loading zone{pos} biome({worldTileInfo.Biome})");
             World.LoadZone(pos);
+
+            Debug.WriteLine("Newly Created: " + ColoredGlyphRegistry.NewlyCreated);
+            Debug.WriteLine("Cached Retrievals: " + ColoredGlyphRegistry.CachedRetrievals);
         }
 
         /// <summary>

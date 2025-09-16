@@ -283,6 +283,8 @@ namespace Primora.Core.Procedural.WorldBuilding
                         }
                         tileInfo.Biome = Biome.Grassland; // When no trees, woodland and forest becomes grassland
                     }
+
+                    Tilemap.SetTile(x, y, tile);
                 }
             }
         }
@@ -680,6 +682,8 @@ namespace Primora.Core.Procedural.WorldBuilding
                 float blend = 0.45f;
                 tile.Background = Color.Lerp(riverColor, biome, blend);
 
+                Tilemap.SetTile(coordinate, tile);
+
                 var tileInfo = GetTileInfo(coordinate);
                 tileInfo.Biome = Biome.River;
                 tileInfo.HasWaterResource = true;
@@ -703,6 +707,8 @@ namespace Primora.Core.Procedural.WorldBuilding
                 tile.Glyph = glyph;
                 tile.Foreground = GetBiomeGlyphColor("#A1866F".HexToColor(), Biome.Road, random);
 
+                Tilemap.SetTile(coordinate, tile);
+
                 var tileInfo = GetTileInfo(coordinate);
                 if (tileInfo.Biome == Biome.River)
                 {
@@ -721,6 +727,8 @@ namespace Primora.Core.Procedural.WorldBuilding
                 var tile = Tilemap.GetTile(coordinate);
                 tile.Glyph = 127;
                 tile.Foreground = Color.White;
+
+                Tilemap.SetTile(coordinate, tile);
 
                 var tileInfo = GetTileInfo(coordinate);
                 tileInfo.Biome = Biome.Settlement;

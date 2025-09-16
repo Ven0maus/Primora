@@ -81,6 +81,8 @@ namespace Primora.Core.Procedural.WorldBuilding
                     {
                         tile.Glyph = grassTiles[random.Next(grassTiles.Length)];
                     }
+
+                    zone.Tilemap.SetTile(x, y, tile);
                 }
             }
         }

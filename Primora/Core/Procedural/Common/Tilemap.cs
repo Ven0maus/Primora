@@ -1,4 +1,4 @@
-﻿using Primora.Core.Procedural.Objects;
+﻿using Primora.Core.Procedural.WorldBuilding;
 using SadConsole;
 using SadRogue.Primitives;
 using System;
@@ -71,7 +71,7 @@ namespace Primora.Core.Procedural.Common
             if (!InBounds(x, y))
                 throw new Exception($"Point ({x}, {y}) is out of bounds of the world.");
 
-            return _tiles[Point.ToIndex(x, y, Width)];
+            return (ColoredGlyph)_tiles[Point.ToIndex(x, y, Width)].Clone();
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Primora.Core.Procedural.Common
         /// <param name="point"></param>
         /// <returns></returns>
         internal ColoredGlyph GetTile(Point point)
-            => GetTile(point.X, point.Y);
+            => (ColoredGlyph)GetTile(point.X, point.Y).Clone();
 
         /// <summary>
         /// Sets the specified tile at the specified coordinates.
@@ -100,8 +100,8 @@ namespace Primora.Core.Procedural.Common
             var currentTile = _tiles[index];
             if (currentTile == tile) return;
 
-            // Set new tile
-            _tiles[index] = tile;
+            // Set new tile cached from registry to reduce memory footprint
+            _tiles[index] = ColoredGlyphRegistry.GetOrCreate(tile.Glyph, tile.Foreground, tile.Background, tile.Mirror);
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace Primora.Core.Procedural.Common
             {
                 for (int y = 0; y < Height; y++)
                 {
-                    var tile = _tiles[Point.ToIndex(x, y, Width)];
+                    var tile = GetTile(x, y);
                     if (tile == null)
                         surface.Clear(x, y);
                     else
