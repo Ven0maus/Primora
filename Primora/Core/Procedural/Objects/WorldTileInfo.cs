@@ -2,12 +2,12 @@
 
 namespace Primora.Core.Procedural.Objects
 {
-    internal class WorldTileInfo
+    internal struct WorldTileInfo(Point origin, Biome biome)
     {
-        internal Point Origin { get; set; }
-        internal Biome Biome { get; set; }
-        internal bool HasTreeResource { get; set; }
-        internal bool HasWaterResource { get; set; }
-        internal bool Walkable { get; set; } = true;
+        internal Point Origin = origin;
+        internal Biome Biome = biome;
+        internal bool HasTreeResource = false;
+        internal bool HasWaterResource = false;
+        internal bool Walkable = true;
     }
 }

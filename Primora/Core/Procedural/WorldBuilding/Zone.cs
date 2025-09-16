@@ -57,18 +57,30 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal ZoneTileInfo GetTileInfo(Point position)
             => GetTileInfo(position.X, position.Y);
 
+        internal void SetTileInfo(int x, int y, ZoneTileInfo zoneTileInfo)
+        {
+            if (!InBounds(x, y)) return;
+            _zoneTileInfo[Point.ToIndex(x, y, Width)] = zoneTileInfo;
+        }
+
+        internal void SetTileInfo(Point position, ZoneTileInfo zoneTileInfo)
+            => SetTileInfo(position.X, position.Y, zoneTileInfo);
+
+        internal bool InBounds(int x, int y)
+        {
+            return x >= 0 && y >= 0 && x < Width && y < Height;
+        }
+
+        internal bool InBounds(Point position)
+            => InBounds(position.X, position.Y);
+
         private void InitTilemap()
         {
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
                 {
-                    Tilemap.SetTile(x, y, new SadConsole.ColoredGlyph
-                    {
-                        Glyph = 0,
-                        Foreground = Color.White,
-                        Background = Color.Black
-                    });
+                    SetTileInfo(x, y, new ZoneTileInfo(new Point(x, y)));
                 }
             }
         }

@@ -1,11 +1,11 @@
-﻿using System.Drawing;
+﻿using SadRogue.Primitives;
 
 namespace Primora.Core.Procedural.Objects
 {
-    internal class ZoneTileInfo
+    internal struct ZoneTileInfo(Point origin)
     {
-        public Point Origin { get; set; }
-        public bool Walkable { get; set; } = true;
-        public bool ObstructView { get; set; } = false;
+        public Point Origin = origin;
+        public bool Walkable = true;
+        public bool ObstructView = false;
     }
 }

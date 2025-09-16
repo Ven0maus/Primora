@@ -66,6 +66,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 for (int y = 0; y < zone.Height; y++)
                 {
                     var tile = zone.Tilemap.GetTile(x, y);
+                    var zoneTileInfo = zone.GetTileInfo(x, y);
                     var chance = random.Next(100);
 
                     // Set background as the worldmap origin tile
@@ -75,7 +76,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     if (tallGrassClustersMask[x, y])
                     {
                         tile.Glyph = 157;
-
+                        zoneTileInfo.Walkable = false;
                     }
                     else if (chance < 25)
                     {
@@ -83,6 +84,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     }
 
                     zone.Tilemap.SetTile(x, y, tile);
+                    zone.SetTileInfo(x, y, zoneTileInfo);
                 }
             }
         }
@@ -373,7 +375,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             var results = new List<Color>
             {
-                worldMap.GetTile(origin).Background // Include origin tile
+                worldMap.Tilemap.GetTile(origin).Background // Include origin tile
             };
 
             for (int dx = -radius; dx <= radius; dx++)
@@ -386,7 +388,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                     if (!worldMap.InBounds(pos)) continue;
 
                     var neighborInfo = worldMap.GetTileInfo(pos);
-                    var neighborTile = worldMap.GetTile(pos);
+                    var neighborTile = worldMap.Tilemap.GetTile(pos);
 
                     if (neighborInfo.Biome == biome)
                         results.Add(neighborTile.Background);

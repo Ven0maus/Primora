@@ -48,23 +48,24 @@ namespace Primora.Core.Procedural.WorldBuilding
             => GetTileInfo(position.X, position.Y);
 
         /// <summary>
-        /// Gets the tile in the tilemap of the worldmap.
+        /// Sets the new world tile info at the specified coordinate on the worldmap.
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
-        /// <returns></returns>
-        internal ColoredGlyph GetTile(int x, int y)
+        /// <param name="worldTileInfo"></param>
+        internal void SetTileInfo(int x, int y, WorldTileInfo worldTileInfo)
         {
-            return Tilemap.GetTile(x, y);
+            if (!InBounds(x, y)) return;
+            _tileInfo[Point.ToIndex(x, y, Width)] = worldTileInfo;
         }
 
         /// <summary>
-        /// Gets the tile in the tilemap of the worldmap.
+        /// Sets the new world tile info at the specified coordinate on the worldmap.
         /// </summary>
         /// <param name="position"></param>
-        /// <returns></returns>
-        internal ColoredGlyph GetTile(Point position)
-            => Tilemap.GetTile(position.X, position.Y);
+        /// <param name="worldTileInfo"></param>
+        internal void SetTileInfo(Point position, WorldTileInfo worldTileInfo)
+            => SetTileInfo(position.X, position.Y, worldTileInfo);
 
         internal bool InBounds(int x, int y)
         {
@@ -242,7 +243,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 for (int y=0; y < Height; y++)
                 {
-                    _tileInfo[Point.ToIndex(x, y, Width)] = new WorldTileInfo { Origin = new Point(x, y), Biome = biomeMap[x, y] };
+                    _tileInfo[Point.ToIndex(x, y, Width)] = new WorldTileInfo(new Point(x, y), biomeMap[x, y]);
                 }
             }
         }
@@ -258,15 +259,15 @@ namespace Primora.Core.Procedural.WorldBuilding
                 for (int y = 0; y < Height; y++)
                 {
                     var tile = Tilemap.GetTile(x, y);
-                    var tileInfo = GetTileInfo(x, y);
-                    var biome = tileInfo.Biome;
+                    var worldTileInfo = GetTileInfo(x, y);
+                    var biome = worldTileInfo.Biome;
 
                     if (treeMask[x, y])
                     {
                         tile.Glyph = 6; // Tree glyph
                         tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
-                        tileInfo.Biome = Biome.Forest; // Turn into forest, regardless of biome
-                        tileInfo.HasTreeResource = true;
+                        worldTileInfo.Biome = Biome.Forest; // Turn into forest, regardless of biome
+                        worldTileInfo.HasTreeResource = true;
                     }
                     else if ((biome == Biome.Hills || biome == Biome.Mountains) && random.Next(100) < 20)
                     {
@@ -281,9 +282,10 @@ namespace Primora.Core.Procedural.WorldBuilding
                             tile.Glyph = grassTiles[random.Next(grassTiles.Length)];
                             tile.Foreground = GetBiomeGlyphColor(tile.Background, biome, random);
                         }
-                        tileInfo.Biome = Biome.Grassland; // When no trees, woodland and forest becomes grassland
+                        worldTileInfo.Biome = Biome.Grassland; // When no trees, woodland and forest becomes grassland
                     }
 
+                    SetTileInfo(x, y, worldTileInfo);
                     Tilemap.SetTile(x, y, tile);
                 }
             }
@@ -684,10 +686,11 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                 Tilemap.SetTile(coordinate, tile);
 
-                var tileInfo = GetTileInfo(coordinate);
-                tileInfo.Biome = Biome.River;
-                tileInfo.HasWaterResource = true;
-                tileInfo.Walkable = false;
+                var worldTileInfo = GetTileInfo(coordinate);
+                worldTileInfo.Biome = Biome.River;
+                worldTileInfo.HasWaterResource = true;
+                worldTileInfo.Walkable = false;
+                SetTileInfo(coordinate, worldTileInfo);
             }
         }
         #endregion
@@ -709,16 +712,17 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                 Tilemap.SetTile(coordinate, tile);
 
-                var tileInfo = GetTileInfo(coordinate);
-                if (tileInfo.Biome == Biome.River)
+                var worldTileInfo = GetTileInfo(coordinate);
+                if (worldTileInfo.Biome == Biome.River)
                 {
-                    tileInfo.Biome = Biome.Bridge;
-                    tileInfo.Walkable = true;
+                    worldTileInfo.Biome = Biome.Bridge;
+                    worldTileInfo.Walkable = true;
                 }
                 else
                 {
-                    tileInfo.Biome = Biome.Road;
+                    worldTileInfo.Biome = Biome.Road;
                 }
+                SetTileInfo(coordinate, worldTileInfo);
             }
 
             // Set cities
@@ -730,9 +734,10 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                 Tilemap.SetTile(coordinate, tile);
 
-                var tileInfo = GetTileInfo(coordinate);
-                tileInfo.Biome = Biome.Settlement;
-                tileInfo.Walkable = true;
+                var worldTileInfo = GetTileInfo(coordinate);
+                worldTileInfo.Biome = Biome.Settlement;
+                worldTileInfo.Walkable = true;
+                SetTileInfo(coordinate, worldTileInfo);
             }
         }
 
