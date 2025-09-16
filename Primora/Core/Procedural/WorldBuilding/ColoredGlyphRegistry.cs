@@ -105,7 +105,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             Background.Equals(other.Background) &&
             Mirror == other.Mirror;
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals(object obj) =>
             obj is GlyphKey other && Equals(other);
 
         public override int GetHashCode() =>
