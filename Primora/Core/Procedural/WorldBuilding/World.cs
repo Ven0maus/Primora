@@ -89,7 +89,6 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// <param name="worldPosition"></param>
         internal void OpenZone(Point worldPosition)
         {
-            const int cacheTTL = 120; // 120 turns
             if (!_zoneCache.TryGetValue(worldPosition, out var zone))
             {
                 // Create new zone and generate it.
@@ -97,7 +96,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 zone.Generate();
 
                 // Add to cache
-                _zoneCache[worldPosition, cacheTTL] = zone;
+                _zoneCache[worldPosition, Constants.Zone.ZoneCacheTTLInTurns] = zone;
             }
             CurrentZone = zone;
             ShowCurrentZone();

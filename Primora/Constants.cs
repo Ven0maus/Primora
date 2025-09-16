@@ -18,6 +18,11 @@ namespace Primora
             };
         }
 
+        internal static class Zone
+        {
+            internal const int ZoneCacheTTLInTurns = 120;
+        }
+
         internal static class GameData
         {
             internal const string Biomes = "GameData/Biomes.json";
