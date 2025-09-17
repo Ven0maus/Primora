@@ -10,7 +10,7 @@ namespace Primora
         {
             internal const string GameTitle = "Primora";
             internal static readonly (int width, int height) DefaultWindowSize = (1920, 1080);
-            internal static int GameSeed = new Random().Next();
+            internal static int GameSeed = 1924984455; // new Random().Next();
             internal static readonly JsonSerializerOptions SerializerOptions = new()
             {
                 PropertyNameCaseInsensitive = true,

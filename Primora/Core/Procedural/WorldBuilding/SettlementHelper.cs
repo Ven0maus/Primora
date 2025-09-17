@@ -3,6 +3,7 @@ using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -12,61 +13,130 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             public Rectangle Bounds;
             public Point Door;
+            public string Type;
         }
 
         public static void GenerateSettlement(Zone zone)
         {
             int width = zone.Width;
             int height = zone.Height;
-
             Random rnd = zone.Random;
 
-            // Step 1: Town center
-            Point townCenter = new Point(width / 2, height / 2);
+            // STEP 1: Define town center plaza
+            int plazaSize = 5;
+            Rectangle plaza = new Rectangle(width / 2 - plazaSize / 2, height / 2 - plazaSize / 2, plazaSize, plazaSize);
+            CarvePlaza(zone, plaza);
 
-            // Step 2: Town Hall in front of plaza
+            // STEP 3: Carve main north-south and east-west roads through center
+            CarveMainRoads(zone, plaza);
+
             var buildings = new List<Building>();
-            var townHall = PlaceBuilding(zone, width / 2 - 4, height / 2 - 6, 9, 6, "TownHall", buildings);
-            buildings.Add(townHall);
 
-            // Step 3: Populate the town
-            int numBuildings = 20;
+            // STEP 2: Town hall and key landmark near center
+            var townHall = PlaceBuilding(zone, plaza.Center.X - 4, plaza.MinExtentY - 6, 9, 6, "TownHall", buildings);
+            if (townHall != null) buildings.Add(townHall);
+
+            var temple = PlaceBuilding(zone, plaza.Center.X + 5, plaza.Center.Y - 4, 7, 6, "Temple", buildings);
+            if (temple != null) buildings.Add(temple);
+
+            // STEP 4: Place districts
+            PlaceDistrict(zone, "Residential", 8, plaza, buildings, rnd);
+            PlaceDistrict(zone, "Market", 3, plaza, buildings, rnd);
+            PlaceDistrict(zone, "Crafts", 2, plaza, buildings, rnd);
+            PlaceDistrict(zone, "Farms", 3, plaza, buildings, rnd);
+
+            // STEP 5: Connect all doors to plaza
+            foreach (var b in buildings)
+                CarveAStarRoad(zone, b.Door, plaza.Center, plaza);
+
+            // STEP 6: Perimeter wall with towers + gates
+            DrawPerimeterWall(zone, buildings, 3);
+        }
+
+        // ---------------- DISTRICTS ----------------
+
+        private static void PlaceDistrict(Zone zone, string district, int count, Rectangle plaza, List<Building> buildings, Random rnd)
+        {
             int attempts = 0;
-            while (buildings.Count < numBuildings && attempts < 300)
+            while (count > 0 && attempts < 500)
             {
-                int w = rnd.Next(4, 10);
+                int w = rnd.Next(4, 9);
                 int h = rnd.Next(4, 8);
-                int x = rnd.Next(5, width - w - 5);
-                int y = rnd.Next(5, height - h - 5);
 
-                var b = PlaceBuilding(zone, x, y, w, h, "House", buildings);
+                // Bias location by district type
+                int x, y;
+                switch (district)
+                {
+                    case "Residential":
+                        x = rnd.Next(plaza.MinExtentX - 20, plaza.MaxExtentX + 20);
+                        y = rnd.Next(plaza.MinExtentY - 8, plaza.MaxExtentY + 8);
+                        break;
+                    case "Market":
+                        x = rnd.Next(plaza.MinExtentX - 8, plaza.MaxExtentX + 8);
+                        y = rnd.Next(plaza.MinExtentY - 8, plaza.MaxExtentY + 8);
+                        break;
+                    case "Crafts":
+                        x = rnd.Next(plaza.MaxExtentX + 4, plaza.MaxExtentX + 4);
+                        y = rnd.Next(plaza.MinExtentY - 4, plaza.MaxExtentY + 4);
+                        break;
+                    case "Farms":
+                        x = rnd.Next(plaza.MaxExtentX + 7, plaza.MaxExtentX + 7);
+                        y = rnd.Next(plaza.MinExtentY - 7, plaza.MaxExtentY + 7);
+                        break;
+                    default:
+                        x = rnd.Next(plaza.MaxExtentX + 12, plaza.MaxExtentX + 12);
+                        y = rnd.Next(plaza.MinExtentY - 8, plaza.MaxExtentY + 8);
+                        break;
+                }
+
+                string type = PickBuildingType(district, rnd);
+                var b = PlaceBuilding(zone, x, y, w, h, type, buildings);
                 if (b != null)
+                {
                     buildings.Add(b);
+                    count--;
+                }
 
                 attempts++;
             }
-
-            // Step 4: Connect all doors to town center using A*
-            foreach (var b in buildings)
-                CarveAStarRoad(zone, b.Door, townCenter);
-
-            // Step 5: Build perimeter wall around all buildings
-            DrawPerimeterWall(zone, buildings, 2);
-
-            ConnectGatesToRoads(zone, buildings, 2);
         }
 
-        // ---------------- BUILDING PLACEMENT ----------------
+        private static string PickBuildingType(string district, Random rnd)
+        {
+            return district switch
+            {
+                "Residential" => "House",
+                "Market" => rnd.NextDouble() < 0.7 ? "Shop" : "Inn",
+                "Crafts" => rnd.NextDouble() < 0.5 ? "Blacksmith" : "Warehouse",
+                "Farms" => "Farm",
+                _ => "House"
+            };
+        }
+
+        // ---------------- BUILDINGS ----------------
 
         private static Building PlaceBuilding(Zone zone, int x, int y, int w, int h, string type, List<Building> existing)
         {
             Rectangle rect = new Rectangle(x, y, w, h);
             Random rnd = zone.Random;
 
-            // Determine door location first
+            // Skip if outside bounds
+            if (rect.MinExtentX < 2 || rect.MinExtentY < 2 || rect.MaxExtentX >= zone.Width - 2 || rect.MaxExtentY >= zone.Height - 2)
+                return null;
+
+            // Extra check in PlaceBuilding before drawing
+            for (int dx = x; dx < x + w; dx++)
+            {
+                for (int dy = y; dy < y + h; dy++)
+                {
+                    if (zone.Tilemap.GetTile(dx, dy).Glyph == '=')
+                        return null; // don't place building across a road
+                }
+            }
+
+            // Pick door position
             int side = rnd.Next(4);
             int doorX = x, doorY = y;
-
             switch (side)
             {
                 case 0: doorX = x + 1 + rnd.Next(w - 2); doorY = y; break;
@@ -77,20 +147,15 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             Point doorPoint = new Point(doorX, doorY);
 
-            // Check overlap with existing buildings + door + 1-tile spacing
+            // Check overlap with existing buildings
             foreach (var b in existing)
             {
-                // Reserve the door tile with buffer
-                var doorRect = new Rectangle(b.Door.X - 1, b.Door.Y - 1, 3, 3);
-
-                // Expand existing building bounds by 1 for spacing
-                var expandedBounds = new Rectangle(b.Bounds.MinExtentX - 1, b.Bounds.MinExtentY - 1, b.Bounds.Width + 2, b.Bounds.Height + 2);
-
-                if (rect.Intersects(expandedBounds) || rect.Intersects(doorRect))
+                var expanded = new Rectangle(b.Bounds.MinExtentX - 1, b.Bounds.MinExtentY - 1, b.Bounds.Width + 2, b.Bounds.Height + 2);
+                if (rect.Intersects(expanded))
                     return null;
             }
 
-            // Draw building outline
+            // Draw building
             for (int dx = x; dx < x + w; dx++)
             {
                 for (int dy = y; dy < y + h; dy++)
@@ -103,24 +168,51 @@ namespace Primora.Core.Procedural.WorldBuilding
                 }
             }
 
-            // Place door
             zone.Tilemap.SetTile(doorX, doorY, DoorTile(zone, doorX, doorY));
 
-            return new Building { Bounds = rect, Door = doorPoint };
+            return new Building { Bounds = rect, Door = doorPoint, Type = type };
+        }
+
+        private static void CarvePlaza(Zone zone, Rectangle plaza)
+        {
+            for (int x = plaza.MinExtentX; x <= plaza.MaxExtentX; x++)
+            {
+                for (int y = plaza.MinExtentY; y <= plaza.MaxExtentY; y++)
+                {
+                    var tile = zone.Tilemap.GetTile(x, y);
+                    tile.Glyph = '.';
+                    tile.Foreground = Color.DarkKhaki;
+                    tile.Background = Color.Black;
+                }
+            }
+        }
+
+        private static void CarveMainRoads(Zone zone, Rectangle plaza)
+        {
+            int cx = plaza.Center.X;
+            int cy = plaza.Center.Y;
+
+            // Vertical road
+            for (int y = 0; y < zone.Height; y++)
+                zone.Tilemap.SetTile(cx, y, RoadTile(zone, cx, y));
+
+            // Horizontal road
+            for (int x = 0; x < zone.Width; x++)
+                zone.Tilemap.SetTile(x, cy, RoadTile(zone, x, cy));
         }
 
         // ---------------- ROADS ----------------
 
         private static readonly Point[] _directions = { new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1) };
 
-        private static void CarveAStarRoad(Zone zone, Point start, Point goal)
+        private static void CarveAStarRoad(Zone zone, Point start, Point goal, Rectangle plaza)
         {
-            var open = new SortedSet<(int fScore, int tieBreak, Point pt)>(Comparer<(int fScore, int tieBreak, Point pt)>.Create((a, b) =>
+            var open = new SortedSet<(int f, int t, Point p)>(Comparer<(int f, int t, Point p)>.Create((a, b) =>
             {
-                int cmp = a.fScore.CompareTo(b.fScore);
-                if (cmp == 0) cmp = a.tieBreak.CompareTo(b.tieBreak);
-                if (cmp == 0) cmp = a.pt.X.CompareTo(b.pt.X);
-                if (cmp == 0) cmp = a.pt.Y.CompareTo(b.pt.Y);
+                int cmp = a.f.CompareTo(b.f);
+                if (cmp == 0) cmp = a.t.CompareTo(b.t);
+                if (cmp == 0) cmp = a.p.X.CompareTo(b.p.X);
+                if (cmp == 0) cmp = a.p.Y.CompareTo(b.p.Y);
                 return cmp;
             }));
 
@@ -128,13 +220,13 @@ namespace Primora.Core.Procedural.WorldBuilding
             var cameFrom = new Dictionary<Point, Point>();
             int counter = 0;
             open.Add((Heuristic(start, goal), counter++, start));
-            HashSet<Point> closed = [];
+            HashSet<Point> closed = new();
 
             while (open.Count > 0)
             {
                 var current = open.Min;
                 open.Remove(current);
-                Point pt = current.pt;
+                Point pt = current.p;
 
                 if (pt == goal) break;
                 closed.Add(pt);
@@ -146,34 +238,81 @@ namespace Primora.Core.Procedural.WorldBuilding
                     if (closed.Contains(next)) continue;
 
                     var tile = zone.Tilemap.GetTile(next.X, next.Y);
-                    int cost;
 
-                    if (tile.Glyph == '#') continue;    // cannot pass through walls
-                    else if (tile.Glyph == '=') cost = 1; // existing road preferred
-                    else cost = 3;                      // grass/empty cost a bit more
+                    // Block walls, floors, and doors so roads don't carve through buildings
+                    bool isBuildingFloor = tile.Glyph == '.' && !plaza.Contains(next);
+                    if (tile.Glyph == '#' || isBuildingFloor)
+                        continue;
 
-                    int tentativeG = gScore[pt] + cost;
-                    if (!gScore.ContainsKey(next) || tentativeG < gScore[next])
+                    // Allow goal door, but not other doors
+                    if (tile.Glyph == '+' && next != goal)
+                        continue;
+
+                    int cost = tile.Glyph == '=' ? 1 : 3;
+                    int tentative = gScore[pt] + cost;
+
+                    if (!gScore.ContainsKey(next) || tentative < gScore[next])
                     {
-                        gScore[next] = tentativeG;
+                        gScore[next] = tentative;
                         cameFrom[next] = pt;
-                        open.Add((tentativeG + Heuristic(next, goal), counter++, next));
+                        open.Add((tentative + Heuristic(next, goal), counter++, next));
                     }
                 }
             }
 
-            // Retrace path
             Point cur = goal;
             while (cameFrom.ContainsKey(cur))
             {
-                var tile = zone.Tilemap.GetTile(cur.X, cur.Y);
                 zone.Tilemap.SetTile(cur.X, cur.Y, RoadTile(zone, cur.X, cur.Y));
                 cur = cameFrom[cur];
             }
         }
 
-
         private static int Heuristic(Point a, Point b) => Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
+
+        // ---------------- WALLS ----------------
+
+        private static void DrawPerimeterWall(Zone zone, List<Building> buildings, int padding)
+        {
+            int minX = int.MaxValue, minY = int.MaxValue;
+            int maxX = int.MinValue, maxY = int.MinValue;
+            foreach (var b in buildings)
+            {
+                minX = Math.Min(minX, b.Bounds.MinExtentX);
+                minY = Math.Min(minY, b.Bounds.MinExtentY);
+                maxX = Math.Max(maxX, b.Bounds.MaxExtentX);
+                maxY = Math.Max(maxY, b.Bounds.MaxExtentY);
+            }
+
+            minX = Math.Max(1, minX - padding);
+            minY = Math.Max(1, minY - padding);
+            maxX = Math.Min(zone.Width - 2, maxX + padding);
+            maxY = Math.Min(zone.Height - 2, maxY + padding);
+
+            // Wall outline
+            for (int x = minX; x <= maxX; x++)
+            {
+                if (zone.Tilemap.GetTile(x, minY).Glyph != '=')
+                    zone.Tilemap.SetTile(x, minY, WallTile(zone, x, minY));
+                if (zone.Tilemap.GetTile(x, maxY).Glyph != '=')
+                    zone.Tilemap.SetTile(x, maxY, WallTile(zone, x, maxY));
+            }
+            for (int y = minY; y <= maxY; y++)
+            {
+                if (zone.Tilemap.GetTile(minX, y).Glyph != '=')
+                    zone.Tilemap.SetTile(minX, y, WallTile(zone, minX, y));
+                if (zone.Tilemap.GetTile(maxX, y).Glyph != '=')
+                    zone.Tilemap.SetTile(maxX, y, WallTile(zone, maxX, y));
+            }
+
+            // Towers at corners
+            zone.Tilemap.SetTile(minX, minY, TowerTile(zone, minX, minY));
+            zone.Tilemap.SetTile(maxX, minY, TowerTile(zone, maxX, minY));
+            zone.Tilemap.SetTile(minX, maxY, TowerTile(zone, minX, maxY));
+            zone.Tilemap.SetTile(maxX, maxY, TowerTile(zone, maxX, maxY));
+        }
+
+        // ---------------- TILES ----------------
 
         private static ColoredGlyph RoadTile(Zone zone, int x, int y)
         {
@@ -193,6 +332,15 @@ namespace Primora.Core.Procedural.WorldBuilding
             return tile;
         }
 
+        private static ColoredGlyph TowerTile(Zone zone, int x, int y)
+        {
+            var tile = zone.Tilemap.GetTile(x, y);
+            tile.Glyph = 'O';
+            tile.Foreground = Color.DarkSlateGray;
+            tile.Background = "#1c130f".HexToColor();
+            return tile;
+        }
+
         private static ColoredGlyph DoorTile(Zone zone, int x, int y)
         {
             var tile = zone.Tilemap.GetTile(x, y);
@@ -205,123 +353,10 @@ namespace Primora.Core.Procedural.WorldBuilding
         private static ColoredGlyph FloorTile(Zone zone, int x, int y)
         {
             var tile = zone.Tilemap.GetTile(x, y);
-            tile.Glyph = '|';
+            tile.Glyph = '.';
             tile.Foreground = "#120d0b".HexToColor();
             tile.Background = "#1c130f".HexToColor();
             return tile;
-        }
-
-        private static ColoredGlyph TreeTile(Zone zone, int x, int y)
-        {
-            var tile = zone.Tilemap.GetTile(x, y);
-            tile.Glyph = 6;
-            tile.Foreground = Color.LightGreen;
-            return tile;
-        }
-
-        // ---------------- WALL ----------------
-
-        private static void DrawPerimeterWall(Zone zone, List<Building> buildings, int padding)
-        {
-            // Find outermost extents of buildings
-            int minX = int.MaxValue, minY = int.MaxValue;
-            int maxX = int.MinValue, maxY = int.MinValue;
-
-            foreach (var b in buildings)
-            {
-                minX = Math.Min(minX, b.Bounds.MinExtentX);
-                minY = Math.Min(minY, b.Bounds.MinExtentY);
-                maxX = Math.Max(maxX, b.Bounds.MaxExtentX);
-                maxY = Math.Max(maxY, b.Bounds.MaxExtentY);
-            }
-
-            // Expand by padding radius
-            minX = Math.Max(1, minX - padding);
-            minY = Math.Max(1, minY - padding);
-            maxX = Math.Min(zone.Width - 2, maxX + padding);
-            maxY = Math.Min(zone.Height - 2, maxY + padding);
-
-            // Draw continuous wall
-            for (int x = minX; x <= maxX; x++)
-            {
-                zone.Tilemap.SetTile(x, minY, WallTile(zone, x, minY));
-                zone.Tilemap.SetTile(x, maxY, WallTile(zone, x, maxY));
-            }
-            for (int y = minY + 1; y < maxY; y++)
-            {
-                zone.Tilemap.SetTile(minX, y, WallTile(zone, minX, y));
-                zone.Tilemap.SetTile(maxX, y, WallTile(zone, maxX, y));
-            }
-
-            // Gates N/W/S/E aligned with center
-            int centerX = (minX + maxX) / 2;
-            int centerY = (minY + maxY) / 2;
-            zone.Tilemap.SetTile(centerX, minY, RoadTile(zone, centerX, minY)); // North gate
-            zone.Tilemap.SetTile(centerX, maxY, RoadTile(zone, centerX, maxY)); // South gate
-            zone.Tilemap.SetTile(minX, centerY, RoadTile(zone, minX, centerY)); // West gate
-            zone.Tilemap.SetTile(maxX, centerY, RoadTile(zone, maxX, centerY)); // East gate
-
-            // Extend north road (up from minY to mapMinY)
-            for (int y = minY - 1; y >= 0; y--)
-            {
-                zone.Tilemap.SetTile(centerX, y, RoadTile(zone, centerX, y));
-            }
-
-            // Extend south road (down from maxY to mapMaxY)
-            for (int y = maxY + 1; y <= zone.Height - 1; y++)
-            {
-                zone.Tilemap.SetTile(centerX, y, RoadTile(zone, centerX, y));
-            }
-
-            // Extend west road (left from minX to mapMinX)
-            for (int x = minX - 1; x >= 0; x--)
-            {
-                zone.Tilemap.SetTile(x, centerY, RoadTile(zone, x, centerY));
-            }
-
-            // Extend east road (right from maxX to mapMaxX)
-            for (int x = maxX + 1; x <= zone.Width - 1; x++)
-            {
-                zone.Tilemap.SetTile(x, centerY, RoadTile(zone, x, centerY));
-            }
-        }
-
-        private static void ConnectGatesToRoads(Zone zone, List<Building> buildings, int padding)
-        {
-            // Compute wall bounds (same as your wall)
-            int minX = int.MaxValue, minY = int.MaxValue;
-            int maxX = int.MinValue, maxY = int.MinValue;
-            foreach (var b in buildings)
-            {
-                minX = Math.Min(minX, b.Bounds.MinExtentX);
-                minY = Math.Min(minY, b.Bounds.MinExtentY);
-                maxX = Math.Max(maxX, b.Bounds.MaxExtentX);
-                maxY = Math.Max(maxY, b.Bounds.MaxExtentY);
-            }
-            minX = Math.Max(1, minX - padding);
-            minY = Math.Max(1, minY - padding);
-            maxX = Math.Min(zone.Width - 2, maxX + padding);
-            maxY = Math.Min(zone.Height - 2, maxY + padding);
-
-            int centerX = (minX + maxX) / 2;
-            int centerY = (minY + maxY) / 2;
-
-            List<Point> gates = new()
-            {
-                new Point(centerX, minY), // North
-                new Point(centerX, maxY), // South
-                new Point(minX, centerY), // West
-                new Point(maxX, centerY)  // East
-            };
-
-            // Find a suitable target inside village (town center or closest building door)
-            Point villageCenter = new Point(zone.Width / 2, zone.Height / 2);
-
-            foreach (var gate in gates)
-            {
-                // Carve a path from gate directly to village center using your A* function
-                CarveAStarRoad(zone, gate, villageCenter);
-            }
         }
     }
 }
