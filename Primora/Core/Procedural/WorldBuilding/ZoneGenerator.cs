@@ -2,6 +2,7 @@
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
@@ -209,8 +210,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private static void GenerateBridge(Zone zone)
         {
-            // TODO: Fix no variation because not always same biome neighbors
-            SetBackgroundAsOriginBiomeColor(zone);
+            // Very custom
         }
 
         private static void SetBackgroundAsOriginBiomeColor(Zone zone)
@@ -490,9 +490,9 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         private static List<Color> CollectBiomeNeighborBackgrounds(WorldMap worldMap, Point origin, Biome biome, int radius)
         {
-            var results = new List<Color>
+            var results = new List<(Biome biome, Color color)>
             {
-                worldMap.Tilemap.GetTile(origin).Background // Include origin tile
+                (biome, worldMap.Tilemap.GetTile(origin).Background) // Include origin tile
             };
 
             for (int dx = -radius; dx <= radius; dx++)
@@ -507,12 +507,31 @@ namespace Primora.Core.Procedural.WorldBuilding
                     var neighborInfo = worldMap.GetTileInfo(pos);
                     var neighborTile = worldMap.Tilemap.GetTile(pos);
 
-                    if (neighborInfo.Biome == biome)
-                        results.Add(neighborTile.Background);
+                    // Exceptional biomes
+                    results.Add((neighborInfo.Biome, neighborTile.Background));
                 }
             }
 
-            return results;
+            var exceptionalCases = new[]
+            {
+                Biome.Settlement,
+                Biome.Road,
+            };
+
+            // Some are exceptional cases
+            if (exceptionalCases.Contains(biome))
+            {
+                // Take the colors of the most present biome that isn't one of the exceptionals
+                return [.. results.GroupBy(a => a.biome)
+                    .Where(a => !exceptionalCases.Contains(a.Key))
+                    .OrderByDescending(a => a.Count())
+                    .First()
+                    .Select(a => a.color)];
+            }
+
+            return [.. results
+                      .Where(a => a.biome == biome)
+                      .Select(a => a.color)];
         }
     }
 }

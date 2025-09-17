@@ -1,4 +1,5 @@
-﻿using SadConsole;
+﻿using Primora.Extensions;
+using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -15,8 +16,6 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         public static void GenerateSettlement(Zone zone)
         {
-            SetBackgroundGrass(zone);
-
             int width = zone.Width;
             int height = zone.Height;
 
@@ -93,25 +92,26 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // Draw building outline
             for (int dx = x; dx < x + w; dx++)
+            {
                 for (int dy = y; dy < y + h; dy++)
                 {
                     bool border = dx == x || dy == y || dx == x + w - 1 || dy == y + h - 1;
-                    char glyph = border ? '#' : '.';
-                    Color color = border ? Color.SaddleBrown : Color.Green;
-                    zone.Tilemap.SetTile(dx, dy, new ColoredGlyph { Glyph = glyph, Foreground = color });
+                    if (border)
+                        zone.Tilemap.SetTile(dx, dy, WallTile(zone, dx, dy));
+                    else
+                        zone.Tilemap.SetTile(dx, dy, FloorTile(zone, dx, dy));
                 }
+            }
 
             // Place door
-            zone.Tilemap.SetTile(doorX, doorY, new ColoredGlyph { Glyph = '+', Foreground = Color.Yellow });
+            zone.Tilemap.SetTile(doorX, doorY, DoorTile(zone, doorX, doorY));
 
             return new Building { Bounds = rect, Door = doorPoint };
         }
 
-
-
         // ---------------- ROADS ----------------
 
-        private static readonly Point[] Directions = { new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1) };
+        private static readonly Point[] _directions = { new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1) };
 
         private static void CarveAStarRoad(Zone zone, Point start, Point goal)
         {
@@ -128,7 +128,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             var cameFrom = new Dictionary<Point, Point>();
             int counter = 0;
             open.Add((Heuristic(start, goal), counter++, start));
-            HashSet<Point> closed = new HashSet<Point>();
+            HashSet<Point> closed = [];
 
             while (open.Count > 0)
             {
@@ -139,7 +139,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 if (pt == goal) break;
                 closed.Add(pt);
 
-                foreach (var dir in Directions)
+                foreach (var dir in _directions)
                 {
                     Point next = pt + dir;
                     if (next.X < 0 || next.Y < 0 || next.X >= zone.Width || next.Y >= zone.Height) continue;
@@ -167,8 +167,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             while (cameFrom.ContainsKey(cur))
             {
                 var tile = zone.Tilemap.GetTile(cur.X, cur.Y);
-                if (tile.Glyph == '.' || tile.Glyph == '#')
-                    zone.Tilemap.SetTile(cur.X, cur.Y, RoadTile());
+                zone.Tilemap.SetTile(cur.X, cur.Y, RoadTile(zone, cur.X, cur.Y));
                 cur = cameFrom[cur];
             }
         }
@@ -176,7 +175,49 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private static int Heuristic(Point a, Point b) => Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
 
-        private static ColoredGlyph RoadTile() => new ColoredGlyph { Glyph = '=', Foreground = Color.Gray };
+        private static ColoredGlyph RoadTile(Zone zone, int x, int y)
+        {
+            var tile = zone.Tilemap.GetTile(x, y);
+            tile.Glyph = '=';
+            tile.Foreground = Color.DarkGray;
+            tile.Background = "#2e2626".HexToColor();
+            return tile;
+        }
+
+        private static ColoredGlyph WallTile(Zone zone, int x, int y)
+        {
+            var tile = zone.Tilemap.GetTile(x, y);
+            tile.Glyph = '#';
+            tile.Foreground = Color.Gray;
+            tile.Background = "#1c130f".HexToColor();
+            return tile;
+        }
+
+        private static ColoredGlyph DoorTile(Zone zone, int x, int y)
+        {
+            var tile = zone.Tilemap.GetTile(x, y);
+            tile.Glyph = '+';
+            tile.Foreground = Color.Goldenrod;
+            tile.Background = "#1c130f".HexToColor();
+            return tile;
+        }
+
+        private static ColoredGlyph FloorTile(Zone zone, int x, int y)
+        {
+            var tile = zone.Tilemap.GetTile(x, y);
+            tile.Glyph = '|';
+            tile.Foreground = "#120d0b".HexToColor();
+            tile.Background = "#1c130f".HexToColor();
+            return tile;
+        }
+
+        private static ColoredGlyph TreeTile(Zone zone, int x, int y)
+        {
+            var tile = zone.Tilemap.GetTile(x, y);
+            tile.Glyph = 6;
+            tile.Foreground = Color.LightGreen;
+            return tile;
+        }
 
         // ---------------- WALL ----------------
 
@@ -203,22 +244,46 @@ namespace Primora.Core.Procedural.WorldBuilding
             // Draw continuous wall
             for (int x = minX; x <= maxX; x++)
             {
-                zone.Tilemap.SetTile(x, minY, new ColoredGlyph { Glyph = '#', Foreground = Color.SaddleBrown });
-                zone.Tilemap.SetTile(x, maxY, new ColoredGlyph { Glyph = '#', Foreground = Color.SaddleBrown });
+                zone.Tilemap.SetTile(x, minY, WallTile(zone, x, minY));
+                zone.Tilemap.SetTile(x, maxY, WallTile(zone, x, maxY));
             }
             for (int y = minY + 1; y < maxY; y++)
             {
-                zone.Tilemap.SetTile(minX, y, new ColoredGlyph { Glyph = '#', Foreground = Color.SaddleBrown });
-                zone.Tilemap.SetTile(maxX, y, new ColoredGlyph { Glyph = '#', Foreground = Color.SaddleBrown });
+                zone.Tilemap.SetTile(minX, y, WallTile(zone, minX, y));
+                zone.Tilemap.SetTile(maxX, y, WallTile(zone, maxX, y));
             }
 
             // Gates N/W/S/E aligned with center
             int centerX = (minX + maxX) / 2;
             int centerY = (minY + maxY) / 2;
-            zone.Tilemap.SetTile(centerX, minY, RoadTile()); // North gate
-            zone.Tilemap.SetTile(centerX, maxY, RoadTile()); // South gate
-            zone.Tilemap.SetTile(minX, centerY, RoadTile()); // West gate
-            zone.Tilemap.SetTile(maxX, centerY, RoadTile()); // East gate
+            zone.Tilemap.SetTile(centerX, minY, RoadTile(zone, centerX, minY)); // North gate
+            zone.Tilemap.SetTile(centerX, maxY, RoadTile(zone, centerX, maxY)); // South gate
+            zone.Tilemap.SetTile(minX, centerY, RoadTile(zone, minX, centerY)); // West gate
+            zone.Tilemap.SetTile(maxX, centerY, RoadTile(zone, maxX, centerY)); // East gate
+
+            // Extend north road (up from minY to mapMinY)
+            for (int y = minY - 1; y >= 0; y--)
+            {
+                zone.Tilemap.SetTile(centerX, y, RoadTile(zone, centerX, y));
+            }
+
+            // Extend south road (down from maxY to mapMaxY)
+            for (int y = maxY + 1; y <= zone.Height - 1; y++)
+            {
+                zone.Tilemap.SetTile(centerX, y, RoadTile(zone, centerX, y));
+            }
+
+            // Extend west road (left from minX to mapMinX)
+            for (int x = minX - 1; x >= 0; x--)
+            {
+                zone.Tilemap.SetTile(x, centerY, RoadTile(zone, x, centerY));
+            }
+
+            // Extend east road (right from maxX to mapMaxX)
+            for (int x = maxX + 1; x <= zone.Width - 1; x++)
+            {
+                zone.Tilemap.SetTile(x, centerY, RoadTile(zone, x, centerY));
+            }
         }
 
         private static void ConnectGatesToRoads(Zone zone, List<Building> buildings, int padding)
@@ -257,15 +322,6 @@ namespace Primora.Core.Procedural.WorldBuilding
                 // Carve a path from gate directly to village center using your A* function
                 CarveAStarRoad(zone, gate, villageCenter);
             }
-        }
-
-        // ---------------- HELPERS ----------------
-
-        private static void SetBackgroundGrass(Zone zone)
-        {
-            for (int x = 0; x < zone.Width; x++)
-                for (int y = 0; y < zone.Height; y++)
-                    zone.Tilemap.SetTile(x, y, new ColoredGlyph { Glyph = '.', Foreground = Color.Green });
         }
     }
 }
