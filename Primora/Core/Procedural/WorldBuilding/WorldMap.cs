@@ -1,5 +1,7 @@
 ﻿using Primora.Core.Procedural.Common;
 using Primora.Core.Procedural.Objects;
+using Primora.Core.Procedural.WorldBuilding.Helpers;
+using Primora.Core.Procedural.WorldBuilding.Registries;
 using Primora.Extensions;
 using SadConsole;
 using SadRogue.Primitives;
@@ -504,6 +506,26 @@ namespace Primora.Core.Procedural.WorldBuilding
             return forestMask;
         }
 
+        public static Color GetVariationGlyphColor(Color baseColor, Random rand)
+        {
+            // Convert base color to HSL
+            RgbToHsl(baseColor.R, baseColor.G, baseColor.B, out var h, out var s, out var l);
+
+            // Don’t touch hue (keeps it brownish)
+            // h = h;
+
+            // Slight saturation shift (±3%)
+            s = Math.Clamp(s * (0.999f + (float)rand.NextDouble() * 0.01f), 0f, 1f);
+
+            // Lightness: nudge *relative* to base, not replace it
+            float lightnessShift = (float)(rand.NextDouble() * 0.02 - 0.01); // ±1%
+            l = Math.Clamp(l + lightnessShift, 0f, 1f);
+
+            // Convert back to RGB
+            var (r, g, b) = HslToRgb(h, s, l);
+            return new Color(r, g, b);
+        }
+
         private static Color GetBiomeGlyphColor(Color biomeColor, Biome biome, Random rand)
         {
             // Convert biome color to HSL
@@ -825,7 +847,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 else if (down && left) glyph = 191;                  // ┐
                 else if (up && right) glyph = 192;                   // └
                 else if (up && left) glyph = 217;                    // ┘
-                else if (left) glyph = 196;                          // lone horizontal
+                else if (left) glyph = 196;
                 else if (right) glyph = 196;
                 else if (up) glyph = 179;
                 else if (down) glyph = 179;

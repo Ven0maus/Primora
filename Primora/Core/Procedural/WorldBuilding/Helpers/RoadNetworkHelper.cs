@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Primora.Core.Procedural.WorldBuilding
+namespace Primora.Core.Procedural.WorldBuilding.Helpers
 {
     internal static class RoadNetworkHelper
     {

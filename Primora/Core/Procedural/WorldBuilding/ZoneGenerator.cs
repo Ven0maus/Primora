@@ -1,4 +1,5 @@
 ﻿using Primora.Core.Procedural.Objects;
+using Primora.Core.Procedural.WorldBuilding.Helpers;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -206,6 +207,9 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             // TODO: Fix no variation because not always same biome neighbors
             SetBackgroundAsOriginBiomeColor(zone);
+
+            // Define in which direction the road is (can be possible 8 ways)
+            RoadZoneHelper.GenerateRoad(zone);
         }
 
         private static void GenerateBridge(Zone zone)

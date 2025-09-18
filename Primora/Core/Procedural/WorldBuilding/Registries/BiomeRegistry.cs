@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 
-namespace Primora.Core.Procedural.WorldBuilding
+namespace Primora.Core.Procedural.WorldBuilding.Registries
 {
     internal static class BiomeRegistry
     {

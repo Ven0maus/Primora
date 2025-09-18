@@ -3,9 +3,8 @@ using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
-namespace Primora.Core.Procedural.WorldBuilding
+namespace Primora.Core.Procedural.WorldBuilding.Helpers
 {
     internal static class SettlementHelper
     {
@@ -179,10 +178,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 for (int y = plaza.MinExtentY; y <= plaza.MaxExtentY; y++)
                 {
-                    var tile = zone.Tilemap.GetTile(x, y);
-                    tile.Glyph = '.';
-                    tile.Foreground = Color.DarkKhaki;
-                    tile.Background = Color.Black;
+                    zone.Tilemap.SetTile(x, y, RoadTile(zone, x, y));
                 }
             }
         }
@@ -304,12 +300,6 @@ namespace Primora.Core.Procedural.WorldBuilding
                 if (zone.Tilemap.GetTile(maxX, y).Glyph != '=')
                     zone.Tilemap.SetTile(maxX, y, WallTile(zone, maxX, y));
             }
-
-            // Towers at corners
-            zone.Tilemap.SetTile(minX, minY, TowerTile(zone, minX, minY));
-            zone.Tilemap.SetTile(maxX, minY, TowerTile(zone, maxX, minY));
-            zone.Tilemap.SetTile(minX, maxY, TowerTile(zone, minX, maxY));
-            zone.Tilemap.SetTile(maxX, maxY, TowerTile(zone, maxX, maxY));
         }
 
         // ---------------- TILES ----------------
@@ -318,7 +308,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             var tile = zone.Tilemap.GetTile(x, y);
             tile.Glyph = '=';
-            tile.Foreground = Color.DarkGray;
+            tile.Foreground = Color.SaddleBrown;
             tile.Background = "#2e2626".HexToColor();
             return tile;
         }

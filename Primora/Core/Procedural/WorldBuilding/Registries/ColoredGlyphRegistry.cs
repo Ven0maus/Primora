@@ -3,7 +3,7 @@ using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
 
-namespace Primora.Core.Procedural.WorldBuilding
+namespace Primora.Core.Procedural.WorldBuilding.Registries
 {
     internal static class ColoredGlyphRegistry
     {
@@ -82,9 +82,9 @@ namespace Primora.Core.Procedural.WorldBuilding
         private static Color Quantize(Color input, int step = 8)
         {
             return new Color(
-                (input.R / step) * step,
-                (input.G / step) * step,
-                (input.B / step) * step
+                input.R / step * step,
+                input.G / step * step,
+                input.B / step * step
             );
         }
     }

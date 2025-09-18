@@ -1,4 +1,4 @@
-﻿using Primora.Core.Procedural.WorldBuilding;
+﻿using Primora.Core.Procedural.WorldBuilding.Registries;
 using SadConsole;
 using SadRogue.Primitives;
 using System;
