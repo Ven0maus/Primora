@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Primora
@@ -24,9 +23,15 @@ namespace Primora
             internal const int ZoneCacheTTLInTurns = 120;
         }
 
+        internal static class Npcs
+        {
+            internal const int NpcZIndex = 1;
+        }
+
         internal static class GameData
         {
             internal const string Biomes = "GameData/Biomes.json";
+            internal const string ActorDefinitions = "GameData/ActorDefinitions.json";
         }
     }
 }
