@@ -197,7 +197,6 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private static void GenerateSettlement(Zone zone)
         {
-            // TODO: Fix no variation because not always same biome neighbors
             SetBackgroundAsOriginBiomeColor(zone);
 
             SettlementHelper.GenerateSettlement(zone);
@@ -205,16 +204,14 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private static void GenerateRoad(Zone zone)
         {
-            // TODO: Fix no variation because not always same biome neighbors
             SetBackgroundAsOriginBiomeColor(zone);
-
-            // Define in which direction the road is (can be possible 8 ways)
             RoadZoneHelper.GenerateRoad(zone);
         }
 
         private static void GenerateBridge(Zone zone)
         {
-            // Very custom
+            GenerateRiver(zone);
+            GenerateRoad(zone);
         }
 
         private static void SetBackgroundAsOriginBiomeColor(Zone zone)
