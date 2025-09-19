@@ -14,12 +14,13 @@ namespace Primora.Core.Procedural.WorldBuilding
     /// <summary>
     /// Contains all accessible zones in the world.
     /// </summary>
-    internal class WorldMap
+    internal class WorldMap : ILocation
     {
         private readonly WorldTileInfo[] _tileInfo;
 
         internal readonly Tilemap Tilemap;
-        internal readonly int Width, Height;
+        public int Width { get; }
+        public int Height { get; }
 
         internal WorldMap(int width, int height)
         {
@@ -70,9 +71,10 @@ namespace Primora.Core.Procedural.WorldBuilding
             => SetTileInfo(position.X, position.Y, worldTileInfo);
 
         internal bool InBounds(int x, int y)
-        {
-            return x >= 0 && y >= 0 && x < Width && y < Height;
-        }
+            => x >= 0 && y >= 0 && x < Width && y < Height;
+
+        public bool IsWalkable(Point position)
+            => InBounds(position) && GetTileInfo(position).Walkable;
 
         internal bool InBounds(Point position)
             => InBounds(position.X, position.Y);

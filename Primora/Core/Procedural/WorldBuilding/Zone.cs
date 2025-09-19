@@ -7,11 +7,13 @@ using System.Collections.Generic;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
-    internal class Zone
+    internal class Zone : ILocation
     {
         private readonly ZoneTileInfo[] _zoneTileInfo;
 
-        internal readonly int Width, Height;
+        public int Width { get; }
+        public int Height { get; }
+
         internal readonly Point WorldPosition;
         internal readonly Random Random; 
         internal readonly Tilemap Tilemap;
@@ -70,12 +72,13 @@ namespace Primora.Core.Procedural.WorldBuilding
             => SetTileInfo(position.X, position.Y, zoneTileInfo);
 
         internal bool InBounds(int x, int y)
-        {
-            return x >= 0 && y >= 0 && x < Width && y < Height;
-        }
+            => x >= 0 && y >= 0 && x < Width && y < Height;
 
         internal bool InBounds(Point position)
             => InBounds(position.X, position.Y);
+
+        public bool IsWalkable(Point position)
+            => InBounds(position) && GetTileInfo(position).Walkable;
 
         private void InitTilemap()
         {

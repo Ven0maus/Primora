@@ -28,6 +28,20 @@ namespace Primora.Extensions
             }
         }
 
+        public static double Distance(this Point a, Point b)
+        {
+            int dx = a.X - b.X;
+            int dy = a.Y - b.Y;
+            return Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        public static int DistanceSquared(this Point a, Point b)
+        {
+            int dx = a.X - b.X;
+            int dy = a.Y - b.Y;
+            return dx * dx + dy * dy;
+        }
+
         public static float Clamp01(float value)
         {
             if (value < 0f) return 0f;

@@ -1,6 +1,7 @@
 ﻿using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
 using SadConsole;
+using SadConsole.Entities;
 using SadRogue.Primitives;
 using System;
 using System.Diagnostics;
@@ -24,6 +25,8 @@ namespace Primora.Screens
         /// </summary>
         internal readonly World World;
 
+        internal readonly EntityManager EntityManager;
+
         private Point? _currentHoverTile;
 
         public RootScreen()
@@ -39,6 +42,14 @@ namespace Primora.Screens
                 Constants.General.DefaultWindowSize.height);
             RenderingSurface.ResizeToFitFontSize(1f, true);
             Children.Add(RenderingSurface);
+
+            // Entity manager component
+            EntityManager = new EntityManager
+            {
+                SkipExistsChecks = true,
+                DoEntityUpdate = false
+            };
+            SadComponents.Add(EntityManager);
 
             // Setup the world elements
             World = new World(RenderingSurface.Width, RenderingSurface.Height);
@@ -103,7 +114,7 @@ namespace Primora.Screens
             if (!e.Mouse.LeftClicked) return;
 
             var coordinate = e.SurfaceCellPosition;
-            World.OpenZone(coordinate);
+            _ = World.OpenZone(coordinate);
         }
 
         /// <summary>

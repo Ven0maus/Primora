@@ -10,6 +10,7 @@ namespace Primora
             internal const string GameTitle = "Primora";
             internal static readonly (int width, int height) DefaultWindowSize = (1920, 1080);
             internal static int GameSeed = 1924984455; // new Random().Next();
+
             internal static readonly JsonSerializerOptions SerializerOptions = new()
             {
                 PropertyNameCaseInsensitive = true,
@@ -26,6 +27,8 @@ namespace Primora
         internal static class Npcs
         {
             internal const int NpcZIndex = 1;
+            internal static readonly (int min, int max) PlayerSpawnDistanceFromSettlements = (10, 20); // How far from a settlement to spawn
+            internal const int PlayerSpawnZoneClearRadius = 4; // How many tiles radius there is no obstruction on player spawn.
         }
 
         internal static class GameData
