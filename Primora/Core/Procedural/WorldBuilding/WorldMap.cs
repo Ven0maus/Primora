@@ -19,6 +19,8 @@ namespace Primora.Core.Procedural.WorldBuilding
         private readonly WorldTileInfo[] _tileInfo;
 
         internal readonly Tilemap Tilemap;
+        internal bool IsDisplayed = false;
+
         public int Width { get; }
         public int Height { get; }
 
@@ -82,7 +84,7 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         #region World Generation
 
-        internal void Generate()
+        internal void Generate(Dictionary<Point, Settlement> settlements)
         {
             var random = new Random(Constants.General.GameSeed);
 
@@ -90,7 +92,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             GenerateBiomes(random, out var heightmap);
 
             // Define the details of the biomes of the world
-            GenerateDetails(random, heightmap);
+            GenerateDetails(random, heightmap, settlements);
         }
 
         private void GenerateBiomes(Random random, out float[] heightmap)
@@ -126,7 +128,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             ApplyColorsToTilemap(smoothed);
         }
 
-        private void GenerateDetails(Random random, float[] heightMap)
+        private void GenerateDetails(Random random, float[] heightMap, Dictionary<Point, Settlement> settlements)
         {
             // Step 1: Initial biome glyphs and detailing
             SetupBasicBiomeDetailGlyphs(random);
@@ -135,7 +137,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             CreateRiver(random, heightMap);
 
             // Step 3: Settlements and roads
-            CreateSettlementsAndRoads(random, heightMap);
+            CreateSettlementsAndRoads(random, heightMap, settlements);
         }
 
         #endregion
@@ -720,7 +722,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         #endregion
 
         #region Settlements
-        private void CreateSettlementsAndRoads(Random random, float[] heightMap)
+        private void CreateSettlementsAndRoads(Random random, float[] heightMap, Dictionary<Point, Settlement> settlements)
         {
             // Collect random city locations and roads
             var cityPositions = GetCityPositions(random, heightMap, Width, Height);
@@ -762,6 +764,9 @@ namespace Primora.Core.Procedural.WorldBuilding
                 worldTileInfo.Biome = Biome.Settlement;
                 worldTileInfo.Walkable = true;
                 SetTileInfo(coordinate, worldTileInfo);
+
+                // Register settlement in world
+                settlements[coordinate] = new Settlement(coordinate);
             }
         }
 

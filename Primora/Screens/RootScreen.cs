@@ -18,7 +18,7 @@ namespace Primora.Screens
         /// <summary>
         /// The main rendering surface.
         /// </summary>
-        internal readonly ScreenSurface RenderingSurface;
+        internal readonly WorldScreen WorldScreen;
 
         /// <summary>
         /// The entire world
@@ -37,30 +37,31 @@ namespace Primora.Screens
             Instance = this;
 
             // Create the main rendering surface and add it to the RootScreen tree
-            RenderingSurface = new ScreenSurface(
+            WorldScreen = new WorldScreen(
                 Constants.General.DefaultWindowSize.width,
                 Constants.General.DefaultWindowSize.height);
-            RenderingSurface.ResizeToFitFontSize(1f, true);
-            Children.Add(RenderingSurface);
+            WorldScreen.ResizeToFitFontSize(1f, true);
+            Children.Add(WorldScreen);
 
             // Entity manager component
             EntityManager = new EntityManager
             {
                 SkipExistsChecks = true,
-                DoEntityUpdate = false
+                DoEntityUpdate = true
             };
-            SadComponents.Add(EntityManager);
+            WorldScreen.IsFocused = true;
+            WorldScreen.SadComponents.Add(EntityManager);
 
             // Setup the world elements
-            World = new World(RenderingSurface.Width, RenderingSurface.Height);
+            World = new World(WorldScreen.Width, WorldScreen.Height);
             Debug.WriteLine("Game Seed: " + Constants.General.GameSeed);
 #if DEBUG
             // Add a glyph selector popup for development purposes
             SadConsole.UI.Windows.GlyphSelectPopup.AddRootComponent(SadConsole.Input.Keys.F11);
 #endif
-            RenderingSurface.MouseMove += RenderingSurface_MouseMove;
-            RenderingSurface.MouseExit += RenderingSurface_MouseExit;
-            RenderingSurface.MouseButtonClicked += RenderingSurface_MouseButtonClicked;
+            WorldScreen.MouseMove += RenderingSurface_MouseMove;
+            WorldScreen.MouseExit += RenderingSurface_MouseExit;
+            WorldScreen.MouseButtonClicked += RenderingSurface_MouseButtonClicked;
 
             // Testing:
             StartGame();
@@ -72,7 +73,7 @@ namespace Primora.Screens
             var prev = _currentHoverTile;
             if (prev != null)
             {
-                RenderingSurface.ClearDecorators(prev.Value.X, prev.Value.Y, 1);
+                WorldScreen.ClearDecorators(prev.Value.X, prev.Value.Y, 1);
                 _currentHoverTile = null;
             }
         }
@@ -85,24 +86,24 @@ namespace Primora.Screens
             var prev = _currentHoverTile;
             if (prev != null)
             {
-                RenderingSurface.ClearDecorators(prev.Value.X, prev.Value.Y, 1);
+                WorldScreen.ClearDecorators(prev.Value.X, prev.Value.Y, 1);
                 _currentHoverTile = null;
             }
 
             if (_currentHoverTile != null && pos == _currentHoverTile) return;
 
-            if (pos.X >= 0 && pos.Y >= 0 && pos.X < RenderingSurface.Width && pos.Y < RenderingSurface.Height)
+            if (pos.X >= 0 && pos.Y >= 0 && pos.X < WorldScreen.Width && pos.Y < WorldScreen.Height)
             {
                 // Set current
                 _currentHoverTile = pos;
-                RenderingSurface.SetDecorator(pos.X, pos.Y, 1, new CellDecorator(Color.Black, 255, Mirror.None));
+                WorldScreen.SetDecorator(pos.X, pos.Y, 1, new CellDecorator(Color.Black, 255, Mirror.None));
             }
         }
 
         private void RenderingSurface_MouseButtonClicked(object sender, SadConsole.Input.MouseScreenObjectState e)
         {
             // TODO: Rework into fast travel, properly going into zones, this is just for testing purposes at the moment.
-            if (World.CurrentZone != null)
+            if (World.CurrentZone != null && World.CurrentZone.IsDisplayed)
             {
                 if (e.Mouse.RightClicked)
                 {

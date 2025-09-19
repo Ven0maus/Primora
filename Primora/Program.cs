@@ -1,6 +1,7 @@
 ﻿using Primora.Screens;
 using SadConsole;
 using SadConsole.Configuration;
+using SadConsole.Input;
 
 namespace Primora
 {
@@ -22,7 +23,8 @@ namespace Primora
                     Constants.General.DefaultWindowSize.width,
                     Constants.General.DefaultWindowSize.height)
                 .SetStartingScreen<RootScreen>()
-                .IsStartingScreenFocused(true)
+                .IsStartingScreenFocused(false)
+                .EnableImGuiDebugger(Keys.F12)
                 .ConfigureFonts((fc, gh) =>
                 {
                     fc.UseCustomFont("Assets/font_16x16.font");

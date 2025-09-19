@@ -25,6 +25,7 @@ namespace Primora.Core.Npcs
                   zIndex: Constants.Npcs.NpcZIndex)
         {
             Stats = new ActorStats(this, actorDefinition);
+            Location = location;
             Position = position;
 
             // Register in manager on creation after position is defined

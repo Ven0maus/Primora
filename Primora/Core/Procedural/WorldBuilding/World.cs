@@ -1,5 +1,6 @@
 ﻿using Primora.Core.Npcs;
 using Primora.Core.Npcs.Actors;
+using Primora.Core.Npcs.Objects;
 using Primora.Core.Procedural.Common;
 using Primora.Core.Procedural.Objects;
 using Primora.Extensions;
@@ -28,15 +29,35 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// The zone that is currently loaded.
         /// </summary>
         internal Zone CurrentZone { get; private set; }
+
         /// <summary>
         /// The player character object.
         /// </summary>
         internal Player Player { get; private set; }
 
+        /// <summary>
+        /// The player's entity on the worldmap.
+        /// </summary>
+        internal WorldMapEntity PlayerWorldMapEntity { get; private set; }
+
         internal Dictionary<Point, Settlement> Settlements { get; private set; }
 
         private readonly int _defaultZoneWidth, _defaultZoneHeight;
         private static readonly TickDictionary<Point, Zone> _zoneCache = [];
+
+        static World()
+        {
+            _zoneCache.OnExpire += ZoneCache_OnExpire;
+        }
+
+        private static void ZoneCache_OnExpire(object sender, TickDictionary<Point, Zone>.ExpireArgs e)
+        {
+            if (e.Value == Player.Instance.Location)
+            {
+                // Re-add player zone to the cache, since it is not allowed to be uncached
+                _zoneCache[e.Key, 120] = e.Value;
+            }
+        }
 
         internal World(int width, int height)
         {
@@ -66,13 +87,10 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal void Generate()
         {
             // Start initial world generation
-            WorldMap.Generate();
+            WorldMap.Generate(Settlements);
 
             // Finds a suitable easy early-game zone for the player to spawn in
             SpawnPlayerActorInRandomZone();
-
-            // TODO: Make sure player is visible on world map
-            // TODO: Make sure player zone is never removed from the cache.
         }
 
         /// <summary>
@@ -80,14 +98,18 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         internal void ShowWorldMap()
         {
+            if (CurrentZone != null)
+                CurrentZone.IsDisplayed = false;
+
             // Worldmap has a regular fontsize (1 size)
-            RootScreen.Instance.RenderingSurface.ResizeToFitFontSize(1f, true);
+            RootScreen.Instance.WorldScreen.ResizeToFitFontSize(1f, true);
 
             // Render world map
-            WorldMap.Tilemap.Render(RootScreen.Instance.RenderingSurface);
+            WorldMap.Tilemap.Render(RootScreen.Instance.WorldScreen);
+            WorldMap.IsDisplayed = true;
 
             // Render also the entities
-            ActorManager.RenderLocation(CurrentZone);
+            ActorManager.RenderLocation(WorldMap);
         }
 
         /// <summary>
@@ -95,11 +117,14 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         internal void ShowCurrentZone()
         {
+            WorldMap.IsDisplayed = false;
+
             // Zone has a larger fontsize
-            RootScreen.Instance.RenderingSurface.ResizeToFitFontSize(Constants.Zone.ZoneSizeModifier, true);
+            RootScreen.Instance.WorldScreen.ResizeToFitFontSize(Constants.Zone.ZoneSizeModifier, true);
 
             // Render zone
-            CurrentZone.Tilemap.Render(RootScreen.Instance.RenderingSurface);
+            CurrentZone.Tilemap.Render(RootScreen.Instance.WorldScreen);
+            CurrentZone.IsDisplayed = true;
 
             // Render also the entities
             ActorManager.RenderLocation(CurrentZone);
@@ -136,6 +161,9 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private void SpawnPlayerActorInRandomZone()
         {
+            if (Settlements.Count == 0)
+                throw new Exception("There are no settlements on the map!");
+
             var random = new Random(Constants.General.GameSeed);
 
             // Find a grassland biome between min and max tiles from any settlement.
@@ -185,7 +213,11 @@ namespace Primora.Core.Procedural.WorldBuilding
             if (candidateZonePositions.Count == 0)
                 throw new Exception("Could not find a valid position within the player designated spawn zone.");
 
+            // Player entity itself
             Player = new Player(zone, candidateZonePositions[random.Next(candidateZonePositions.Count)]);
+
+            // Player's WorldMap Entity
+            PlayerWorldMapEntity = new WorldMapEntity(Player.Location.WorldPosition, Entities.Player);
         }
 
         private static bool IsClearAround(Zone zone, int x, int y, int radius)

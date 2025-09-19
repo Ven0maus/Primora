@@ -7,13 +7,14 @@ using System.Collections.Generic;
 
 namespace Primora.Core.Procedural.WorldBuilding
 {
-    internal class Zone : ILocation
+    internal class Zone : ILocation, IEquatable<Zone>
     {
         private readonly ZoneTileInfo[] _zoneTileInfo;
 
         public int Width { get; }
         public int Height { get; }
 
+        internal bool IsDisplayed = false;
         internal readonly Point WorldPosition;
         internal readonly Random Random; 
         internal readonly Tilemap Tilemap;
@@ -90,5 +91,29 @@ namespace Primora.Core.Procedural.WorldBuilding
                 }
             }
         }
+
+        public bool Equals(Zone other)
+        {
+            return other != null && (ReferenceEquals(this, other) || other.WorldPosition == WorldPosition);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Zone zone && Equals(zone);
+        }
+
+        public override int GetHashCode()
+        {
+            return WorldPosition.GetHashCode();
+        }
+
+        public static bool operator ==(Zone left, Zone right)
+        {
+            if (ReferenceEquals(left, right)) return true;
+            if (left is null || right is null) return false;
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Zone left, Zone right) => !(left == right);
     }
 }

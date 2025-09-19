@@ -19,7 +19,7 @@ namespace Primora.Core.Npcs
         public static void Register(Actor actor)
         {
             if (!_actorMaps.TryGetValue(actor.Location, out var actorMap))
-                _actorMaps[actor.Location] = actorMap = new AutoSyncSpatialMap<Actor>();
+                _actorMaps[actor.Location] = actorMap = [];
             actorMap.Add(actor);
         }
 
