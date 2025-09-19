@@ -1,5 +1,4 @@
 ﻿using Primora.Core.Npcs.Actors;
-using Primora.Core.Procedural.WorldBuilding;
 using SadConsole;
 using SadConsole.Input;
 using SadRogue.Primitives;
@@ -27,10 +26,9 @@ namespace Primora.Screens
 
         public override bool ProcessKeyboard(Keyboard keyboard)
         {
-            var zoneDisplayed = World.Instance.CurrentZone != null && World.Instance.CurrentZone.IsDisplayed;
-            if (zoneDisplayed)
+            if (Player.Instance.Location.IsDisplayed)
             {
-                // Player movement allowed only if zone is displayed, (can't display zone that player isn't it)
+                // Player movement allowed only if it's zone is displayed
                 foreach (var key in _moveDirections)
                 {
                     if (keyboard.IsKeyPressed(key.Key))

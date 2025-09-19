@@ -47,7 +47,7 @@ namespace Primora.Screens
             EntityManager = new EntityManager
             {
                 SkipExistsChecks = true,
-                DoEntityUpdate = true
+                DoEntityUpdate = false
             };
             WorldScreen.IsFocused = true;
             WorldScreen.SadComponents.Add(EntityManager);
