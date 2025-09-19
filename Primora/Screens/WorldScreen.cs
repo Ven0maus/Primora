@@ -1,4 +1,5 @@
 ﻿using Primora.Core.Npcs.Actors;
+using Primora.Core.Procedural.WorldBuilding;
 using SadConsole;
 using SadConsole.Input;
 using SadRogue.Primitives;
@@ -34,7 +35,10 @@ namespace Primora.Screens
                     if (keyboard.IsKeyPressed(key.Key))
                     {
                         if (Player.Instance.Move(key.Value))
+                        {
+                            World.Instance.EndTurn();
                             return true;
+                        }
                     }
                 }
             }

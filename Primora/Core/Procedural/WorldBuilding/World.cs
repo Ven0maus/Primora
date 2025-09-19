@@ -93,6 +93,11 @@ namespace Primora.Core.Procedural.WorldBuilding
             SpawnPlayerActorInRandomZone();
         }
 
+        internal void EndTurn()
+        {
+            _zoneCache.Tick();
+        }
+
         /// <summary>
         /// Shows the world map on the rendering surface.
         /// </summary>
