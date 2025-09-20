@@ -16,6 +16,8 @@ namespace Primora.Screens
             base(Title, width, height)
         { }
 
+        // TODO: Move equipment code to actor, because each actor can equip stuff.
+
         public Item GetEquipment(EquipmentSlot slot) 
             => _equipedItems.GetValueOrDefault(slot);
 
