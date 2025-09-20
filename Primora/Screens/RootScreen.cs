@@ -1,10 +1,8 @@
 ﻿using Primora.Core.Procedural.WorldBuilding;
-using Primora.Extensions;
 using SadConsole;
 using SadConsole.Entities;
 using SadRogue.Primitives;
 using System;
-using System.Diagnostics;
 
 namespace Primora.Screens
 {
@@ -15,33 +13,53 @@ namespace Primora.Screens
         /// </summary>
         internal static RootScreen Instance { get; private set; }
 
+        #region Screens
         /// <summary>
-        /// The main rendering surface.
+        /// The main surface for rendering the world visuals.
         /// </summary>
         internal readonly WorldScreen WorldScreen;
+        /// <summary>
+        /// The main screen for rendering the player stats and information.
+        /// </summary>
+        internal readonly StatsScreen StatsScreen;
+        /// <summary>
+        /// The main surface for rendering the game's log messages.
+        /// </summary>
+        internal readonly LogScreen LogScreen;
+        #endregion
 
         /// <summary>
         /// The entire world
         /// </summary>
         internal readonly World World;
-
+        /// <summary>
+        /// The EntityManager component used to draw entities to the world screen.
+        /// </summary>
         internal readonly EntityManager EntityManager;
 
         private Point? _currentHoverTile;
 
-        public RootScreen()
+        public RootScreen(int rootWidth, int rootHeight)
         {
             if (Instance != null) 
                 throw new Exception($"An instance of the {nameof(RootScreen)} already exists.");
 
             Instance = this;
 
-            // Create the main rendering surface and add it to the RootScreen tree
-            WorldScreen = new WorldScreen(
-                Constants.General.DefaultWindowSize.width,
-                Constants.General.DefaultWindowSize.height);
-            WorldScreen.ResizeToFitFontSize(1f, true);
+            // Compute child sizes (using ratios)
+            int worldWidth = (int)(rootWidth * 0.7);
+            int statsWidth = rootWidth - worldWidth;
+            int worldHeight = (int)(rootHeight * 0.75);
+            int messagesHeight = rootHeight - worldHeight;
+
+            // Create children
+            WorldScreen = new WorldScreen(worldWidth, worldHeight) { Position = (0, 0) };
+            StatsScreen = new StatsScreen(statsWidth, worldHeight) { Position = (worldWidth, 0) };
+            LogScreen = new LogScreen(rootWidth, messagesHeight) { Position = (0, worldHeight) };
+
             Children.Add(WorldScreen);
+            Children.Add(StatsScreen);
+            Children.Add(LogScreen);
 
             // Entity manager component
             EntityManager = new EntityManager
@@ -52,16 +70,12 @@ namespace Primora.Screens
             WorldScreen.IsFocused = true;
             WorldScreen.SadComponents.Add(EntityManager);
 
-            // Setup the world elements
-            World = new World(WorldScreen.Width, WorldScreen.Height);
-            Debug.WriteLine("Game Seed: " + Constants.General.GameSeed);
-#if DEBUG
-            // Add a glyph selector popup for development purposes
-            SadConsole.UI.Windows.GlyphSelectPopup.AddRootComponent(SadConsole.Input.Keys.F11);
-#endif
             WorldScreen.MouseMove += RenderingSurface_MouseMove;
             WorldScreen.MouseExit += RenderingSurface_MouseExit;
             WorldScreen.MouseButtonClicked += RenderingSurface_MouseButtonClicked;
+
+            // Setup the world with a much larger size
+            World = new World();
 
             // Testing:
             StartGame();
@@ -80,7 +94,7 @@ namespace Primora.Screens
 
         private void RenderingSurface_MouseMove(object sender, SadConsole.Input.MouseScreenObjectState e)
         {
-            var pos = e.SurfaceCellPosition;
+            var pos = e.SurfaceCellPosition + WorldScreen.ViewPosition;
 
             // Clear previous
             var prev = _currentHoverTile;
@@ -114,7 +128,7 @@ namespace Primora.Screens
             }
             if (!e.Mouse.LeftClicked) return;
 
-            var coordinate = e.SurfaceCellPosition;
+            var coordinate = e.SurfaceCellPosition + WorldScreen.ViewPosition;
             _ = World.OpenZone(coordinate);
         }
 

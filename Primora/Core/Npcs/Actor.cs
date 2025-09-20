@@ -86,6 +86,6 @@ namespace Primora.Core.Npcs
         /// <param name="targetPos"></param>
         /// <returns></returns>
         private bool InBounds(Point targetPos)
-            => targetPos.X >= 0 && targetPos.Y >= 0 && targetPos.Y < Location.Width && targetPos.X < Location.Height;
+            => targetPos.X >= 0 && targetPos.Y >= 0 && targetPos.X < Location.Width && targetPos.Y < Location.Height;
     }
 }

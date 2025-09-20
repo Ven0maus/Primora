@@ -17,9 +17,22 @@ namespace Primora.Screens
             { Keys.D, Direction.Right },
         };
 
+        /// <summary>
+        /// Original view width
+        /// </summary>
+        public readonly int OriginalWidth;
+
+        /// <summary>
+        /// Original view height
+        /// </summary>
+        public readonly int OriginalHeight;
+
         public WorldScreen(int width, int height) : 
-            base(width, height)
-        {
+            base(width, height, Constants.Worldmap.DefaultWidth, Constants.Worldmap.DefaultHeight)
+        { 
+            OriginalWidth = width;
+            OriginalHeight = height;
+
             UseKeyboard = true;
             UseMouse = true;
             IsFocused = true;

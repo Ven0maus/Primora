@@ -5,7 +5,6 @@ using Primora.Core.Procedural.Common;
 using Primora.Core.Procedural.Objects;
 using Primora.Extensions;
 using Primora.Screens;
-using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -42,7 +41,6 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         internal Dictionary<Point, Settlement> Settlements { get; private set; }
 
-        private readonly int _defaultZoneWidth, _defaultZoneHeight;
         private static readonly TickDictionary<Point, Zone> _zoneCache = [];
 
         static World()
@@ -59,25 +57,15 @@ namespace Primora.Core.Procedural.WorldBuilding
             }
         }
 
-        internal World(int width, int height)
+        internal World()
         {
             if (Instance != null)
                 throw new Exception($"An instance of the {nameof(World)} already exists.");
 
             Instance = this;
 
-            // TODO: Rework worldmap and zone width/height defining
-            // World width/height is initialized at fontsize One.
-            WorldMap = new WorldMap(width, height);
-
-            // Just used as a helper to collect the zone width/height
-            var surface = new ScreenSurface(width, height);
-            surface.ResizeToFitFontSize(Constants.Zone.ZoneSizeModifier);
-
-            _defaultZoneWidth = surface.Width;
-            _defaultZoneHeight = surface.Height;
-
-            // Settlement data
+            // Data
+            WorldMap = new WorldMap(Constants.Worldmap.DefaultWidth, Constants.Worldmap.DefaultHeight);
             Settlements = [];
         }
 
@@ -106,8 +94,21 @@ namespace Primora.Core.Procedural.WorldBuilding
             if (CurrentZone != null)
                 CurrentZone.IsDisplayed = false;
 
-            // Worldmap has a regular fontsize (1 size)
-            RootScreen.Instance.WorldScreen.ResizeToFitFontSize(1f, true);
+            RootScreen.Instance.WorldScreen.Resize(
+                RootScreen.Instance.WorldScreen.OriginalWidth, 
+                RootScreen.Instance.WorldScreen.OriginalHeight,
+                Constants.Worldmap.DefaultWidth, 
+                Constants.Worldmap.DefaultHeight,
+                false);
+
+            RootScreen.Instance.WorldScreen.FontSize = new Point(
+                Constants.General.FontGlyphWidth,
+                Constants.General.FontGlyphHeight);
+
+            // Center view on player
+            RootScreen.Instance.WorldScreen.ViewPosition = Player.WorldPosition - new Point(
+                RootScreen.Instance.WorldScreen.ViewWidth / 2,
+                RootScreen.Instance.WorldScreen.ViewHeight / 2);
 
             // Render world map
             WorldMap.Tilemap.Render(RootScreen.Instance.WorldScreen);
@@ -124,8 +125,22 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             WorldMap.IsDisplayed = false;
 
-            // Zone has a larger fontsize
-            RootScreen.Instance.WorldScreen.ResizeToFitFontSize(Constants.Zone.ZoneSizeModifier, true);
+            // Zone is half the size of worldmap but font is double size of worldmap font.
+            RootScreen.Instance.WorldScreen.Resize(
+                RootScreen.Instance.WorldScreen.OriginalWidth / 2,
+                RootScreen.Instance.WorldScreen.OriginalHeight / 2,
+                Constants.Zone.DefaultWidth,
+                Constants.Zone.DefaultHeight,
+                false);
+
+            RootScreen.Instance.WorldScreen.FontSize = new Point(
+                Constants.General.FontGlyphWidth * 2, 
+                Constants.General.FontGlyphHeight * 2);
+
+            // Center view on player
+            RootScreen.Instance.WorldScreen.ViewPosition = Player.Position - new Point(
+                RootScreen.Instance.WorldScreen.ViewWidth / 2,
+                RootScreen.Instance.WorldScreen.ViewHeight / 2);
 
             // Render zone
             CurrentZone.Tilemap.Render(RootScreen.Instance.WorldScreen);
@@ -148,7 +163,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             if (!_zoneCache.TryGetValue(worldPosition, out var zone))
             {
                 // Create new zone and generate it.
-                zone = new Zone(worldPosition, _defaultZoneWidth, _defaultZoneHeight);
+                zone = new Zone(worldPosition, Constants.Zone.DefaultWidth, Constants.Zone.DefaultHeight);
                 zone.Generate();
 
                 // Add to cache
