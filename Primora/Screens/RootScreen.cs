@@ -1,8 +1,10 @@
 ﻿using Primora.Core.Procedural.WorldBuilding;
+using Primora.Extensions;
 using SadConsole;
 using SadConsole.Entities;
 using SadRogue.Primitives;
 using System;
+using static Primora.Extensions.SurfaceExtensions;
 
 namespace Primora.Screens
 {
@@ -51,12 +53,18 @@ namespace Primora.Screens
             Instance = this;
 
             // Create screen layout
-            WorldScreen = new WorldScreen(60, 50) { Position = (0, 0) };
+            var borderSurface = new ScreenSurface(60, 50);
+            borderSurface.Surface.DrawBorder(LineThickness.Thin, "World", Color.Gray, Color.White);
+
+            WorldScreen = new WorldScreen(borderSurface.Width - 2, borderSurface.Height - 2) { Position = (0, 0) };
+            WorldScreen.Position = new Point(1, 1);
+            borderSurface.Children.Add(WorldScreen);
+
             LogScreen = new LogScreen(20, 20) { Position = (60, 0) };
             StatsScreen = new StatsScreen(20, 14) { Position = (60, 20) };
             EquipmentScreen = new EquipmentScreen(20, 16) { Position = (60, 34) };
 
-            Children.Add(WorldScreen);
+            Children.Add(borderSurface);
             Children.Add(LogScreen);
             Children.Add(StatsScreen);
             Children.Add(EquipmentScreen);

@@ -1,4 +1,5 @@
-﻿using SadConsole;
+﻿using Primora.Extensions;
+using SadConsole;
 using SadRogue.Primitives;
 
 namespace Primora.Screens
@@ -10,12 +11,7 @@ namespace Primora.Screens
         public StatsScreen(int width, int height) : 
             base(width, height)
         {
-            // Draw borders
-            var shapeParams = ShapeParameters.CreateStyledBox(ICellSurface.ConnectedLineThick, new ColoredGlyph(Color.Gray), ignoreBorderBackground: true);
-            Surface.DrawBox(new Rectangle(0, 0, width, height), shapeParams);
-
-            // Print title
-            Surface.Print(width / 2 - Title.Length / 2, 0, new ColoredString(Title, Color.White, Color.Transparent));
+            Surface.DrawBorder(SurfaceExtensions.LineThickness.Thin, Title, Color.Gray, Color.White);
         }
     }
 }
