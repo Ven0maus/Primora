@@ -5,10 +5,17 @@ namespace Primora.Screens
 {
     internal class StatsScreen : ScreenSurface
     {
+        private const string Title = "Stats";
+
         public StatsScreen(int width, int height) : 
             base(width, height)
         {
-            Surface.Fill(background: Color.Yellow);
+            // Draw borders
+            var shapeParams = ShapeParameters.CreateStyledBox(ICellSurface.ConnectedLineThick, new ColoredGlyph(Color.Gray), ignoreBorderBackground: true);
+            Surface.DrawBox(new Rectangle(0, 0, width, height), shapeParams);
+
+            // Print title
+            Surface.Print(width / 2 - Title.Length / 2, 0, new ColoredString(Title, Color.White, Color.Transparent));
         }
     }
 }

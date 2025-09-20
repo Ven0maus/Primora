@@ -3,11 +3,11 @@ using SadRogue.Primitives;
 
 namespace Primora.Screens
 {
-    internal class LogScreen : ScreenSurface
+    internal class EquipmentScreen : ScreenSurface
     {
-        private const string Title = "Event Log";
+        private const string Title = "Equipment";
 
-        public LogScreen(int width, int height) : 
+        public EquipmentScreen(int width, int height) : 
             base(width, height)
         {
             // Draw borders

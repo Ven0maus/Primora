@@ -19,13 +19,17 @@ namespace Primora.Screens
         /// </summary>
         internal readonly WorldScreen WorldScreen;
         /// <summary>
-        /// The main screen for rendering the player stats and information.
-        /// </summary>
-        internal readonly StatsScreen StatsScreen;
-        /// <summary>
         /// The main surface for rendering the game's log messages.
         /// </summary>
         internal readonly LogScreen LogScreen;
+        /// <summary>
+        /// The main screen for rendering the player stats.
+        /// </summary>
+        internal readonly StatsScreen StatsScreen;
+        /// <summary>
+        /// The main screen for rendering the player equipment.
+        /// </summary>
+        internal readonly EquipmentScreen EquipmentScreen;
         #endregion
 
         /// <summary>
@@ -39,27 +43,23 @@ namespace Primora.Screens
 
         private Point? _currentHoverTile;
 
-        public RootScreen(int rootWidth, int rootHeight)
+        public RootScreen()
         {
             if (Instance != null) 
                 throw new Exception($"An instance of the {nameof(RootScreen)} already exists.");
 
             Instance = this;
 
-            // Compute child sizes (using ratios)
-            int worldWidth = (int)(rootWidth * 0.7);
-            int statsWidth = rootWidth - worldWidth;
-            int worldHeight = (int)(rootHeight * 0.75);
-            int messagesHeight = rootHeight - worldHeight;
-
-            // Create children
-            WorldScreen = new WorldScreen(worldWidth, worldHeight) { Position = (0, 0) };
-            StatsScreen = new StatsScreen(statsWidth, worldHeight) { Position = (worldWidth, 0) };
-            LogScreen = new LogScreen(rootWidth, messagesHeight) { Position = (0, worldHeight) };
+            // Create screen layout
+            WorldScreen = new WorldScreen(60, 50) { Position = (0, 0) };
+            LogScreen = new LogScreen(20, 20) { Position = (60, 0) };
+            StatsScreen = new StatsScreen(20, 14) { Position = (60, 20) };
+            EquipmentScreen = new EquipmentScreen(20, 16) { Position = (60, 34) };
 
             Children.Add(WorldScreen);
-            Children.Add(StatsScreen);
             Children.Add(LogScreen);
+            Children.Add(StatsScreen);
+            Children.Add(EquipmentScreen);
 
             // Entity manager component
             EntityManager = new EntityManager

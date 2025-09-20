@@ -22,8 +22,8 @@ namespace Primora
 
         internal static class Worldmap
         {
-            internal const int DefaultWidth = 200;
-            internal const int DefaultHeight = 100;
+            internal const int DefaultWidth = 240;
+            internal const int DefaultHeight = 120;
         }
 
         internal static class Zone

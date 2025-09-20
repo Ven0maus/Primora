@@ -21,11 +21,9 @@ namespace Primora
             Settings.ResizeMode = Settings.WindowResizeOptions.Scale;
 
             // Configure how SadConsole starts up
-            int width = 0, height = 0;
             Builder startup = new Builder()
-                //.SetWindowSizeInCells(60, 40)
-                .SetWindowSizeInCells(() => (width, height) = ScreenHelper.CreateRootWithMin(60, 40, 16, 16))
-                .SetStartingScreen((gh) => new RootScreen(width, height))
+                .SetWindowSizeInCells(80, 50)
+                .SetStartingScreen<RootScreen>()
                 .IsStartingScreenFocused(false)
                 .EnableImGuiDebugger(Keys.F12)
                 .OnStart(OnStart)
