@@ -1,6 +1,6 @@
 ﻿namespace Primora.Core.Items
 {
-    internal class Item
+    internal abstract class Item
     {
         public string Name { get; set; }
 

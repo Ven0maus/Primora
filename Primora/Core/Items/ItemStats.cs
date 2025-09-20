@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Primora.Core.Items
+﻿namespace Primora.Core.Items
 {
     internal class ItemStats
     {
-
+        public int Damage { get; set; }
+        public int Armour { get; set; }
+        public int Evasion { get; set; }
     }
 }

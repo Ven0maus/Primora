@@ -14,6 +14,11 @@ namespace Primora.Core.Npcs
         /// </summary>
         public ActorStats Stats { get; }
         /// <summary>
+        /// Contains all the equipment the actor is wielding.
+        /// </summary>
+        public EquipmentHandler Equipment { get; }
+
+        /// <summary>
         /// Returns the zone or worldmap that the actor is active in.
         /// </summary>
         public ILocation Location { get; }
@@ -25,6 +30,7 @@ namespace Primora.Core.Npcs
                   zIndex: Constants.Npcs.NpcZIndex)
         {
             Stats = new ActorStats(this, actorDefinition);
+            Equipment = new();
             Location = location;
             Position = position;
 

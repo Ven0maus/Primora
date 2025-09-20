@@ -10,6 +10,9 @@ namespace Primora.Core.Npcs
         public Actor Actor { get; }
         public int MaxHealth { get; set; }
         public int Health { get; private set; }
+        public int Damage { get; private set; }
+        public int Armour { get; private set; }
+        public int Evasion { get; private set; }
 
         /// <summary>
         /// Raised when the actor dies.
@@ -21,6 +24,9 @@ namespace Primora.Core.Npcs
             Actor = actor;
             MaxHealth = actorDefinition.MaxHealth;
             Health = MaxHealth;
+            Damage = Math.Min(1, actorDefinition.Damage);
+            Armour = actorDefinition.Armour;
+            Evasion = actorDefinition.Evasion;
         }
 
         /// <summary>
@@ -42,12 +48,16 @@ namespace Primora.Core.Npcs
 
         internal void AddItemStats(ItemStats providedStats)
         {
-
+            Damage += providedStats.Damage;
+            Armour += providedStats.Armour;
+            Evasion += providedStats.Evasion;
         }
 
         internal void RemoveItemStats(ItemStats providedStats)
         {
-
+            Damage -= providedStats.Damage;
+            Armour -= providedStats.Armour;
+            Evasion -= providedStats.Evasion;
         }
     }
 }
