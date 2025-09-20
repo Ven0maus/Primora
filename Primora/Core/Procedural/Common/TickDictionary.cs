@@ -13,7 +13,8 @@ namespace Primora.Core.Procedural.Common
     internal class TickDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : notnull
     {
-        private readonly Dictionary<TKey, (TValue Value, int TicksLeft)> _cache = [];
+        private readonly Dictionary<TKey, (TValue Value, int TicksLeft, long Index)> _cache = [];
+        private long _insertionIndex = 0;
 
         public TValue this[TKey key, int ttl]
         {
@@ -41,7 +42,7 @@ namespace Primora.Core.Procedural.Common
         public void AddOrUpdate(TKey key, TValue value, int ttl)
         {
             if (ttl <= 0) throw new ArgumentOutOfRangeException(nameof(ttl), "TTL must be > 0");
-            _cache[key] = (value, ttl);
+            _cache[key] = (value, ttl, _insertionIndex++);
         }
 
         /// <summary>
@@ -76,7 +77,7 @@ namespace Primora.Core.Procedural.Common
                 }
                 else
                 {
-                    _cache[kvp.Key] = (kvp.Value.Value, newTicks);
+                    _cache[kvp.Key] = (kvp.Value.Value, newTicks, _insertionIndex++);
                 }
             }
 
@@ -102,7 +103,12 @@ namespace Primora.Core.Procedural.Common
                 return;
             }
 
-            TKey key = _cache.OrderBy(a => a.Value.TicksLeft).First().Key;
+            var key = _cache
+                .OrderBy(a => a.Value.TicksLeft)
+                .ThenBy(a => a.Value.Index) // break ties by earliest added
+                .First()
+                .Key;
+
             Remove(key);
         }
 

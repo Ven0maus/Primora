@@ -153,6 +153,11 @@ namespace Primora.Core.Procedural.WorldBuilding
 
                 // Add to cache
                 _zoneCache[worldPosition, Constants.Zone.ZoneCacheTTLInTurns] = zone;
+
+                // Remove lowest ttl from cache ones atleast 2 zones are in cache
+                // Current and previous zone is the only ones cached
+                if (_zoneCache.Count > 2)
+                    _zoneCache.RemoveLowestTTL();
             }
 
             if (setAsCurrentZone)
