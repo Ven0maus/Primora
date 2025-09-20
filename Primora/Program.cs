@@ -2,7 +2,6 @@
 using SadConsole;
 using SadConsole.Configuration;
 using SadConsole.Input;
-using System;
 using System.Diagnostics;
 
 namespace Primora
@@ -30,6 +29,7 @@ namespace Primora
                 .ConfigureFonts((fc, gh) =>
                 {
                     fc.UseCustomFont("Assets/font_16x16.font");
+                    fc.AddExtraFonts("Assets/Cheepicus_12x12.font");
                 });
 
             // Setup the engine and start the game
