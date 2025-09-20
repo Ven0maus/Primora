@@ -1,4 +1,7 @@
-﻿namespace Primora.Screens
+﻿using Primora.Extensions;
+using SadConsole;
+
+namespace Primora.Screens
 {
     internal class AbilityScreen : TextScreen
     {
@@ -12,7 +15,14 @@
 
         public override void UpdateDisplay()
         {
-            
+            View.Clear();
+
+            var color = "#adadad".HexToColor();
+            View.Print(1, 1, "1. No ability set.", color);
+            View.Print(1, 3, "2. No ability set.", color);
+            View.Print(1, 5, "3. No ability set.", color);
+            View.Print(1, 7, "4. No ability set.", color);
+            View.Print(1, 9, "5. No ability set.", color);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Primora.Core.Npcs.EventArguments;
+﻿using Primora.Core.Items;
+using Primora.Core.Npcs.EventArguments;
 using Primora.Core.Npcs.Objects;
 using System;
 
@@ -37,6 +38,16 @@ namespace Primora.Core.Npcs
 
             if (previousHealth > 0 && Health <= 0)
                 OnDeath?.Invoke(this, new DeathArgs(Actor, attacker));
+        }
+
+        internal void AddItemStats(ItemStats providedStats)
+        {
+
+        }
+
+        internal void RemoveItemStats(ItemStats providedStats)
+        {
+
         }
     }
 }

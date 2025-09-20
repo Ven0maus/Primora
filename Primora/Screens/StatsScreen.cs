@@ -1,4 +1,5 @@
 ﻿using Primora.Core.Npcs.Actors;
+using Primora.Extensions;
 using SadConsole;
 
 namespace Primora.Screens
@@ -15,9 +16,11 @@ namespace Primora.Screens
 
         public override void UpdateDisplay()
         {
-            var stats = Player.Instance.Stats;
+            View.Clear();
 
-            View.Print(1, 1, $"Health: {stats.Health}");
+            var stats = Player.Instance.Stats;
+            var color = "#adadad".HexToColor();
+            View.Print(1, 1, $"Health: {stats.Health}", color);
         }
     }
 }

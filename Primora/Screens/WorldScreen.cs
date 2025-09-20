@@ -49,6 +49,7 @@ namespace Primora.Screens
                     {
                         if (Player.Instance.Move(key.Value))
                         {
+                            LogScreen.Add(LogEntry.New($"Player moved {key.Value.Type}"));
                             World.Instance.EndTurn();
                             return true;
                         }

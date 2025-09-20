@@ -1,4 +1,5 @@
-﻿using SadConsole;
+﻿using Primora.Extensions;
+using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -11,11 +12,17 @@ namespace Primora.Screens
         private const string Title = "Event Log";
         private readonly Queue<LogEntry> _logEntries = [];
 
+        public static LogScreen Instance { get; private set; }
+
         public LogScreen(int width, int height) : 
             base(Title, width, height)
-        { }
+        {
+            if (Instance != null)
+                throw new Exception("An instance for LogScreen already exists.");
+            Instance = this;
+        }
 
-        public void Add(LogEntry logEntry)
+        private void AddEntry(LogEntry logEntry)
         {
             if (logEntry == null) return;
 
@@ -24,6 +31,15 @@ namespace Primora.Screens
                 _ = _logEntries.Dequeue();
 
             UpdateDisplay();
+        }
+
+        /// <summary>
+        /// Adds a new log entry into the log screen.
+        /// </summary>
+        /// <param name="logEntry"></param>
+        public static void Add(LogEntry logEntry)
+        {
+            Instance.AddEntry(logEntry);
         }
 
         public override void UpdateDisplay()
@@ -38,14 +54,15 @@ namespace Primora.Screens
                 if (content.Length > (View.Width - 2))
                     throw new Exception($"Message \"{new string([.. content.Select(a => a.GlyphCharacter)])}\" succeeds max content width by {content.Length - (View.Width - 2)} characters!");
 
-                View.Print(0, row++, content);
+                View.Print(1, row++, content);
             }
         }
 
         private static ColoredGlyph[] ParseContent(string content)
         {
             // TODO: Improve to parse colors from content string
-            return [.. content.Select(a => new ColoredGlyph(Color.White, Color.Transparent, a))];
+            var defaultColor = "#adadad".HexToColor();
+            return [.. content.Select(a => new ColoredGlyph(defaultColor, Color.Transparent, a))];
         }
     }
 
@@ -65,6 +82,7 @@ namespace Primora.Screens
 
         public LogEntry Append(string content, Color? color = null)
         {
+            // TODO: Put color into the content with formatting
             Content += content;
             return this;
         }
