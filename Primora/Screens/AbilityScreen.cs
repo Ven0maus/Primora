@@ -1,10 +1,10 @@
 ﻿namespace Primora.Screens
 {
-    internal class EquipmentScreen : TextScreen
+    internal class AbilityScreen : TextScreen
     {
-        private const string Title = "Equipment";
+        private const string Title = "Abilities";
 
-        public EquipmentScreen(int width, int height) : 
+        public AbilityScreen(int width, int height) : 
             base(Title, width, height)
         {
 

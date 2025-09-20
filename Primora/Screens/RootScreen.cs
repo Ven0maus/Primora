@@ -4,7 +4,6 @@ using SadConsole;
 using SadConsole.Entities;
 using SadRogue.Primitives;
 using System;
-using static Primora.Extensions.SurfaceExtensions;
 
 namespace Primora.Screens
 {
@@ -32,6 +31,10 @@ namespace Primora.Screens
         /// The main screen for rendering the player equipment.
         /// </summary>
         internal readonly EquipmentScreen EquipmentScreen;
+        /// <summary>
+        /// The main screen for rendering the entities in the surrounding environment of the player.
+        /// </summary>
+        internal readonly AbilityScreen AbilitiesScreen;
         #endregion
 
         /// <summary>
@@ -52,22 +55,25 @@ namespace Primora.Screens
 
             Instance = this;
 
+            // Screen is 80 x 50
             // Create screen layout
-            var borderSurface = new ScreenSurface(60, 50);
+            var borderSurface = new ScreenSurface(60, 40);
             borderSurface.Surface.DrawBorder(LineThickness.Thin, "World", Color.Gray, Color.White);
 
             WorldScreen = new WorldScreen(borderSurface.Width - 2, borderSurface.Height - 2) { Position = (0, 0) };
             WorldScreen.Position = new Point(1, 1);
             borderSurface.Children.Add(WorldScreen);
 
-            LogScreen = new LogScreen(20, 20) { Position = (60, 0) };
-            StatsScreen = new StatsScreen(20, 14) { Position = (60, 20) };
-            EquipmentScreen = new EquipmentScreen(20, 16) { Position = (60, 34) };
+            LogScreen = new LogScreen(40, 10) { Position = (0, 40) };
+            StatsScreen = new StatsScreen(20, 25) { Position = (60, 0) };
+            EquipmentScreen = new EquipmentScreen(20, 25) { Position = (60, 25) };
+            AbilitiesScreen = new AbilityScreen(20, 10) { Position = (40, 40) };
 
             Children.Add(borderSurface);
             Children.Add(LogScreen);
             Children.Add(StatsScreen);
             Children.Add(EquipmentScreen);
+            Children.Add(AbilitiesScreen);
 
             // Entity manager component
             EntityManager = new EntityManager
@@ -147,9 +153,20 @@ namespace Primora.Screens
         {
             // TODO: Open character creation screen
             GenerateWorld();
+
+            // Update all the displays
+            UpdateDisplays();
         }
 
-        internal void GenerateWorld()
+        internal void UpdateDisplays()
+        {
+            StatsScreen.UpdateDisplay();
+            EquipmentScreen.UpdateDisplay();
+            AbilitiesScreen.UpdateDisplay();
+            LogScreen.UpdateDisplay();
+        }
+
+        private void GenerateWorld()
         {
             // TODO: Show a fancy loading bar?
             World.Generate();

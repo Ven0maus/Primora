@@ -17,11 +17,11 @@ namespace Primora.Extensions
             // Print title
             surface.Print(surface.Width / 2 - title.Length / 2, 0, new ColoredString(title, titleColor, Color.Transparent));
         }
+    }
 
-        public enum LineThickness
-        {
-            Thin,
-            Thick
-        }
+    public enum LineThickness
+    {
+        Thin,
+        Thick
     }
 }

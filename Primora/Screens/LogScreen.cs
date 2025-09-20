@@ -1,5 +1,4 @@
-﻿using Primora.Extensions;
-using SadConsole;
+﻿using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -7,58 +6,39 @@ using System.Linq;
 
 namespace Primora.Screens
 {
-    internal class LogScreen : ScreenSurface
+    internal class LogScreen : TextScreen
     {
         private const string Title = "Event Log";
         private readonly Queue<LogEntry> _logEntries = [];
 
-        private readonly ScreenSurface _screen;
-
         public LogScreen(int width, int height) : 
-            base(width, height)
-        {
-            var nW = width - 2;
-            var nH = height - 2;
-
-            nW = (int)(nW * 1.4); // 1.4 because font is 4 pixels smaller than base font
-            nH = (int)(nH * 1.4);
-            _screen = new ScreenSurface(nW, nH)
-            {
-                Font = Game.Instance.Fonts["Cheepicus_12x12"],
-                Position = new Point(1, 1)
-            };
-            Children.Add(_screen);
-
-            Surface.DrawBorder(SurfaceExtensions.LineThickness.Thin, Title, Color.Gray, Color.White);
-
-            // Test
-            Add(LogEntry.New($"Hello world!"));
-        }
+            base(Title, width, height)
+        { }
 
         public void Add(LogEntry logEntry)
         {
             if (logEntry == null) return;
 
             _logEntries.Enqueue(logEntry);
-            if (_logEntries.Count > (_screen.Height - 2))
+            if (_logEntries.Count > (View.Height - 2))
                 _ = _logEntries.Dequeue();
 
-            UpdateLogDisplay();
+            UpdateDisplay();
         }
 
-        private void UpdateLogDisplay()
+        public override void UpdateDisplay()
         {
-            _screen.Clear();
+            View.Clear();
 
             // Parse content and handle
             int row = 1;
             foreach (var logEntry in _logEntries)
             {
                 var content = ParseContent(logEntry.Content);
-                //if (content.Length > (_screen.Width - 2))
-                    //throw new Exception($"Message \"{new string([.. content.Select(a => a.GlyphCharacter)])}\" succeeds max content width by {content.Length - (_screen.Width - 2)} characters!");
+                if (content.Length > (View.Width - 2))
+                    throw new Exception($"Message \"{new string([.. content.Select(a => a.GlyphCharacter)])}\" succeeds max content width by {content.Length - (View.Width - 2)} characters!");
 
-                _screen.Print(0, row++, content);
+                View.Print(0, row++, content);
             }
         }
 
@@ -67,43 +47,41 @@ namespace Primora.Screens
             // TODO: Improve to parse colors from content string
             return [.. content.Select(a => new ColoredGlyph(Color.White, Color.Transparent, a))];
         }
+    }
 
-        public class LogEntry
+    public class LogEntry
+    {
+        public string Content { get; private set; } = string.Empty;
+
+        private LogEntry()
+        { }
+
+        public static LogEntry New(string content, Color? color = null)
         {
-            public string Content { get; private set; } = string.Empty;
+            var entry = new LogEntry();
+            entry.Append(content, color);
+            return entry;
+        }
 
-            private LogEntry()
-            {
+        public LogEntry Append(string content, Color? color = null)
+        {
+            Content += content;
+            return this;
+        }
 
-            }
+        public LogEntry AppendLine(string content, Color? color = null)
+        {
+            if (Content.Length == 0)
+                return Append(content, color);
 
-            public static LogEntry New(string content, Color? color = null)
-            {
-                var entry = new LogEntry();
-                entry.Append(content, color);
-                return entry;
-            }
+            Content += "\n" + content;
+            return this;
+        }
 
-            public LogEntry Append(string content, Color? color = null)
-            {
-                Content += content;
-                return this;
-            }
-
-            public LogEntry AppendLine(string content, Color? color = null)
-            {
-                if (Content.Length == 0)
-                    return Append(content, color);
-
-                Content += "\n" + content;
-                return this;
-            }
-
-            public LogEntry Clear()
-            {
-                Content = string.Empty;
-                return this;
-            }
+        public LogEntry Clear()
+        {
+            Content = string.Empty;
+            return this;
         }
     }
 }

@@ -1,17 +1,23 @@
-﻿using Primora.Extensions;
+﻿using Primora.Core.Npcs.Actors;
 using SadConsole;
-using SadRogue.Primitives;
 
 namespace Primora.Screens
 {
-    internal class StatsScreen : ScreenSurface
+    internal class StatsScreen : TextScreen
     {
         private const string Title = "Stats";
 
         public StatsScreen(int width, int height) : 
-            base(width, height)
+            base(Title, width, height)
         {
-            Surface.DrawBorder(SurfaceExtensions.LineThickness.Thin, Title, Color.Gray, Color.White);
+
+        }
+
+        public override void UpdateDisplay()
+        {
+            var stats = Player.Instance.Stats;
+
+            View.Print(1, 1, $"Health: {stats.Health}");
         }
     }
 }
