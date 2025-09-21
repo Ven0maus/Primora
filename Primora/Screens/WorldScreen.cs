@@ -2,6 +2,7 @@
 using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
 using SadConsole;
+using SadConsole.Components;
 using SadConsole.Input;
 using SadRogue.Primitives;
 using System.Collections.Generic;
@@ -28,6 +29,7 @@ namespace Primora.Screens
         public readonly (int width, int height) WorldMapScreenSize;
 
         private readonly ScreenSurface _borderSurface;
+        private readonly MouseDragViewPort _mouseDragViewPortComponent;
 
         public WorldScreen(ScreenSurface borderSurface,
             (int width, int height) zoneSize, 
@@ -40,6 +42,8 @@ namespace Primora.Screens
             ZoneScreenSize = zoneSize;
             WorldMapScreenSize = worldMapSize;
 
+            SadComponents.Add(_mouseDragViewPortComponent = new MouseDragViewPort());
+            _mouseDragViewPortComponent.IsEnabled = false;
             UseKeyboard = true;
             UseMouse = true;
             IsFocused = true;
@@ -98,6 +102,8 @@ namespace Primora.Screens
             ViewPosition = Player.Instance.WorldPosition - new Point(
                 ViewWidth / 2,
                 ViewHeight / 2);
+
+            _mouseDragViewPortComponent.IsEnabled = true;
         }
 
         public void AdaptScreenForZone()
@@ -130,6 +136,8 @@ namespace Primora.Screens
             ViewPosition = Player.Instance.Position - new Point(
                 ViewWidth / 2,
                 ViewHeight / 2);
+
+            _mouseDragViewPortComponent.IsEnabled = false;
         }
     }
 }

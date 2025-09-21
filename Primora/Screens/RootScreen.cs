@@ -2,6 +2,7 @@
 using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
 using SadConsole;
+using SadConsole.Components;
 using SadConsole.Entities;
 using SadRogue.Primitives;
 using System;
@@ -95,7 +96,6 @@ namespace Primora.Screens
 
             WorldScreen.MouseMove += RenderingSurface_MouseMove;
             WorldScreen.MouseExit += RenderingSurface_MouseExit;
-            WorldScreen.MouseButtonClicked += RenderingSurface_MouseButtonClicked;
 
             // Setup the world with a much larger size
             World = new World();
@@ -135,24 +135,6 @@ namespace Primora.Screens
                 _currentHoverTile = pos;
                 WorldScreen.SetDecorator(pos.X, pos.Y, 1, new CellDecorator(Color.Black, 255, Mirror.None));
             }
-        }
-
-        private void RenderingSurface_MouseButtonClicked(object sender, SadConsole.Input.MouseScreenObjectState e)
-        {
-            // TODO: Rework into fast travel, properly going into zones, this is just for testing purposes at the moment.
-            if (World.CurrentZone != null && World.CurrentZone.IsDisplayed)
-            {
-                if (e.Mouse.RightClicked)
-                {
-                    // Go back to world map
-                    World.ShowWorldMap();
-                }
-                return; 
-            }
-            if (!e.Mouse.LeftClicked) return;
-
-            var coordinate = e.SurfaceCellPosition + WorldScreen.ViewPosition;
-            _ = World.OpenZone(coordinate);
         }
 
         /// <summary>
