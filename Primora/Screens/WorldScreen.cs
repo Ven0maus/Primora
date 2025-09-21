@@ -67,6 +67,14 @@ namespace Primora.Screens
                     }
                 }
             }
+            if (keyboard.IsKeyPressed(Keys.M))
+            {
+                var world = World.Instance;
+                if (world.WorldMap.IsDisplayed)
+                    world.ShowCurrentZone();
+                else
+                    world.ShowWorldMap();
+            }
             return base.ProcessKeyboard(keyboard);
         }
 
