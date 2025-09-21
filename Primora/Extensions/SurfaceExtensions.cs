@@ -5,13 +5,13 @@ namespace Primora.Extensions
 {
     internal static class SurfaceExtensions
     {
-        internal static void DrawBorder(this ICellSurface surface, LineThickness lineStyle, string title, Color borderColor, Color titleColor)
+        internal static void DrawBorder(this ICellSurface surface, LineThickness lineStyle, string title, Color borderColor, Color titleColor, Color? background = null)
         {
             var style = lineStyle == LineThickness.Thin ? 
                 ICellSurface.ConnectedLineThin : ICellSurface.ConnectedLineThick;
 
             // Draw borders
-            var shapeParams = ShapeParameters.CreateStyledBox(style, new ColoredGlyph(borderColor), ignoreBorderBackground: true);
+            var shapeParams = ShapeParameters.CreateStyledBox(style, new ColoredGlyph(borderColor, background ?? Color.Transparent), ignoreBorderBackground: background == null ? true : false);
             surface.DrawBox(new Rectangle(0, 0, surface.Width, surface.Height), shapeParams);
 
             // Print title

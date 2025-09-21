@@ -1,4 +1,5 @@
-﻿using Primora.Core.Procedural.WorldBuilding;
+﻿using Primora.Core.Npcs.Actors;
+using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
 using SadConsole;
 using SadConsole.Entities;
@@ -55,12 +56,17 @@ namespace Primora.Screens
 
             Instance = this;
 
-            // Screen is 80 x 50
-            // Create screen layout
-            var borderSurface = new ScreenSurface(60, 40);
-            borderSurface.Surface.DrawBorder(LineThickness.Thin, "World", Color.Gray, Color.White);
+            const int MaxScreenWidth = 80;
+            const int MaxScreenHeight = 50;
 
-            WorldScreen = new WorldScreen(borderSurface.Width - 2, borderSurface.Height - 2) { Position = (0, 0) };
+            // Create screen layout for zone
+            var borderSurface = new ScreenSurface(60, 40);
+            WorldScreen = new WorldScreen(borderSurface, 
+                (borderSurface.Width - 2, borderSurface.Height - 2), 
+                (MaxScreenWidth - 2, MaxScreenHeight - 2)) 
+            { 
+                Position = (0, 0) 
+            };
             WorldScreen.Position = new Point(1, 1);
             borderSurface.Children.Add(WorldScreen);
 
@@ -69,11 +75,14 @@ namespace Primora.Screens
             EquipmentScreen = new EquipmentScreen(20, 25) { Position = (60, 25) };
             AbilitiesScreen = new AbilityScreen(20, 10) { Position = (40, 40) };
 
-            Children.Add(borderSurface);
             Children.Add(LogScreen);
             Children.Add(StatsScreen);
             Children.Add(EquipmentScreen);
             Children.Add(AbilitiesScreen);
+
+            // World screen needs to be last in the render,
+            // This so that the "worldmap" can be rendered on top of all others
+            Children.Add(borderSurface);
 
             // Entity manager component
             EntityManager = new EntityManager
@@ -170,7 +179,7 @@ namespace Primora.Screens
         {
             // TODO: Show a fancy loading bar?
             World.Generate();
-            World.ShowWorldMap();
+            World.OpenZone(Player.Instance.WorldPosition);
         }
     }
 }

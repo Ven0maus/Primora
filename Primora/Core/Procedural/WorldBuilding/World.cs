@@ -94,24 +94,11 @@ namespace Primora.Core.Procedural.WorldBuilding
             if (CurrentZone != null)
                 CurrentZone.IsDisplayed = false;
 
-            RootScreen.Instance.WorldScreen.Resize(
-                RootScreen.Instance.WorldScreen.OriginalWidth, 
-                RootScreen.Instance.WorldScreen.OriginalHeight,
-                Constants.Worldmap.DefaultWidth, 
-                Constants.Worldmap.DefaultHeight,
-                false);
-
-            RootScreen.Instance.WorldScreen.FontSize = new Point(
-                Constants.General.FontGlyphWidth,
-                Constants.General.FontGlyphHeight);
-
-            // Center view on player
-            RootScreen.Instance.WorldScreen.ViewPosition = Player.WorldPosition - new Point(
-                RootScreen.Instance.WorldScreen.ViewWidth / 2,
-                RootScreen.Instance.WorldScreen.ViewHeight / 2);
+            var worldScreen = RootScreen.Instance.WorldScreen;
+            worldScreen.AdaptScreenForWorldMap();
 
             // Render world map
-            WorldMap.Tilemap.Render(RootScreen.Instance.WorldScreen);
+            WorldMap.Tilemap.Render(worldScreen);
             WorldMap.IsDisplayed = true;
 
             // Render also the entities
@@ -125,25 +112,11 @@ namespace Primora.Core.Procedural.WorldBuilding
         {
             WorldMap.IsDisplayed = false;
 
-            // Zone is half the size of worldmap but font is double size of worldmap font.
-            RootScreen.Instance.WorldScreen.Resize(
-                RootScreen.Instance.WorldScreen.OriginalWidth / 2,
-                RootScreen.Instance.WorldScreen.OriginalHeight / 2,
-                Constants.Zone.DefaultWidth,
-                Constants.Zone.DefaultHeight,
-                false);
-
-            RootScreen.Instance.WorldScreen.FontSize = new Point(
-                Constants.General.FontGlyphWidth * 2, 
-                Constants.General.FontGlyphHeight * 2);
-
-            // Center view on player
-            RootScreen.Instance.WorldScreen.ViewPosition = Player.Position - new Point(
-                RootScreen.Instance.WorldScreen.ViewWidth / 2,
-                RootScreen.Instance.WorldScreen.ViewHeight / 2);
+            var worldScreen = RootScreen.Instance.WorldScreen;
+            worldScreen.AdaptScreenForZone();
 
             // Render zone
-            CurrentZone.Tilemap.Render(RootScreen.Instance.WorldScreen);
+            CurrentZone.Tilemap.Render(worldScreen);
             CurrentZone.IsDisplayed = true;
 
             // Render also the entities
