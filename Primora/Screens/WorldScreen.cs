@@ -69,7 +69,9 @@ namespace Primora.Screens
         public void AdaptScreenForWorldMap()
         {
             // Screen is already adapted for worldmap
-            if (_borderSurface.Width == WorldMapScreenSize.width + 2 && _borderSurface.Height == WorldMapScreenSize.height + 2)
+            if (FontSize == new Point(Constants.General.FontGlyphWidth, Constants.General.FontGlyphHeight) && 
+                _borderSurface.Width == WorldMapScreenSize.width + 2 && 
+                _borderSurface.Height == WorldMapScreenSize.height + 2)
                 return;
 
             // Resize also the border surface
@@ -101,7 +103,9 @@ namespace Primora.Screens
         public void AdaptScreenForZone()
         {
             // Screen is already adapted for zones
-            if (_borderSurface.Width == ZoneScreenSize.width + 2 && _borderSurface.Height == ZoneScreenSize.height + 2)
+            if (FontSize == new Point(Constants.General.FontGlyphWidth *2, Constants.General.FontGlyphHeight * 2) && 
+                _borderSurface.Width == ZoneScreenSize.width + 2 && 
+                _borderSurface.Height == ZoneScreenSize.height + 2)
                 return;
 
             // Resize also the border surface
