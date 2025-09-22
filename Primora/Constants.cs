@@ -13,6 +13,11 @@ namespace Primora
             internal const string GameTitle = "Primora";
             internal static int GameSeed = 1924984455; // new Random().Next();
 
+            /// <summary>
+            /// The glyph used to display paths from the pathfinders.
+            /// </summary>
+            internal const char PathingGlyph = 'O';
+
             internal static readonly JsonSerializerOptions SerializerOptions = new()
             {
                 PropertyNameCaseInsensitive = true,

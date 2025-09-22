@@ -64,15 +64,30 @@ namespace Primora.Core.Procedural.WorldBuilding
                     var tileInfo = GetTileInfo(x, y);
                     var weight = tileInfo.Biome switch
                     {
-                        Biome.Grassland => 8,
+                        Biome.Grassland => 7,
                         Biome.Forest => 9,
-                        Biome.Bridge or Biome.Road => 1,
-                        _ => 10,
+                        Biome.Bridge or Biome.Road => 5,
+                        _ => 10
                     };
                     tileInfo.Weight = Weights[x, y] = weight;
                     SetTileInfo(x, y, tileInfo);
                 }
             }
+        }
+
+        internal double GetLowestWeight()
+        {
+            double weight = double.MaxValue;
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    var weightValue = GetTileInfo(x, y).Weight;
+                    if (weightValue < weight)
+                        weight = weightValue;
+                }
+            }
+            return weight;
         }
 
         #region Accessors
@@ -290,7 +305,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             return biomeMap;
         }
 
-        public void RecordBiomesIntoWorldMap(Biome[,] biomeMap)
+        private void RecordBiomesIntoWorldMap(Biome[,] biomeMap)
         {
             for (int x = 0; x < Width; x++)
             {
@@ -732,7 +747,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             var roadPoints = RiverNetworkHelper.BuildMajorRiver(heightMap, Width, Height, random, out var riverDistances);
 
             // Draw roads between cities
-            var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
+            var glyphPositions = roadPoints.DefineLineGlyphsByPositions();
             foreach (var (coordinate, _) in glyphPositions)
             {
                 var tile = Tilemap.GetTile(coordinate);
@@ -776,7 +791,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             var roadPoints = RoadNetworkHelper.BuildRoadNetwork(cityPositions, heightMap, Width, Height, random);
 
             // Draw roads between cities
-            var glyphPositions = DefineLineGlyphsByPositions(roadPoints);
+            var glyphPositions = roadPoints.DefineLineGlyphsByPositions();
             foreach (var (coordinate, glyph) in glyphPositions)
             {
                 var tile = Tilemap.GetTile(coordinate);
@@ -871,47 +886,6 @@ namespace Primora.Core.Procedural.WorldBuilding
         #endregion
 
         #region Utility Functions
-        /// <summary>
-        /// Defines the correct box-line style glyphs for the entire path.
-        /// </summary>
-        /// <param name="positions"></param>
-        /// <returns></returns>
-        public static List<(Point coordinate, int glyph)> DefineLineGlyphsByPositions(HashSet<Point> positions)
-        {
-            var glyphs = new List<(Point coordinate, int glyph)>();
-            foreach (var point in positions)
-            {
-                // Check each neighbor to define the correct glyph for this point
-                bool left = positions.Contains(new Point(point.X - 1, point.Y));
-                bool right = positions.Contains(new Point(point.X + 1, point.Y));
-                bool up = positions.Contains(new Point(point.X, point.Y - 1));
-                bool down = positions.Contains(new Point(point.X, point.Y + 1));
-
-                int glyph;
-
-                // Decide glyph based on neighbors
-                if (left && right && up && down) glyph = 197;        // ┼
-                else if (left && right && up) glyph = 193;           // ┴
-                else if (left && right && down) glyph = 194;         // ┬
-                else if (up && down && left) glyph = 180;            // ┤
-                else if (up && down && right) glyph = 195;           // ├
-                else if (left && right) glyph = 196;                 // ─
-                else if (up && down) glyph = 179;                    // │
-                else if (down && right) glyph = 218;                 // ┌
-                else if (down && left) glyph = 191;                  // ┐
-                else if (up && right) glyph = 192;                   // └
-                else if (up && left) glyph = 217;                    // ┘
-                else if (left) glyph = 196;
-                else if (right) glyph = 196;
-                else if (up) glyph = 179;
-                else if (down) glyph = 179;
-                else glyph = 250; // middle dot for isolated tile
-
-                glyphs.Add((point, glyph));
-            }
-            return glyphs;
-        }
-
         private static Biome SelectOrganicBiome(
             int seed,
             float height,

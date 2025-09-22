@@ -55,6 +55,21 @@ namespace Primora.Core.Procedural.WorldBuilding
             // TODO: Generate NPCS
         }
 
+        internal double GetLowestWeight()
+        {
+            double weight = double.MaxValue;
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    var weightValue = GetTileInfo(x, y).Weight;
+                    if (weightValue < weight)
+                        weight = weightValue;
+                }
+            }
+            return weight;
+        }
+
         internal ZoneTileInfo GetTileInfo(int x, int y)
         {
             return _zoneTileInfo[Point.ToIndex(x, y, Width)];

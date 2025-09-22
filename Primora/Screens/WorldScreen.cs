@@ -6,6 +6,7 @@ using Primora.Extensions;
 using SadConsole;
 using SadConsole.Input;
 using SadRogue.Primitives;
+using SadRogue.Primitives.GridViews;
 using System.Collections.Generic;
 
 namespace Primora.Screens
@@ -32,9 +33,10 @@ namespace Primora.Screens
         private readonly ScreenSurface _borderSurface;
         private readonly MouseDragViewPortCustom _mouseDragViewPortComponent;
         private readonly FastAStar _worldMapPathfinder;
+        private readonly FastAStar _zonePathfinder;
 
-        private Path _currentPath;
-        private Point? _currentHoverTile;
+        private Path _currentWorldMapPath, _currentZonePath;
+        private Point? _currentHoverTile, _currentZoneHoverTile;
 
         public WorldScreen(ScreenSurface borderSurface,
             (int width, int height) zoneSize, 
@@ -61,16 +63,45 @@ namespace Primora.Screens
             // Setup the pathfinder for the worldmap
             var worldmap = World.Instance.WorldMap;
             _worldMapPathfinder = new FastAStar(worldmap.Walkability, Distance.Manhattan, worldmap.Weights, 1);
+
+            // Setup the pathfinder for the zones
+            // Since zones change dynamically, we need to use lambda view
+            var zoneWalkabilityView = new LambdaGridView<bool>(Constants.Zone.DefaultWidth, Constants.Zone.DefaultHeight, 
+                (p) => World.Instance.CurrentZone.GetTileInfo(p).Walkable);
+            var zoneWeightsView = new LambdaGridView<double>(Constants.Zone.DefaultWidth, Constants.Zone.DefaultHeight,
+                (p) => World.Instance.CurrentZone.GetTileInfo(p).Weight);
+            _zonePathfinder = new FastAStar(zoneWalkabilityView, Distance.Manhattan, zoneWeightsView, 1);
         }
+
+        /// <summary>
+        /// Updates the lowest weight for the worldmap pathfinder.
+        /// </summary>
+        /// <param name="value"></param>
+        internal void UpdateLowestWeightForWorldMap(double value)
+            => _worldMapPathfinder.MinimumWeight = value;
+
+        /// <summary>
+        /// Updates the lowest weight for the zone pathfinder.
+        /// </summary>
+        /// <param name="value"></param>
+        internal void UpdateLowestWeightForZone(double value)
+            => _zonePathfinder.MinimumWeight = value;
 
         public override bool ProcessMouse(MouseScreenObjectState state)
         {
+            VisualizeWorldMapPath(state);
+            VisualizeZonePath(state);
+            return base.ProcessMouse(state);
+        }
+
+        private void VisualizeWorldMapPath(MouseScreenObjectState state)
+        {
+            // TODO: Fix path getting removed by hover glyph in mouse move
             if (state.Mouse.LeftClicked && World.Instance.WorldMap.IsDisplayed)
             {
-                // TODO: Fix path getting removed by hover glyph in mouse move
-                if (_currentPath != null)
+                if (_currentWorldMapPath != null)
                 {
-                    foreach (var p in _currentPath.Steps)
+                    foreach (var p in _currentWorldMapPath.Steps)
                     {
                         this.ClearDecorators(p.X, p.Y, 1);
                     }
@@ -79,15 +110,51 @@ namespace Primora.Screens
                 var path = _worldMapPathfinder.ShortestPath(Player.Instance.WorldPosition, state.SurfaceCellPosition + ViewPosition);
                 if (path != null)
                 {
-                    foreach (var p in path.Steps)
+                    var steps = path.Steps.DefineLineGlyphsByPositions();
+                    foreach (var (coordinate, glyph) in steps)
                     {
-                        this.SetDecorator(p.X, p.Y, 1, new CellDecorator(Color.White, 255, Mirror.None));
+                        this.SetDecorator(coordinate.X, coordinate.Y, 1, new CellDecorator(Color.White, glyph, Mirror.None));
                     }
                 }
 
-                _currentPath = path;
+                _currentWorldMapPath = path;
             }
-            return base.ProcessMouse(state);
+        }
+
+        private void VisualizeZonePath(MouseScreenObjectState state)
+        {
+            // TODO: Fix path getting removed by hover glyph in mouse move
+            if (World.Instance.WorldMap.IsDisplayed) return;
+
+            // Only visualize zone pathing if aiming
+            if (!Player.Instance.IsAiming) return;
+
+            // Don't recalculate path if we didn't leave the current hover tile
+            if (_currentZoneHoverTile != null && _currentZoneHoverTile.Value == (state.CellPosition + ViewPosition))
+                return;
+
+            // Set new hover tile position
+            _currentZoneHoverTile = state.CellPosition + ViewPosition;
+
+            if (_currentZonePath != null)
+            {
+                foreach (var p in _currentZonePath.Steps)
+                {
+                    this.ClearDecorators(p.X, p.Y, 1);
+                }
+            }
+
+            var path = _zonePathfinder.ShortestPath(Player.Instance.Position, state.SurfaceCellPosition + ViewPosition);
+            if (path != null)
+            {
+                var steps = path.Steps.DefineLineGlyphsByPositions();
+                foreach (var (coordinate, glyph) in steps)
+                {
+                    this.SetDecorator(coordinate.X, coordinate.Y, 1, new CellDecorator(Color.White, glyph, Mirror.None));
+                }
+            }
+
+            _currentZonePath = path;
         }
 
         public override bool ProcessKeyboard(Keyboard keyboard)
@@ -108,6 +175,7 @@ namespace Primora.Screens
                     }
                 }
             }
+
             if (keyboard.IsKeyPressed(Keys.M))
             {
                 var world = World.Instance;
@@ -116,6 +184,7 @@ namespace Primora.Screens
                 else
                     world.ShowWorldMap();
             }
+
             return base.ProcessKeyboard(keyboard);
         }
 
@@ -126,6 +195,8 @@ namespace Primora.Screens
                 _borderSurface.Width == WorldMapScreenSize.width + 2 && 
                 _borderSurface.Height == WorldMapScreenSize.height + 2)
                 return;
+
+            _currentZonePath = null;
 
             // Resize also the border surface
             _borderSurface.Resize(
@@ -162,6 +233,8 @@ namespace Primora.Screens
                 _borderSurface.Width == ZoneScreenSize.width + 2 && 
                 _borderSurface.Height == ZoneScreenSize.height + 2)
                 return;
+
+            _currentWorldMapPath = null;
 
             // Resize also the border surface
             _borderSurface.Resize(

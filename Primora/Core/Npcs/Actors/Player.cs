@@ -20,6 +20,11 @@ namespace Primora.Core.Npcs.Actors
         /// </summary>
         public Point WorldPosition => Location.WorldPosition;
 
+        /// <summary>
+        /// True if the player is in aiming mode.
+        /// </summary>
+        public bool IsAiming { get; set; } = false;
+
         public Player(Zone zone, Point position) : 
             base(zone, position, Entities.Player)
         {

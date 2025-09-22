@@ -131,7 +131,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         /// <param name="worldPosition"></param>
         /// <param name="setAsCurrentZone"></param>
-        internal Zone OpenZone(Point worldPosition, bool setAsCurrentZone = true)
+        internal Zone OpenZone(Point worldPosition, bool setAsCurrentZone = true, bool cacheZone = true)
         {
             if (!_zoneCache.TryGetValue(worldPosition, out var zone))
             {
@@ -140,12 +140,15 @@ namespace Primora.Core.Procedural.WorldBuilding
                 zone.Generate();
 
                 // Add to cache
-                _zoneCache[worldPosition, Constants.Zone.ZoneCacheTTLInTurns] = zone;
+                if (cacheZone)
+                {
+                    _zoneCache[worldPosition, Constants.Zone.ZoneCacheTTLInTurns] = zone;
 
-                // Remove lowest ttl from cache ones atleast 2 zones are in cache
-                // Current and previous zone is the only ones cached
-                if (_zoneCache.Count > 2)
-                    _zoneCache.RemoveLowestTTL();
+                    // Remove lowest ttl from cache ones atleast 2 zones are in cache
+                    // Current and previous zone is the only ones cached
+                    if (_zoneCache.Count > 2)
+                        _zoneCache.RemoveLowestTTL();
+                }
             }
 
             if (setAsCurrentZone)
@@ -159,6 +162,8 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         private void SpawnPlayerActorInRandomZone()
         {
+            // TODO: when no valid location can be found, fallback to a random grassland biome location.
+
             if (Settlements.Count == 0)
                 throw new Exception("There are no settlements on the map!");
 
@@ -195,7 +200,7 @@ namespace Primora.Core.Procedural.WorldBuilding
                 throw new Exception("Could not find a valid zone within the world map for player generation.");
 
             // Open the zone
-            var zone = OpenZone(candidateWorldPositions[random.Next(candidateWorldPositions.Count)], false);
+            var zone = OpenZone(candidateWorldPositions[random.Next(candidateWorldPositions.Count)], false, false);
 
             // Find a position within the zone that has no obstructions in its immediate area (4 radius)
             var candidateZonePositions = new List<Point>();

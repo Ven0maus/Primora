@@ -97,9 +97,7 @@ namespace Primora.Screens
 
             // Testing:
             StartGame();
-        }
-
-        
+        }     
 
         /// <summary>
         /// Entrypoint into gameplay, enters into the character creation screen.
@@ -126,6 +124,10 @@ namespace Primora.Screens
             // TODO: Show a fancy loading bar?
             World.Generate();
             World.OpenZone(Player.Instance.WorldPosition);
+
+            // Set lowest weights for pathfinding
+            WorldScreen.UpdateLowestWeightForWorldMap(World.WorldMap.GetLowestWeight());
+            WorldScreen.UpdateLowestWeightForZone(World.CurrentZone.GetLowestWeight());
         }
     }
 }
