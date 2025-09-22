@@ -13,7 +13,7 @@ namespace Primora.Extensions
                 ICellSurface.ConnectedLineThin : ICellSurface.ConnectedLineThick;
 
             // Draw borders
-            var shapeParams = ShapeParameters.CreateStyledBox(style, new ColoredGlyph(borderColor, background ?? Color.Transparent), ignoreBorderBackground: background == null ? true : false);
+            var shapeParams = ShapeParameters.CreateStyledBox(style, new ColoredGlyph(borderColor, background ?? Color.Transparent), ignoreBorderBackground: background == null);
             surface.DrawBox(new Rectangle(0, 0, surface.Width, surface.Height), shapeParams);
 
             // Print title
@@ -28,7 +28,7 @@ namespace Primora.Extensions
         public static List<(Point coordinate, int glyph)> DefineLineGlyphsByPositions(this IEnumerable<Point> positions)
         {
             var glyphs = new List<(Point coordinate, int glyph)>();
-            var hashset = positions as HashSet<Point> ?? positions.ToHashSet();
+            var hashset = positions as HashSet<Point> ?? [.. positions];
             foreach (var point in hashset)
             {
                 // Check each neighbor to define the correct glyph for this point

@@ -123,7 +123,7 @@ namespace Primora.Screens
                 }
 
                 var startPos = Player.Instance.WorldPosition;
-                var path = _worldMapPathfinder.ShortestPath(startPos, state.SurfaceCellPosition + ViewPosition);
+                var path = _worldMapPathfinder.ShortestPath(startPos, state.SurfaceCellPosition + ViewPosition, false);
                 if (path != null)
                 {
                     var steps = path.Steps.Append(startPos).DefineLineGlyphsByPositions();
@@ -162,7 +162,7 @@ namespace Primora.Screens
             }
 
             var startPos = Player.Instance.Position;
-            var path = _zonePathfinder.ShortestPath(startPos, state.SurfaceCellPosition + ViewPosition);
+            var path = _zonePathfinder.ShortestPath(startPos, state.SurfaceCellPosition + ViewPosition, false);
             if (path != null)
             {
                 var steps = path.Steps.Append(startPos).DefineLineGlyphsByPositions();
