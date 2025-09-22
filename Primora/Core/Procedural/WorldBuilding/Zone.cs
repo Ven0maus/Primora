@@ -41,9 +41,11 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         internal void Generate(bool cached = true)
         {
-            _zoneLoadCount.TryGetValue(WorldPosition, out var count);
             if (cached)
+            {
+                _zoneLoadCount.TryGetValue(WorldPosition, out var count);
                 _zoneLoadCount[WorldPosition] = ++count;
+            }
 
             // Setup initial tilemap tiles
             InitTilemap();
