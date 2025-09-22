@@ -130,7 +130,7 @@ namespace Primora.Screens
                     foreach (var (coordinate, glyph) in steps)
                     {
                         if (coordinate == startPos) continue; // We added start pos so the correct glyph is generated
-                        _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyph, Color.White);
+                        _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyph, Color.Lerp(Color.White, Color.Transparent, 0.1f));
                     }
                 }
 
@@ -169,7 +169,7 @@ namespace Primora.Screens
                 foreach (var (coordinate, glyph) in steps)
                 {
                     if (coordinate == startPos) continue; // We added start pos so the correct glyph is generated
-                    _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyph, Color.White);
+                    _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyph, Color.Lerp(Color.White, Color.Transparent, 0.3f));
                 }
             }
 

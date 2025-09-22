@@ -13,7 +13,11 @@ namespace Primora.Core.Npcs.Actors
         /// <summary>
         /// Returns the current player zone.
         /// </summary>
-        public new Zone Location => (Zone)base.Location;
+        public new Zone Location
+        {
+            get => (Zone)base.Location;
+            private set => base.Location = value;
+        }
 
         /// <summary>
         /// Returns the position of the player on the world map.
@@ -33,6 +37,15 @@ namespace Primora.Core.Npcs.Actors
             Instance = this;
 
             PositionChanged += Player_PositionChanged;
+        }
+
+        /// <summary>
+        /// Travels the player into a new zone.
+        /// </summary>
+        /// <param name="worldPosition"></param>
+        public void Travel(Point worldPosition)
+        {
+            Location = World.Instance.OpenZone(worldPosition);
         }
 
         private void Player_PositionChanged(object sender, ValueChangedEventArgs<Point> e)

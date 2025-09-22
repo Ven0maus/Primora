@@ -123,7 +123,7 @@ namespace Primora.Screens
         {
             // TODO: Show a fancy loading bar?
             World.Generate();
-            World.OpenZone(Player.Instance.WorldPosition);
+            World.ShowCurrentZone();
 
             // Set lowest weights for pathfinding
             WorldScreen.UpdateLowestWeightForWorldMap(World.WorldMap.GetLowestWeight());

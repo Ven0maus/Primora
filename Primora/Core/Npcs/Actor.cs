@@ -21,7 +21,7 @@ namespace Primora.Core.Npcs
         /// <summary>
         /// Returns the zone or worldmap that the actor is active in.
         /// </summary>
-        public ILocation Location { get; }
+        public ILocation Location { get; protected set; }
 
         private Actor(ILocation location, Point position, ActorDefinition actorDefinition) : 
             base(foreground: actorDefinition.Foreground,

@@ -137,7 +137,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             {
                 // Create new zone and generate it.
                 zone = new Zone(worldPosition, Constants.Zone.DefaultWidth, Constants.Zone.DefaultHeight);
-                zone.Generate();
+                zone.Generate(cacheZone);
 
                 // Add to cache
                 if (cacheZone)
@@ -215,6 +215,10 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             if (candidateZonePositions.Count == 0)
                 throw new Exception("Could not find a valid position within the player designated spawn zone.");
+
+            // Open and store in cache + set as current zone but don't show yet
+            zone = OpenZone(zone.WorldPosition, false, true);
+            CurrentZone = zone;
 
             // Player entity itself
             Player = new Player(zone, candidateZonePositions[random.Next(candidateZonePositions.Count)]);
