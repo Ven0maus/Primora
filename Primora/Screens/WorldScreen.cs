@@ -111,7 +111,6 @@ namespace Primora.Screens
 
         private void VisualizeWorldMapPath(MouseScreenObjectState state)
         {
-            // TODO: Fix path getting removed by hover glyph in mouse move
             if (state.Mouse.LeftClicked && World.Instance.WorldMap.IsDisplayed)
             {
                 if (_currentWorldMapPath != null)
@@ -123,14 +122,16 @@ namespace Primora.Screens
                 }
 
                 var startPos = Player.Instance.WorldPosition;
-                var path = _worldMapPathfinder.ShortestPath(startPos, state.SurfaceCellPosition + ViewPosition, false);
+                var endPos = state.SurfaceCellPosition + ViewPosition;
+                var path = _worldMapPathfinder.ShortestPath(startPos, endPos, false);
                 if (path != null)
                 {
                     var steps = path.Steps.Append(startPos).DefineLineGlyphsByPositions();
                     foreach (var (coordinate, glyph) in steps)
                     {
                         if (coordinate == startPos) continue; // We added start pos so the correct glyph is generated
-                        _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyph, Color.Lerp(Color.White, Color.Transparent, 0.1f));
+                        var glyphValue = coordinate == endPos ? 255 : glyph;
+                        _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyphValue, Color.Lerp(Color.White, Color.Transparent, 0.1f));
                     }
                 }
 
@@ -140,7 +141,6 @@ namespace Primora.Screens
 
         private void VisualizeZonePath(MouseScreenObjectState state)
         {
-            // TODO: Fix path getting removed by hover glyph in mouse move
             if (World.Instance.WorldMap.IsDisplayed) return;
 
             // Only visualize zone pathing if aiming
@@ -162,14 +162,16 @@ namespace Primora.Screens
             }
 
             var startPos = Player.Instance.Position;
-            var path = _zonePathfinder.ShortestPath(startPos, state.SurfaceCellPosition + ViewPosition, false);
+            var endPos = state.SurfaceCellPosition + ViewPosition;
+            var path = _zonePathfinder.ShortestPath(startPos, endPos, false);
             if (path != null)
             {
                 var steps = path.Steps.Append(startPos).DefineLineGlyphsByPositions();
                 foreach (var (coordinate, glyph) in steps)
                 {
                     if (coordinate == startPos) continue; // We added start pos so the correct glyph is generated
-                    _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyph, Color.Lerp(Color.White, Color.Transparent, 0.3f));
+                    var glyphValue = coordinate == endPos ? 255 : glyph;
+                    _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyphValue, Color.Lerp(Color.White, Color.Transparent, 0.3f));
                 }
             }
 
