@@ -1,6 +1,6 @@
 ﻿using Primora.Core.Npcs.Actors;
 using Primora.Core.Procedural.Objects;
-using Primora.Screens;
+using Primora.Screens.Main;
 using SadRogue.Primitives;
 using SadRogue.Primitives.SpatialMaps;
 using System;

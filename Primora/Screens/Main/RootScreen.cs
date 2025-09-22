@@ -7,7 +7,7 @@ using SadConsole.Entities;
 using SadRogue.Primitives;
 using System;
 
-namespace Primora.Screens
+namespace Primora.Screens.Main
 {
     internal class RootScreen : ScreenObject
     {

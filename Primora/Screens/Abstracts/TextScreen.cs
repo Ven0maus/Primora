@@ -2,7 +2,7 @@
 using SadConsole;
 using SadRogue.Primitives;
 
-namespace Primora.Screens
+namespace Primora.Screens.Abstracts
 {
     internal abstract class TextScreen : ScreenSurface
     {

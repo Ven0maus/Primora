@@ -1,7 +1,8 @@
 ﻿using Primora.Extensions;
+using Primora.Screens.Abstracts;
 using SadConsole;
 
-namespace Primora.Screens
+namespace Primora.Screens.Main
 {
     internal class AbilityScreen : TextScreen
     {

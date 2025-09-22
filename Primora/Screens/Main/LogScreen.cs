@@ -1,11 +1,12 @@
 ﻿using Primora.Extensions;
+using Primora.Screens.Abstracts;
 using SadConsole;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Primora.Screens
+namespace Primora.Screens.Main
 {
     internal class LogScreen : TextScreen
     {
@@ -27,7 +28,7 @@ namespace Primora.Screens
             if (logEntry == null) return;
 
             _logEntries.Enqueue(logEntry);
-            if (_logEntries.Count > (View.Height - 2))
+            if (_logEntries.Count > View.Height - 2)
                 _ = _logEntries.Dequeue();
 
             UpdateDisplay();
@@ -51,7 +52,7 @@ namespace Primora.Screens
             foreach (var logEntry in _logEntries)
             {
                 var content = ParseContent(logEntry.Content);
-                if (content.Length > (View.Width - 2))
+                if (content.Length > View.Width - 2)
                     throw new Exception($"Message \"{new string([.. content.Select(a => a.GlyphCharacter)])}\" succeeds max content width by {content.Length - (View.Width - 2)} characters!");
 
                 View.Print(1, row++, content);

@@ -4,7 +4,7 @@ using Primora.Core.Npcs.Objects;
 using Primora.Core.Procedural.Common;
 using Primora.Core.Procedural.Objects;
 using Primora.Extensions;
-using Primora.Screens;
+using Primora.Screens.Main;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;

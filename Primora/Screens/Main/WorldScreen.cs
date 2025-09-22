@@ -3,14 +3,17 @@ using Primora.Components;
 using Primora.Core.Npcs.Actors;
 using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
+using Primora.Screens.Helpers;
 using SadConsole;
 using SadConsole.Input;
+using SadConsole.UI;
 using SadRogue.Primitives;
 using SadRogue.Primitives.GridViews;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
-namespace Primora.Screens
+namespace Primora.Screens.Main
 {
     internal class WorldScreen : ScreenSurface
     {
@@ -41,6 +44,7 @@ namespace Primora.Screens
 
         private Path _currentWorldMapPath, _currentZonePath;
         private Point? _currentHoverTile, _currentZoneHoverTile;
+        private ControlsConsole _previousTravelScreen;
 
         public WorldScreen(ScreenSurface borderSurface,
             (int width, int height) zoneSize, 
@@ -133,6 +137,23 @@ namespace Primora.Screens
                         var glyphValue = coordinate == endPos ? 255 : glyph;
                         _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyphValue, Color.Lerp(Color.White, Color.Transparent, 0.1f));
                     }
+
+                    if (_previousTravelScreen != null)
+                    {
+                        _previousTravelScreen.Parent.Children.Remove(_previousTravelScreen);
+                        _previousTravelScreen.IsEnabled = false;
+                    }
+
+                    _previousTravelScreen = new ScreenBuilder()
+                        .AddTitle("Fast Travel")
+                        .EnableXButton()
+                        .AppendTextLine("Fast traveling here will take {} turns.")
+                        .AppendTextLine("You will consume {} food during your journey.")
+                        .Position(endPos - ViewPosition)
+                        .AddButton("Travel", () => Debug.WriteLine("Travel!"))
+                        .SurroundWithBorder()
+                        .BuildAndParent(this);
+
                 }
 
                 _currentWorldMapPath = path;
@@ -147,7 +168,7 @@ namespace Primora.Screens
             if (!Player.Instance.IsAiming) return;
 
             // Don't recalculate path if we didn't leave the current hover tile
-            if (_currentZoneHoverTile != null && _currentZoneHoverTile.Value == (state.CellPosition + ViewPosition))
+            if (_currentZoneHoverTile != null && _currentZoneHoverTile.Value == state.CellPosition + ViewPosition)
                 return;
 
             // Set new hover tile position
@@ -302,7 +323,7 @@ namespace Primora.Screens
             }
         }
 
-        private void RenderingSurface_MouseExit(object sender, SadConsole.Input.MouseScreenObjectState e)
+        private void RenderingSurface_MouseExit(object sender, MouseScreenObjectState e)
         {
             // Clear previous
             var prev = _currentHoverTile;
@@ -313,7 +334,7 @@ namespace Primora.Screens
             }
         }
 
-        private void RenderingSurface_MouseMove(object sender, SadConsole.Input.MouseScreenObjectState e)
+        private void RenderingSurface_MouseMove(object sender, MouseScreenObjectState e)
         {
             var pos = e.SurfaceCellPosition + ViewPosition;
 

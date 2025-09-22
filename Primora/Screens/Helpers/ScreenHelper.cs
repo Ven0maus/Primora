@@ -2,7 +2,7 @@
 using SadConsole.Configuration;
 using System;
 
-namespace Primora.Screens
+namespace Primora.Screens.Helpers
 {
     internal static class ScreenHelper
     {
@@ -22,8 +22,8 @@ namespace Primora.Screens
             int screenHeight = displayMode.Height;
 
             // Max cells that fit on this monitor
-            int maxCellsX = (int)((screenWidth * maxScreenFraction) / glyphWidth);
-            int maxCellsY = (int)((screenHeight * maxScreenFraction) / glyphHeight);
+            int maxCellsX = (int)(screenWidth * maxScreenFraction / glyphWidth);
+            int maxCellsY = (int)(screenHeight * maxScreenFraction / glyphHeight);
 
             // Clamp to minimum
             int rootWidth = Math.Max(minWidth, maxCellsX);
@@ -31,8 +31,8 @@ namespace Primora.Screens
 
             // Round down to nearest multiple of glyph size factor
             // Here we assume font glyphs are square multiples (8,16, etc.)
-            rootWidth = (rootWidth / 2) * 2;   // round down to nearest multiple of 2
-            rootHeight = (rootHeight / 2) * 2;
+            rootWidth = rootWidth / 2 * 2;   // round down to nearest multiple of 2
+            rootHeight = rootHeight / 2 * 2;
 
             return (rootWidth, rootHeight);
         }

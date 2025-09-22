@@ -1,10 +1,11 @@
 ﻿using Primora.Core.Items;
 using Primora.Core.Npcs.Actors;
 using Primora.Extensions;
+using Primora.Screens.Abstracts;
 using SadConsole;
 using System;
 
-namespace Primora.Screens
+namespace Primora.Screens.Main
 {
     internal class EquipmentScreen : TextScreen
     {
