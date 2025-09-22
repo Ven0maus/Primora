@@ -28,6 +28,11 @@ namespace Primora.Components
         public bool IsEnabled { get; set; } = true;
 
         /// <summary>
+        /// Should the viewpositioning also apply to all child surfaces?
+        /// </summary>
+        public bool ApplyToHierarchy { get; set; } = false;
+
+        /// <summary>
         /// Which mouse button to use for registering the dragging. Default: Left
         /// </summary>
         public MouseButtonType MouseButtonForDragging { get; set; }
@@ -66,7 +71,7 @@ namespace Primora.Components
             // Dragging
             else if (_isDragging)
             {
-                localHost.Surface.ViewPosition = _grabOriginalPosition + (_grabWorldPosition - state.WorldCellPosition);
+                SetViewPosition(localHost, _grabOriginalPosition + (_grabWorldPosition - state.WorldCellPosition));
                 handled = true;
             }
 
@@ -79,6 +84,21 @@ namespace Primora.Components
                 _previousMouseExclusiveDrag = localHost.IsExclusiveMouse;
                 localHost.IsExclusiveMouse = true;
                 handled = true;
+            }
+        }
+
+        private void SetViewPosition(IScreenSurface surface, Point viewPosition)
+        {
+            surface.Surface.ViewPosition = viewPosition;
+            if (!ApplyToHierarchy) return;
+
+            foreach (var child in surface.Children)
+            {
+                var sf = (IScreenSurface)child;
+                sf.Surface.ViewPosition = viewPosition;
+
+                // Go down child hierarchy
+                SetViewPosition(sf, viewPosition);
             }
         }
     }

@@ -32,8 +32,11 @@ namespace Primora.Screens
 
         private readonly ScreenSurface _borderSurface;
         private readonly MouseDragViewPortCustom _mouseDragViewPortComponent;
+
+        // Pathfinding
         private readonly FastAStar _worldMapPathfinder;
         private readonly FastAStar _zonePathfinder;
+        private readonly ScreenSurface _pathfindingSurface;
 
         private Path _currentWorldMapPath, _currentZonePath;
         private Point? _currentHoverTile, _currentZoneHoverTile;
@@ -41,16 +44,27 @@ namespace Primora.Screens
         public WorldScreen(ScreenSurface borderSurface,
             (int width, int height) zoneSize, 
             (int width, int height) worldMapSize) : 
-            base(zoneSize.width, zoneSize.height, Constants.Worldmap.DefaultWidth, Constants.Worldmap.DefaultHeight)
+            base(zoneSize.width, zoneSize.height, Constants.Zone.DefaultWidth, Constants.Zone.DefaultHeight)
         {
             _borderSurface = borderSurface;
+
+            // Add surface child for pathfinding this resizes automatically based on parent
+            _pathfindingSurface = new ScreenSurface(zoneSize.width, zoneSize.height, Constants.Zone.DefaultWidth, Constants.Zone.DefaultHeight)
+            {
+                UseKeyboard = false,
+                UseMouse = false
+            };
+            Children.Add(_pathfindingSurface);
 
             // Store screen sizes
             ZoneScreenSize = zoneSize;
             WorldMapScreenSize = worldMapSize;
 
             SadComponents.Add(_mouseDragViewPortComponent = new MouseDragViewPortCustom() 
-            {  MouseButtonForDragging = MouseDragViewPortCustom.MouseButtonType.Right });
+            {  
+                ApplyToHierarchy = true,
+                MouseButtonForDragging = MouseDragViewPortCustom.MouseButtonType.Right 
+            });
 
             _mouseDragViewPortComponent.IsEnabled = false;
             UseKeyboard = true;
@@ -103,7 +117,7 @@ namespace Primora.Screens
                 {
                     foreach (var p in _currentWorldMapPath.Steps)
                     {
-                        this.ClearDecorators(p.X, p.Y, 1);
+                        _pathfindingSurface.Clear(p.X, p.Y);
                     }
                 }
 
@@ -113,7 +127,7 @@ namespace Primora.Screens
                     var steps = path.Steps.DefineLineGlyphsByPositions();
                     foreach (var (coordinate, glyph) in steps)
                     {
-                        this.SetDecorator(coordinate.X, coordinate.Y, 1, new CellDecorator(Color.White, glyph, Mirror.None));
+                        _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyph, Color.White);
                     }
                 }
 
@@ -140,7 +154,7 @@ namespace Primora.Screens
             {
                 foreach (var p in _currentZonePath.Steps)
                 {
-                    this.ClearDecorators(p.X, p.Y, 1);
+                    _pathfindingSurface.Clear(p.X, p.Y);
                 }
             }
 
@@ -150,7 +164,7 @@ namespace Primora.Screens
                 var steps = path.Steps.DefineLineGlyphsByPositions();
                 foreach (var (coordinate, glyph) in steps)
                 {
-                    this.SetDecorator(coordinate.X, coordinate.Y, 1, new CellDecorator(Color.White, glyph, Mirror.None));
+                    _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyph, Color.White);
                 }
             }
 
@@ -188,6 +202,19 @@ namespace Primora.Screens
             return base.ProcessKeyboard(keyboard);
         }
 
+        private void ResizeChildren(int viewWidth, int viewHeight, int totalWidth, int totalHeight, Point viewPosition, Point fontSize)
+        {
+            foreach (var child in Children)
+            {
+                if (child is ScreenSurface sf)
+                {
+                    sf.Resize(viewWidth, viewHeight, totalWidth, totalHeight, true);
+                    sf.ViewPosition = viewPosition;
+                    sf.FontSize = fontSize;
+                }
+            }
+        }
+
         public void AdaptScreenForWorldMap()
         {
             // Screen is already adapted for worldmap
@@ -222,6 +249,9 @@ namespace Primora.Screens
             ViewPosition = Player.Instance.WorldPosition - new Point(
                 ViewWidth / 2,
                 ViewHeight / 2);
+
+            // Resize all children too
+            ResizeChildren(Surface.ViewWidth, Surface.ViewHeight, Surface.Width, Surface.Height, ViewPosition, FontSize);
 
             _mouseDragViewPortComponent.IsEnabled = true;
         }
@@ -258,6 +288,9 @@ namespace Primora.Screens
             ViewPosition = Player.Instance.Position - new Point(
                 ViewWidth / 2,
                 ViewHeight / 2);
+
+            // Resize all children too
+            ResizeChildren(Surface.ViewWidth, Surface.ViewHeight, Surface.Width, Surface.Height, ViewPosition, FontSize);
 
             _mouseDragViewPortComponent.IsEnabled = false;
         }
