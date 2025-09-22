@@ -48,14 +48,15 @@ namespace Primora.Screens
         /// </summary>
         internal readonly EntityManager EntityManager;
 
-        private Point? _currentHoverTile;
-
         public RootScreen()
         {
             if (Instance != null) 
                 throw new Exception($"An instance of the {nameof(RootScreen)} already exists.");
 
             Instance = this;
+
+            // Setup the world as it does not directly interact with screens on construction
+            World = new World();
 
             const int MaxScreenWidth = 80;
             const int MaxScreenHeight = 50;
@@ -94,48 +95,11 @@ namespace Primora.Screens
             WorldScreen.IsFocused = true;
             WorldScreen.SadComponents.Add(EntityManager);
 
-            WorldScreen.MouseMove += RenderingSurface_MouseMove;
-            WorldScreen.MouseExit += RenderingSurface_MouseExit;
-
-            // Setup the world with a much larger size
-            World = new World();
-
             // Testing:
             StartGame();
         }
 
-        private void RenderingSurface_MouseExit(object sender, SadConsole.Input.MouseScreenObjectState e)
-        {
-            // Clear previous
-            var prev = _currentHoverTile;
-            if (prev != null)
-            {
-                WorldScreen.ClearDecorators(prev.Value.X, prev.Value.Y, 1);
-                _currentHoverTile = null;
-            }
-        }
-
-        private void RenderingSurface_MouseMove(object sender, SadConsole.Input.MouseScreenObjectState e)
-        {
-            var pos = e.SurfaceCellPosition + WorldScreen.ViewPosition;
-
-            // Clear previous
-            var prev = _currentHoverTile;
-            if (prev != null)
-            {
-                WorldScreen.ClearDecorators(prev.Value.X, prev.Value.Y, 1);
-                _currentHoverTile = null;
-            }
-
-            if (_currentHoverTile != null && pos == _currentHoverTile) return;
-
-            if (pos.X >= 0 && pos.Y >= 0 && pos.X < WorldScreen.Width && pos.Y < WorldScreen.Height)
-            {
-                // Set current
-                _currentHoverTile = pos;
-                WorldScreen.SetDecorator(pos.X, pos.Y, 1, new CellDecorator(Color.Black, 255, Mirror.None));
-            }
-        }
+        
 
         /// <summary>
         /// Entrypoint into gameplay, enters into the character creation screen.

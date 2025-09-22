@@ -1,13 +1,12 @@
-﻿using Primora.Components;
+﻿using GoRogue.Pathing;
+using Primora.Components;
 using Primora.Core.Npcs.Actors;
 using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
 using SadConsole;
-using SadConsole.Components;
 using SadConsole.Input;
 using SadRogue.Primitives;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Primora.Screens
 {
@@ -32,6 +31,10 @@ namespace Primora.Screens
 
         private readonly ScreenSurface _borderSurface;
         private readonly MouseDragViewPortCustom _mouseDragViewPortComponent;
+        private readonly FastAStar _worldMapPathfinder;
+
+        private Path _currentPath;
+        private Point? _currentHoverTile;
 
         public WorldScreen(ScreenSurface borderSurface,
             (int width, int height) zoneSize, 
@@ -51,13 +54,38 @@ namespace Primora.Screens
             UseKeyboard = true;
             UseMouse = true;
             IsFocused = true;
+
+            MouseMove += RenderingSurface_MouseMove;
+            MouseExit += RenderingSurface_MouseExit;
+
+            // Setup the pathfinder for the worldmap
+            var worldmap = World.Instance.WorldMap;
+            _worldMapPathfinder = new FastAStar(worldmap.Walkability, Distance.Manhattan, worldmap.Weights, 1);
         }
 
         public override bool ProcessMouse(MouseScreenObjectState state)
         {
             if (state.Mouse.LeftClicked && World.Instance.WorldMap.IsDisplayed)
             {
-                Debug.WriteLine("Click");
+                // TODO: Fix path getting removed by hover glyph in mouse move
+                if (_currentPath != null)
+                {
+                    foreach (var p in _currentPath.Steps)
+                    {
+                        this.ClearDecorators(p.X, p.Y, 1);
+                    }
+                }
+
+                var path = _worldMapPathfinder.ShortestPath(Player.Instance.WorldPosition, state.SurfaceCellPosition + ViewPosition);
+                if (path != null)
+                {
+                    foreach (var p in path.Steps)
+                    {
+                        this.SetDecorator(p.X, p.Y, 1, new CellDecorator(Color.White, 255, Mirror.None));
+                    }
+                }
+
+                _currentPath = path;
             }
             return base.ProcessMouse(state);
         }
@@ -159,6 +187,39 @@ namespace Primora.Screens
                 ViewHeight / 2);
 
             _mouseDragViewPortComponent.IsEnabled = false;
+        }
+
+        private void RenderingSurface_MouseExit(object sender, SadConsole.Input.MouseScreenObjectState e)
+        {
+            // Clear previous
+            var prev = _currentHoverTile;
+            if (prev != null)
+            {
+                this.ClearDecorators(prev.Value.X, prev.Value.Y, 1);
+                _currentHoverTile = null;
+            }
+        }
+
+        private void RenderingSurface_MouseMove(object sender, SadConsole.Input.MouseScreenObjectState e)
+        {
+            var pos = e.SurfaceCellPosition + ViewPosition;
+
+            // Clear previous
+            var prev = _currentHoverTile;
+            if (prev != null)
+            {
+                this.ClearDecorators(prev.Value.X, prev.Value.Y, 1);
+                _currentHoverTile = null;
+            }
+
+            if (_currentHoverTile != null && pos == _currentHoverTile) return;
+
+            if (pos.X >= 0 && pos.Y >= 0 && pos.X < Width && pos.Y < Height)
+            {
+                // Set current
+                _currentHoverTile = pos;
+                this.SetDecorator(pos.X, pos.Y, 1, new CellDecorator(Color.Black, 255, Mirror.None));
+            }
         }
     }
 }

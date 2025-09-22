@@ -9,5 +9,6 @@ namespace Primora.Core.Procedural.Objects
         internal bool HasTreeResource = false;
         internal bool HasWaterResource = false;
         internal bool Walkable = true;
+        internal double Weight = 1;
     }
 }

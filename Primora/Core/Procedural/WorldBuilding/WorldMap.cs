@@ -3,8 +3,10 @@ using Primora.Core.Procedural.Objects;
 using Primora.Core.Procedural.WorldBuilding.Helpers;
 using Primora.Core.Procedural.WorldBuilding.Registries;
 using Primora.Extensions;
+using Primora.Screens;
 using SadConsole;
 using SadRogue.Primitives;
+using SadRogue.Primitives.GridViews;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,12 +26,53 @@ namespace Primora.Core.Procedural.WorldBuilding
         public int Width { get; }
         public int Height { get; }
 
+        public ArrayView<bool> Walkability { get; }
+        public ArrayView<double> Weights { get; }
+
         internal WorldMap(int width, int height)
         {
             Width = width;
             Height = height;
             _tileInfo = new WorldTileInfo[width * height];
             Tilemap = new Tilemap(width, height);
+            Walkability = new ArrayView<bool>(width, height);
+            Weights = new ArrayView<double>(width, height);
+        }
+
+        private void SetupWalkability()
+        {
+            // Some tiles are gnerally not walkable (river tiles), but can be accessed some other way
+
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    Walkability[x, y] = GetTileInfo(x,y).Walkable;
+                }
+            }
+        }
+
+        private void SetupWeights()
+        {
+            // Some tiles are more prefered because they reduce the time requirement (like roads)
+            // Some are less prefered because they increase the time requirement (like forests)
+
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    var tileInfo = GetTileInfo(x, y);
+                    var weight = tileInfo.Biome switch
+                    {
+                        Biome.Grassland => 8,
+                        Biome.Forest => 9,
+                        Biome.Bridge or Biome.Road => 1,
+                        _ => 10,
+                    };
+                    tileInfo.Weight = Weights[x, y] = weight;
+                    SetTileInfo(x, y, tileInfo);
+                }
+            }
         }
 
         #region Accessors
@@ -93,6 +136,10 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // Define the details of the biomes of the world
             GenerateDetails(random, heightmap, settlements);
+
+            // Setup walkability and weights
+            SetupWalkability();
+            SetupWeights();
         }
 
         private void GenerateBiomes(Random random, out float[] heightmap)
