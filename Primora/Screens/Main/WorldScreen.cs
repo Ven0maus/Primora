@@ -140,7 +140,7 @@ namespace Primora.Screens.Main
 
                     if (_previousTravelScreen != null)
                     {
-                        _previousTravelScreen.Parent.Children.Remove(_previousTravelScreen);
+                        _previousTravelScreen.Parent?.Children.Remove(_previousTravelScreen);
                         _previousTravelScreen.IsEnabled = false;
                     }
 
