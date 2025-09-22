@@ -1,4 +1,5 @@
-﻿using Primora.Core.Npcs.Actors;
+﻿using Primora.Components;
+using Primora.Core.Npcs.Actors;
 using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
 using SadConsole;
@@ -6,6 +7,7 @@ using SadConsole.Components;
 using SadConsole.Input;
 using SadRogue.Primitives;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Primora.Screens
 {
@@ -29,7 +31,7 @@ namespace Primora.Screens
         public readonly (int width, int height) WorldMapScreenSize;
 
         private readonly ScreenSurface _borderSurface;
-        private readonly MouseDragViewPort _mouseDragViewPortComponent;
+        private readonly MouseDragViewPortCustom _mouseDragViewPortComponent;
 
         public WorldScreen(ScreenSurface borderSurface,
             (int width, int height) zoneSize, 
@@ -42,11 +44,22 @@ namespace Primora.Screens
             ZoneScreenSize = zoneSize;
             WorldMapScreenSize = worldMapSize;
 
-            SadComponents.Add(_mouseDragViewPortComponent = new MouseDragViewPort());
+            SadComponents.Add(_mouseDragViewPortComponent = new MouseDragViewPortCustom() 
+            {  MouseButtonForDragging = MouseDragViewPortCustom.MouseButtonType.Right });
+
             _mouseDragViewPortComponent.IsEnabled = false;
             UseKeyboard = true;
             UseMouse = true;
             IsFocused = true;
+        }
+
+        public override bool ProcessMouse(MouseScreenObjectState state)
+        {
+            if (state.Mouse.LeftClicked && World.Instance.WorldMap.IsDisplayed)
+            {
+                Debug.WriteLine("Click");
+            }
+            return base.ProcessMouse(state);
         }
 
         public override bool ProcessKeyboard(Keyboard keyboard)
