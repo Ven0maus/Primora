@@ -8,6 +8,7 @@ using SadConsole.Input;
 using SadRogue.Primitives;
 using SadRogue.Primitives.GridViews;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Primora.Screens
 {
@@ -121,12 +122,14 @@ namespace Primora.Screens
                     }
                 }
 
-                var path = _worldMapPathfinder.ShortestPath(Player.Instance.WorldPosition, state.SurfaceCellPosition + ViewPosition);
+                var startPos = Player.Instance.WorldPosition;
+                var path = _worldMapPathfinder.ShortestPath(startPos, state.SurfaceCellPosition + ViewPosition);
                 if (path != null)
                 {
-                    var steps = path.Steps.DefineLineGlyphsByPositions();
+                    var steps = path.Steps.Append(startPos).DefineLineGlyphsByPositions();
                     foreach (var (coordinate, glyph) in steps)
                     {
+                        if (coordinate == startPos) continue; // We added start pos so the correct glyph is generated
                         _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyph, Color.White);
                     }
                 }
@@ -158,12 +161,14 @@ namespace Primora.Screens
                 }
             }
 
-            var path = _zonePathfinder.ShortestPath(Player.Instance.Position, state.SurfaceCellPosition + ViewPosition);
+            var startPos = Player.Instance.Position;
+            var path = _zonePathfinder.ShortestPath(startPos, state.SurfaceCellPosition + ViewPosition);
             if (path != null)
             {
-                var steps = path.Steps.DefineLineGlyphsByPositions();
+                var steps = path.Steps.Append(startPos).DefineLineGlyphsByPositions();
                 foreach (var (coordinate, glyph) in steps)
                 {
+                    if (coordinate == startPos) continue; // We added start pos so the correct glyph is generated
                     _pathfindingSurface.SetGlyph(coordinate.X, coordinate.Y, glyph, Color.White);
                 }
             }
@@ -200,19 +205,6 @@ namespace Primora.Screens
             }
 
             return base.ProcessKeyboard(keyboard);
-        }
-
-        private void ResizeChildren(int viewWidth, int viewHeight, int totalWidth, int totalHeight, Point viewPosition, Point fontSize)
-        {
-            foreach (var child in Children)
-            {
-                if (child is ScreenSurface sf)
-                {
-                    sf.Resize(viewWidth, viewHeight, totalWidth, totalHeight, true);
-                    sf.ViewPosition = viewPosition;
-                    sf.FontSize = fontSize;
-                }
-            }
         }
 
         public void AdaptScreenForWorldMap()
@@ -293,6 +285,19 @@ namespace Primora.Screens
             ResizeChildren(Surface.ViewWidth, Surface.ViewHeight, Surface.Width, Surface.Height, ViewPosition, FontSize);
 
             _mouseDragViewPortComponent.IsEnabled = false;
+        }
+
+        private void ResizeChildren(int viewWidth, int viewHeight, int totalWidth, int totalHeight, Point viewPosition, Point fontSize)
+        {
+            foreach (var child in Children)
+            {
+                if (child is ScreenSurface sf)
+                {
+                    sf.Resize(viewWidth, viewHeight, totalWidth, totalHeight, true);
+                    sf.ViewPosition = viewPosition;
+                    sf.FontSize = fontSize;
+                }
+            }
         }
 
         private void RenderingSurface_MouseExit(object sender, SadConsole.Input.MouseScreenObjectState e)
