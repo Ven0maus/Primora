@@ -88,9 +88,34 @@ namespace Primora.Screens.Helpers
 
             width = Math.Max(width, 20); // minimum width
 
+            int buttonMargin = 1; // at least 1 cell from each border
+            int availableWidth = width - (_surroundWithBorder ? 2 : 0) - (buttonMargin * 2);
+
+            // Split buttons into rows
+            var rows = new List<List<(string label, Action onClick)>>();
+            var currentRow = new List<(string, Action)>();
+            int rowWidth = 0;
+
+            foreach (var (label, onClick) in _buttons)
+            {
+                int btnWidth = label.Length + 4; // button width
+                if (rowWidth > 0 && rowWidth + 1 + btnWidth > availableWidth) // wrap if needed
+                {
+                    rows.Add(currentRow);
+                    currentRow = new List<(string, Action)>();
+                    rowWidth = 0;
+                }
+
+                currentRow.Add((label, onClick));
+                rowWidth += (rowWidth > 0 ? 1 : 0) + btnWidth; // +1 for spacing
+            }
+
+            if (currentRow.Count > 0)
+                rows.Add(currentRow);
+
             int height = 1; // title row
             height += _texts.Count;
-            height += _buttons.Count > 0 ? _buttons.Count + 1 : 0; // buttons + spacing
+            height += rows.Count * 2;
             height += _enableXButton ? 1 : 0;
 
             if (_surroundWithBorder)
@@ -177,24 +202,38 @@ namespace Primora.Screens.Helpers
 
             cursorY++; // spacing before buttons
 
-            // --- buttons ---
-            foreach (var (label, onClick) in _buttons)
+            foreach (var row in rows)
             {
-                var button = new Button(label.Length + 4, 1)
-                {
-                    Text = label,
-                    Position = new Point((width - (label.Length + 4)) / 2, cursorY)
-                };
-                button.Click += (s, e) =>
-                {
-                    onClick?.Invoke();
-                    console.Parent?.Children.Remove(console);
-                    console.IsEnabled = false;
-                    onClose?.Invoke();
-                };
+                int rowTotalWidth = row.Sum(b => b.label.Length + 4) + (row.Count - 1);
 
-                console.Controls.Add(button);
-                cursorY += 2;
+                // center inside the reduced available space, then add margin + border offset
+                int cursorX = (availableWidth - rowTotalWidth) / 2
+                              + (_surroundWithBorder ? 1 : 0)
+                              + buttonMargin;
+
+                foreach (var (label, onClick) in row)
+                {
+                    int btnWidth = label.Length + 4;
+
+                    var button = new Button(btnWidth, 1)
+                    {
+                        Text = label,
+                        Position = new Point(cursorX, cursorY)
+                    };
+                    button.Click += (s, e) =>
+                    {
+                        onClick?.Invoke();
+                        console.Parent?.Children.Remove(console);
+                        console.IsEnabled = false;
+                        onClose?.Invoke();
+                    };
+
+                    console.Controls.Add(button);
+
+                    cursorX += btnWidth + 1; // move right with spacing
+                }
+
+                cursorY += 2; // move down for next row
             }
 
             // --- X Button ---

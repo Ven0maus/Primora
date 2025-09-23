@@ -15,7 +15,7 @@ using System.Linq;
 
 namespace Primora.Screens.Main
 {
-    internal class WorldScreen : ScreenSurface
+    internal class WorldScreen : LayeredScreenSurface
     {
         private readonly Dictionary<Keys, Direction> _moveDirections = new()
         {
@@ -59,7 +59,7 @@ namespace Primora.Screens.Main
                 UseKeyboard = false,
                 UseMouse = false
             };
-            Children.Add(_pathfindingSurface);
+            Layers.Add(_pathfindingSurface.Surface);
 
             // Store screen sizes
             ZoneScreenSize = zoneSize;
@@ -67,7 +67,7 @@ namespace Primora.Screens.Main
 
             SadComponents.Add(_mouseDragViewPortComponent = new MouseDragViewPortCustom() 
             {  
-                ApplyToHierarchy = true,
+                ApplyToHierarchy = false,
                 MouseButtonForDragging = MouseDragViewPortCustom.MouseButtonType.Right 
             });
 
@@ -143,7 +143,7 @@ namespace Primora.Screens.Main
 
                     if (_previousTravelScreen != null)
                     {
-                        _previousTravelScreen.Parent?.Children.Remove(_previousTravelScreen);
+                        _previousTravelScreen.Parent.Children.Remove(_previousTravelScreen);
                         _previousTravelScreen.IsEnabled = false;
                     }
 
@@ -165,6 +165,7 @@ namespace Primora.Screens.Main
                                 }
                                 _currentWorldMapPath = null;
                             }
+                            _previousTravelScreen = null;
                         });
                 }
 
