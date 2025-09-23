@@ -1,4 +1,5 @@
-﻿using Primora.Extensions;
+﻿using Primora.Core.Procedural.WorldBuilding;
+using Primora.Extensions;
 using Primora.Screens.Abstracts;
 using SadConsole;
 using SadRogue.Primitives;
@@ -16,7 +17,7 @@ namespace Primora.Screens.Main
         public static LogScreen Instance { get; private set; }
 
         public LogScreen(int width, int height) : 
-            base(Title, width, height)
+            base(Title, width, height, Game.Instance.Fonts["IBM_8x16"])
         {
             if (Instance != null)
                 throw new Exception("An instance for LogScreen already exists.");
@@ -28,7 +29,7 @@ namespace Primora.Screens.Main
             if (logEntry == null) return;
 
             _logEntries.Enqueue(logEntry);
-            if (_logEntries.Count > View.Height - 2)
+            if (_logEntries.Count > View.Height)
                 _ = _logEntries.Dequeue();
 
             UpdateDisplay();
@@ -48,32 +49,57 @@ namespace Primora.Screens.Main
             View.Clear();
 
             // Parse content and handle
-            int row = 1;
+            int row = 0;
             foreach (var logEntry in _logEntries)
             {
-                var content = ParseContent(logEntry.Content);
-                if (content.Length > View.Width - 2)
+                var content = ParseContent(logEntry);
+                if (content.Length > View.Width - 1)
                     throw new Exception($"Message \"{new string([.. content.Select(a => a.GlyphCharacter)])}\" succeeds max content width by {content.Length - (View.Width - 2)} characters!");
 
                 View.Print(1, row++, content);
             }
         }
 
-        private static ColoredGlyph[] ParseContent(string content)
+        private static readonly Color _defaultColor = "#adadad".HexToColor();
+        private static ColoredGlyph[] ParseContent(LogEntry entry)
         {
-            // TODO: Improve to parse colors from content string
-            var defaultColor = "#adadad".HexToColor();
-            return [.. content.Select(a => new ColoredGlyph(defaultColor, Color.Transparent, a))];
+            var glyphs = new List<ColoredGlyph>();
+
+            // Use default color for prefix and prepend it to the segments
+            var adjustedPrefix = (entry.Prefix, _defaultColor);
+
+            // Add segments
+            foreach (var (text, color) in entry.Segments.Prepend(adjustedPrefix))
+            {
+                var fg = color ?? _defaultColor;
+                foreach (var c in text)
+                    glyphs.Add(new ColoredGlyph(fg, Color.Transparent, c));
+            }
+
+            return [.. glyphs];
         }
     }
 
     public class LogEntry
     {
-        public string Content { get; private set; } = string.Empty;
+        /// <summary>
+        /// Each segment contains the text and an optional color.
+        /// </summary>
+        public readonly List<(string Text, Color? Color)> Segments = [];
 
-        private LogEntry()
-        { }
+        /// <summary>
+        /// Timestamp prefix for the log entry.
+        /// </summary>
+        public string Prefix { get; }
 
+        private LogEntry() 
+        {
+            Prefix = $"[{World.Instance.Clock:HH:mm}]: ";
+        }
+
+        /// <summary>
+        /// Create a new log entry with optional colored text.
+        /// </summary>
         public static LogEntry New(string content, Color? color = null)
         {
             var entry = new LogEntry();
@@ -81,26 +107,42 @@ namespace Primora.Screens.Main
             return entry;
         }
 
+        /// <summary>
+        /// Appends text with optional color.
+        /// </summary>
         public LogEntry Append(string content, Color? color = null)
         {
-            // TODO: Put color into the content with formatting
-            Content += content;
+            if (!string.IsNullOrEmpty(content))
+                Segments.Add((content, color));
             return this;
         }
 
+        /// <summary>
+        /// Appends text with a newline.
+        /// </summary>
         public LogEntry AppendLine(string content, Color? color = null)
         {
-            if (Content.Length == 0)
-                return Append(content, color);
+            if (Segments.Count > 0)
+                Segments.Add(("\n", null)); // add line break
 
-            Content += "\n" + content;
+            return Append(content, color);
+        }
+
+        /// <summary>
+        /// Clears all segments.
+        /// </summary>
+        public LogEntry Clear()
+        {
+            Segments.Clear();
             return this;
         }
 
-        public LogEntry Clear()
+        /// <summary>
+        /// Concatenates all segments into a single string (ignoring color).
+        /// </summary>
+        public string GetText()
         {
-            Content = string.Empty;
-            return this;
+            return string.Concat(Segments.Select(s => s.Text));
         }
     }
 }

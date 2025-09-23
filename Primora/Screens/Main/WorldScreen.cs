@@ -157,7 +157,7 @@ namespace Primora.Screens.Main
                         .AddTextLine($"Fast traveling here will take {travelDistanceInTurns} turns.")
                         .AddTextLine($"You will consume {foodConsumption} food during your journey.")
                         .Position(endPos - ViewPosition)
-                        .AddButton("Travel", () => Debug.WriteLine("Travel!"))
+                        .AddButton("Travel", () => Player.Instance.Travel(endPos))
                         .SurroundWithBorder()
                         .BuildAndParent(this, onClose: () =>
                         {
@@ -230,7 +230,8 @@ namespace Primora.Screens.Main
                     {
                         if (Player.Instance.Move(key.Value))
                         {
-                            LogScreen.Add(LogEntry.New($"Player moved {key.Value.Type}"));
+                            LogScreen.Add(LogEntry.New("Player moved ")
+                                .Append($"{key.Value.Type}", Color.DarkSlateBlue));
                             World.Instance.EndTurn();
                             return true;
                         }

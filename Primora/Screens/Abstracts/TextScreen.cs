@@ -7,17 +7,19 @@ namespace Primora.Screens.Abstracts
     internal abstract class TextScreen : ScreenSurface
     {
         public readonly ScreenSurface View;
-        public TextScreen(string title, int width, int height) : 
+        public TextScreen(string title, int width, int height, IFont font = null) : 
             base(width, height)
         {
-            var nW = width - 2;
-            var nH = height - 2;
+            var parentFontSize = FontSize;
+            var fontToBeUsed = font ?? Game.Instance.Fonts["Cheepicus_12x12"];
+            var fontToBeUsedSize = fontToBeUsed.GetFontSize(IFont.Sizes.One);
 
-            nW = (int)(nW * 1.4); // 1.4 because font is 4 pixels smaller than base font
-            nH = (int)(nH * 1.4);
+            int nW = (width - 2) * parentFontSize.X / fontToBeUsedSize.X;
+            int nH = (height - 2) * parentFontSize.Y / fontToBeUsedSize.Y;
+
             View = new ScreenSurface(nW, nH)
             {
-                Font = Game.Instance.Fonts["Cheepicus_12x12"],
+                Font = fontToBeUsed,
                 Position = new Point(1, 1)
             };
             Children.Add(View);

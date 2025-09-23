@@ -12,6 +12,7 @@ namespace Primora
 
             internal const string GameTitle = "Primora";
             internal static int GameSeed = new System.Random().Next();
+            internal const int GameStartHour = 12; // 24 hour format
 
             internal static readonly JsonSerializerOptions SerializerOptions = new()
             {

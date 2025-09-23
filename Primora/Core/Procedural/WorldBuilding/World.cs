@@ -20,6 +20,11 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal static World Instance { get; private set; }
 
         /// <summary>
+        /// The current date and time in the world.
+        /// </summary>
+        internal DateTime Clock { get; private set; }
+
+        /// <summary>
         /// The map of the overworld containing all the accessible zones.
         /// </summary>
         internal readonly WorldMap WorldMap;
@@ -39,23 +44,12 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         internal WorldMapEntity PlayerWorldMapEntity { get; private set; }
 
+        /// <summary>
+        /// Contains all settlements in the world
+        /// </summary>
         internal Dictionary<Point, Settlement> Settlements { get; private set; }
 
         private static readonly TickDictionary<Point, Zone> _zoneCache = [];
-
-        static World()
-        {
-            _zoneCache.OnExpire += ZoneCache_OnExpire;
-        }
-
-        private static void ZoneCache_OnExpire(object sender, TickDictionary<Point, Zone>.ExpireArgs e)
-        {
-            if (e.Value == Player.Instance.Location)
-            {
-                // Re-add player zone to the cache, since it is not allowed to be uncached
-                _zoneCache[e.Key, 120] = e.Value;
-            }
-        }
 
         internal World()
         {
@@ -67,6 +61,14 @@ namespace Primora.Core.Procedural.WorldBuilding
             // Data
             WorldMap = new WorldMap(Constants.Worldmap.DefaultWidth, Constants.Worldmap.DefaultHeight);
             Settlements = [];
+
+            // Setup a random medieval clock
+            Clock = GenerateRandomMedievalDate(new Random(Constants.General.GameSeed));
+        }
+
+        static World()
+        {
+            _zoneCache.OnExpire += ZoneCache_OnExpire;
         }
 
         /// <summary>
@@ -244,6 +246,29 @@ namespace Primora.Core.Procedural.WorldBuilding
                 }
             }
             return true;
+        }
+
+        private static DateTime GenerateRandomMedievalDate(Random rng = null)
+        {
+            rng ??= new Random();
+
+            // Medieval era
+            int year = rng.Next(1000, 1501); // 1000–1500 inclusive
+            int month = rng.Next(1, 13);     // 1–12
+
+            // Simplify day calculation to 1–28 to avoid month-length checks
+            int day = rng.Next(1, 29);
+
+            return new DateTime(year, month, day, Constants.General.GameStartHour, 0, 0);
+        }
+
+        private static void ZoneCache_OnExpire(object sender, TickDictionary<Point, Zone>.ExpireArgs e)
+        {
+            if (e.Value == Player.Instance.Location)
+            {
+                // Re-add player zone to the cache, since it is not allowed to be uncached
+                _zoneCache[e.Key, 120] = e.Value;
+            }
         }
     }
 }
