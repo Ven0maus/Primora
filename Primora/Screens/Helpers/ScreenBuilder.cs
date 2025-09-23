@@ -1,4 +1,5 @@
 ﻿using Primora.Extensions;
+using Primora.Screens.Abstracts;
 using SadConsole;
 using SadConsole.UI;
 using SadConsole.UI.Controls;
@@ -17,6 +18,7 @@ namespace Primora.Screens.Helpers
         private string _title;
         private bool _enableXButton = false;
         private bool _surroundWithBorder = false;
+        private bool _syncViewportPosition = false;
         private LineThickness _lineThickness;
         private Point _desiredPosition = Point.Zero;
         private readonly List<string> _texts = [];
@@ -60,10 +62,32 @@ namespace Primora.Screens.Helpers
         /// <param name="parent"></param>
         /// <param name="position"></param>
         /// <returns></returns>
-        public ScreenBuilder Position(Point position)
+        public ScreenBuilder SetAnchorPosition(Point position)
         {
             _desiredPosition = position;
             return this;
+        }
+
+        /// <summary>
+        /// Will keep the position synced with the parent's viewport movement.
+        /// </summary>
+        /// <returns></returns>
+        internal ScreenBuilder SyncWithViewport()
+        {
+            _syncViewportPosition = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Builds and parents the console to the given parent (this will also clamp positioning within parent if set).
+        /// </summary>
+        /// <param name="parent">The parent screen object.</param>
+        /// <param name="configureScreen">Executes to adapt settings on the screen.</param>
+        public PopupScreen BuildAndParent(IScreenSurface parent, Action<ControlsConsole> configureScreen = null, Action onClose = null)
+        {
+            var build = Build(parent, configureScreen, onClose);
+            parent.Children.Add(build);
+            return build;
         }
 
         /// <summary>
@@ -72,7 +96,7 @@ namespace Primora.Screens.Helpers
         /// <param name="parent"></param>
         /// <param name="configureScreen">Executes to adapt settings on the screen.</param>
         /// <returns></returns>
-        public ControlsConsole Build(IScreenObject parent, Action<ControlsConsole> configureScreen = null, Action onClose = null)
+        public PopupScreen Build(IScreenSurface parent, Action<ControlsConsole> configureScreen = null, Action onClose = null)
         {
             // --- measure content ---
             int width = 0;
@@ -124,23 +148,16 @@ namespace Primora.Screens.Helpers
                 height += 2;
             }
 
-            // --- create console ---
-            var console = new ControlsConsole(width, height)
-            {
-                Parent = parent,
-                Font = Game.Instance.Fonts["IBM_8x16"],
-                FontSize = new(8, 16)
-            };
-
             // --- adjust position so popup fits inside parent ---
-            if (console.Parent is IScreenSurface screenSurface)
+            Point position;
+            if (parent != null)
             {
-                var parentWidth = screenSurface.Surface.ViewWidth;
-                var parentHeight = screenSurface.Surface.ViewHeight;
+                var parentWidth = parent.Surface.ViewWidth;
+                var parentHeight = parent.Surface.ViewHeight;
 
                 // How many times larger is the parent font compared to the "base font"?
-                float scaleX = screenSurface.FontSize.X / 8f;  // the screenbuilder windows are always 8x16
-                float scaleY = screenSurface.FontSize.Y / 16f;
+                float scaleX = parent.FontSize.X / 8f;  // the screenbuilder windows are always 8x16
+                float scaleY = parent.FontSize.Y / 16f;
 
                 int px = _desiredPosition.X;
                 int py = _desiredPosition.Y;
@@ -167,12 +184,24 @@ namespace Primora.Screens.Helpers
                 px = Math.Max(0, px);
                 py = Math.Max(0, py);
 
-                console.Position = new Point(px, py);
+                position = new Point(px, py);
             }
             else
             {
-                console.Position = _desiredPosition;
+                position = _desiredPosition;
             }
+
+            // --- create console ---
+            var console = new PopupScreen(width, height, parent)
+            {
+                Font = Game.Instance.Fonts["IBM_8x16"],
+                FontSize = new(8, 16)
+            };
+            console.SetBasePosition(position, parent.Surface.ViewPosition);
+
+            // Viewport sync
+            if (_syncViewportPosition)
+                console.EnableSync();
 
             // --- draw border ---
             if (_surroundWithBorder)
@@ -223,9 +252,10 @@ namespace Primora.Screens.Helpers
                     button.Click += (s, e) =>
                     {
                         onClick?.Invoke();
+                        console.DisableSync();
                         console.Parent?.Children.Remove(console);
                         console.IsEnabled = false;
-                        onClose?.Invoke();
+                        onClose?.Invoke();     
                     };
 
                     console.Controls.Add(button);
@@ -246,6 +276,7 @@ namespace Primora.Screens.Helpers
                 };
                 xBtn.Click += (s, e) =>
                 {
+                    console.DisableSync();
                     console.Parent?.Children.Remove(console);
                     console.IsEnabled = false;
                     onClose?.Invoke();
@@ -255,18 +286,6 @@ namespace Primora.Screens.Helpers
 
             configureScreen?.Invoke(console);
             return console;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="parent">The parent screen object.</param>
-        /// <param name="configureScreen">Executes to adapt settings on the screen.</param>
-        public ControlsConsole BuildAndParent(IScreenObject parent, Action<ControlsConsole> configureScreen = null, Action onClose = null)
-        {
-            var build = Build(parent, configureScreen, onClose);
-            parent.Children.Add(build);
-            return build;
         }
     }
 }

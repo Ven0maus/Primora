@@ -3,6 +3,7 @@ using Primora.Components;
 using Primora.Core.Npcs.Actors;
 using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
+using Primora.Screens.Abstracts;
 using Primora.Screens.Helpers;
 using SadConsole;
 using SadConsole.Input;
@@ -45,7 +46,7 @@ namespace Primora.Screens.Main
 
         private Path _currentWorldMapPath, _currentZonePath;
         private Point? _currentHoverTile, _currentZoneHoverTile;
-        private ControlsConsole _previousTravelScreen;
+        private PopupScreen _previousTravelScreen;
 
         public WorldScreen(ScreenSurface borderSurface,
             (int width, int height) zoneSize, 
@@ -144,6 +145,7 @@ namespace Primora.Screens.Main
 
                     if (_previousTravelScreen != null)
                     {
+                        _previousTravelScreen.DisableSync();
                         _previousTravelScreen.Parent.Children.Remove(_previousTravelScreen);
                         _previousTravelScreen.IsEnabled = false;
                     }
@@ -156,9 +158,10 @@ namespace Primora.Screens.Main
                         .EnableXButton()
                         .AddTextLine($"Fast traveling here will take {travelDistanceInTurns} turns.")
                         .AddTextLine($"You will consume {foodConsumption} food during your journey.")
-                        .Position(endPos - ViewPosition)
+                        .SetAnchorPosition(endPos - ViewPosition)
                         .AddButton("Travel", () => Player.Instance.Travel(endPos))
                         .SurroundWithBorder()
+                        .SyncWithViewport()
                         .BuildAndParent(this, onClose: () =>
                         {
                             if (_currentWorldMapPath != null)

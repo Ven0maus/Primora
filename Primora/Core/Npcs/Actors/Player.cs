@@ -45,7 +45,12 @@ namespace Primora.Core.Npcs.Actors
         /// <param name="worldPosition"></param>
         public void Travel(Point worldPosition)
         {
+            // TODO: Simulate turns and travel every 250ms to the next tile
+
+            // Set new zone as current location
             Location = World.Instance.OpenZone(worldPosition);
+
+            // TODO: Spawn player on the border of the zone from where we come
         }
 
         private void Player_PositionChanged(object sender, ValueChangedEventArgs<Point> e)
