@@ -245,6 +245,19 @@ namespace Primora.Screens.Main
             return base.ProcessKeyboard(keyboard);
         }
 
+        private void OnScreenSwap()
+        {
+            if (_previousTravelScreen != null)
+            {
+                _previousTravelScreen.Parent?.Children.Remove(_previousTravelScreen);
+                _previousTravelScreen.IsEnabled = false;
+                _previousTravelScreen = null;
+            }
+
+            // Resize all children too
+            ResizeChildren(Surface.ViewWidth, Surface.ViewHeight, Surface.Width, Surface.Height, ViewPosition, FontSize);
+        }
+
         public void AdaptScreenForWorldMap()
         {
             // Screen is already adapted for worldmap
@@ -280,8 +293,8 @@ namespace Primora.Screens.Main
                 ViewWidth / 2,
                 ViewHeight / 2);
 
-            // Resize all children too
-            ResizeChildren(Surface.ViewWidth, Surface.ViewHeight, Surface.Width, Surface.Height, ViewPosition, FontSize);
+            // Handle all shared screen swap logic
+            OnScreenSwap();
 
             _mouseDragViewPortComponent.IsEnabled = true;
         }
@@ -319,8 +332,8 @@ namespace Primora.Screens.Main
                 ViewWidth / 2,
                 ViewHeight / 2);
 
-            // Resize all children too
-            ResizeChildren(Surface.ViewWidth, Surface.ViewHeight, Surface.Width, Surface.Height, ViewPosition, FontSize);
+            // Handle all shared screen swap logic
+            OnScreenSwap();
 
             _mouseDragViewPortComponent.IsEnabled = false;
         }
