@@ -117,6 +117,9 @@ namespace Primora.Screens.Main
         {
             if (state.Mouse.LeftClicked && World.Instance.WorldMap.IsDisplayed)
             {
+                // Check if in bounds
+                if (state.SurfaceCellPosition.X >= ViewWidth || state.SurfaceCellPosition.Y >= ViewHeight) return;
+
                 if (_currentWorldMapPath != null)
                 {
                     foreach (var p in _currentWorldMapPath.Steps)
@@ -147,13 +150,22 @@ namespace Primora.Screens.Main
                     _previousTravelScreen = new ScreenBuilder()
                         .AddTitle("Fast Travel")
                         .EnableXButton()
-                        .AppendTextLine("Fast traveling here will take {} turns.")
-                        .AppendTextLine("You will consume {} food during your journey.")
+                        .AppendTextLine("Fast traveling here will take 120 turns.")
+                        .AppendTextLine("You will consume 15 days of food during your journey.")
                         .Position(endPos - ViewPosition)
                         .AddButton("Travel", () => Debug.WriteLine("Travel!"))
                         .SurroundWithBorder()
-                        .BuildAndParent(this);
-
+                        .BuildAndParent(this, onClose: () =>
+                        {
+                            if (_currentWorldMapPath != null)
+                            {
+                                foreach (var p in _currentWorldMapPath.Steps)
+                                {
+                                    _pathfindingSurface.Clear(p.X, p.Y);
+                                }
+                                _currentWorldMapPath = null;
+                            }
+                        });
                 }
 
                 _currentWorldMapPath = path;
@@ -171,8 +183,11 @@ namespace Primora.Screens.Main
             if (_currentZoneHoverTile != null && _currentZoneHoverTile.Value == state.CellPosition + ViewPosition)
                 return;
 
+            // Check if in bounds
+            if (state.SurfaceCellPosition.X >= ViewWidth || state.SurfaceCellPosition.Y >= ViewHeight) return;
+
             // Set new hover tile position
-            _currentZoneHoverTile = state.CellPosition + ViewPosition;
+            _currentZoneHoverTile = state.SurfaceCellPosition + ViewPosition;
 
             if (_currentZonePath != null)
             {

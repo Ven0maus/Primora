@@ -1,4 +1,5 @@
-﻿using SadConsole;
+﻿using Primora.Extensions;
+using SadConsole;
 using SadConsole.UI;
 using SadConsole.UI.Controls;
 using SadRogue.Primitives;
@@ -16,9 +17,10 @@ namespace Primora.Screens.Helpers
         private string _title;
         private bool _enableXButton = false;
         private bool _surroundWithBorder = false;
+        private LineThickness _lineThickness;
         private Point _desiredPosition = Point.Zero;
         private readonly List<string> _texts = [];
-        private readonly List<(string Label, Action OnClick)> _buttons = new();
+        private readonly List<(string Label, Action OnClick)> _buttons = [];
 
         public ScreenBuilder AddTitle(string title)
         {
@@ -32,8 +34,9 @@ namespace Primora.Screens.Helpers
             return this;
         }
 
-        public ScreenBuilder SurroundWithBorder()
+        public ScreenBuilder SurroundWithBorder(LineThickness lineThickness = LineThickness.Thin)
         {
+            _lineThickness = lineThickness;
             _surroundWithBorder = true;
             return this;
         }
@@ -69,7 +72,7 @@ namespace Primora.Screens.Helpers
         /// <param name="parent"></param>
         /// <param name="configureScreen">Executes to adapt settings on the screen.</param>
         /// <returns></returns>
-        public ControlsConsole Build(IScreenObject parent, Action<ControlsConsole> configureScreen = null)
+        public ControlsConsole Build(IScreenObject parent, Action<ControlsConsole> configureScreen = null, Action onClose = null)
         {
             // --- measure content ---
             int width = 0;
@@ -78,7 +81,7 @@ namespace Primora.Screens.Helpers
                 width = Math.Max(width, _title.Length + 4);
 
             if (_texts.Count > 0)
-                width = Math.Max(width, _texts.Max(t => t.Length) + 2);
+                width = Math.Max(width, _texts.Max(t => t.Length) + 3); // 3 because start is offset by 1, and X comes on top of last
 
             if (_buttons.Count > 0)
                 width = Math.Max(width, _buttons.Max(b => b.Label.Length + 4));
@@ -100,24 +103,40 @@ namespace Primora.Screens.Helpers
             var console = new ControlsConsole(width, height)
             {
                 Parent = parent,
-                Font = Game.Instance.Fonts["Cheepicus_12x12"],
-                FontSize = new(12, 12)
+                Font = Game.Instance.Fonts["IBM_8x16"],
+                FontSize = new(8, 16)
             };
 
             // --- adjust position so popup fits inside parent ---
             if (console.Parent is IScreenSurface screenSurface)
             {
-                // TODO: Fix fontsize issues
                 var parentWidth = screenSurface.Surface.ViewWidth;
                 var parentHeight = screenSurface.Surface.ViewHeight;
+
+                // How many times larger is the parent font compared to the "base font"?
+                float scaleX = screenSurface.FontSize.X / 8f;  // the screenbuilder windows are always 8x16
+                float scaleY = screenSurface.FontSize.Y / 16f;
 
                 int px = _desiredPosition.X;
                 int py = _desiredPosition.Y;
 
-                if (px + width > parentWidth)
-                    px = parentWidth - width;
-                if (py + height > parentHeight)
-                    py = parentHeight - height;
+                // Push left by half width, up by height (scaled)
+                px -= (int)(width / (2f * scaleX));
+                py -= (int)(height / scaleY + 1);
+
+                // Clamp in tile space (not pixels!)
+                if (px < 0) px = 0;
+                if (py < 0) py = 0;
+
+                if (px + (int)(width / scaleX) > parentWidth)
+                    px = parentWidth - (int)(width / scaleX);
+
+                if (py + (int)(height / scaleY) > parentHeight)
+                    py = parentHeight - (int)(height / scaleY);
+
+                // Apply scale correction (for "8x16 issue")
+                px = (int)(px * scaleX);
+                py = (int)(py * scaleY);
 
                 // Clamp at least to 0
                 px = Math.Max(0, px);
@@ -135,7 +154,9 @@ namespace Primora.Screens.Helpers
             {
                 console.Surface.DrawBox(
                     new Rectangle(0, 0, width, height),
-                    ShapeParameters.CreateStyledBox(ICellSurface.ConnectedLineThin, new ColoredGlyph(Color.White, Color.Black)));
+                    ShapeParameters.CreateStyledBox(_lineThickness == LineThickness.Thin ? 
+                        ICellSurface.ConnectedLineThin : ICellSurface.ConnectedLineThick, 
+                        new ColoredGlyph(Color.White, Color.Black)));
             }
 
             int cursorY = _surroundWithBorder ? 1 : 0;
@@ -150,7 +171,7 @@ namespace Primora.Screens.Helpers
             // --- text ---
             foreach (var line in _texts)
             {
-                console.Print(1, cursorY, line, Color.White);
+                console.Print(2, cursorY, line, Color.White);
                 cursorY++;
             }
 
@@ -169,6 +190,7 @@ namespace Primora.Screens.Helpers
                     onClick?.Invoke();
                     console.Parent?.Children.Remove(console);
                     console.IsEnabled = false;
+                    onClose?.Invoke();
                 };
 
                 console.Controls.Add(button);
@@ -187,6 +209,7 @@ namespace Primora.Screens.Helpers
                 {
                     console.Parent?.Children.Remove(console);
                     console.IsEnabled = false;
+                    onClose?.Invoke();
                 };
                 console.Controls.Add(xBtn);
             }
@@ -200,9 +223,9 @@ namespace Primora.Screens.Helpers
         /// </summary>
         /// <param name="parent">The parent screen object.</param>
         /// <param name="configureScreen">Executes to adapt settings on the screen.</param>
-        public ControlsConsole BuildAndParent(IScreenObject parent, Action<ControlsConsole> configureScreen = null)
+        public ControlsConsole BuildAndParent(IScreenObject parent, Action<ControlsConsole> configureScreen = null, Action onClose = null)
         {
-            var build = Build(parent, configureScreen);
+            var build = Build(parent, configureScreen, onClose);
             parent.Children.Add(build);
             return build;
         }
