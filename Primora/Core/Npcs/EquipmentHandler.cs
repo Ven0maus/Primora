@@ -1,4 +1,5 @@
 ﻿using Primora.Core.Items;
+using Primora.Core.Items.Interfaces;
 using Primora.Core.Npcs.Actors;
 using System;
 using System.Collections;
@@ -6,11 +7,11 @@ using System.Collections.Generic;
 
 namespace Primora.Core.Npcs
 {
-    internal class EquipmentHandler : IEnumerable<(EquipmentSlot slot, Item item)>
+    internal class EquipmentHandler : IEnumerable<(EquipmentSlot slot, IEquipable item)>
     {
-        private readonly Dictionary<EquipmentSlot, Item> _equipedItems = new(Enum.GetValues<EquipmentSlot>().Length);
+        private readonly Dictionary<EquipmentSlot, IEquipable> _equipedItems = new(Enum.GetValues<EquipmentSlot>().Length);
 
-        public Item GetEquipment(EquipmentSlot slot)
+        public IEquipable GetEquipment(EquipmentSlot slot)
             => _equipedItems.GetValueOrDefault(slot);
 
         public void Equip<T>(T item) where T : Item, IEquipable
@@ -27,7 +28,8 @@ namespace Primora.Core.Npcs
             }
 
             // Add provided item stats
-            Player.Instance.Stats.AddItemStats(item.ProvidedStats);
+            if (item.ProvidedStats != null)
+                Player.Instance.Stats.AddItemStats(item.ProvidedStats);
         }
 
         public void Unequip(EquipmentSlot slot)
@@ -39,7 +41,8 @@ namespace Primora.Core.Npcs
                 _equipedItems.Remove(slot);
 
                 // Remove provided item stats
-                Player.Instance.Stats.RemoveItemStats(((IEquipable)equipedItem).ProvidedStats);
+                if (equipedItem.ProvidedStats != null)
+                    Player.Instance.Stats.RemoveItemStats(equipedItem.ProvidedStats);
 
                 // TODO: Add item back to inventory
             }
@@ -53,7 +56,7 @@ namespace Primora.Core.Npcs
                 Unequip(slot);
         }
 
-        public IEnumerator<(EquipmentSlot slot, Item item)> GetEnumerator()
+        public IEnumerator<(EquipmentSlot slot, IEquipable item)> GetEnumerator()
         {
             foreach (var item in _equipedItems)
                 yield return (item.Key, item.Value);

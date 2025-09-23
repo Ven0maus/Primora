@@ -1,0 +1,26 @@
+﻿[
+  {
+    "name": "Iron Knife",
+    "equipmentSlot": "Main_Hand",
+    "rarity": "Common",
+    "providedStats": {
+      "damage": 1
+    }
+  },
+  {
+    "name": "Iron Hatchet",
+    "equipmentSlot": "Main_Hand",
+    "rarity": "Common",
+    "providedStats": {
+      "damage": 2
+    }
+  },
+  {
+    "name": "Iron Shortsword",
+    "equipmentSlot": "Main_Hand",
+    "rarity": "Common",
+    "providedStats": {
+      "damage": 2
+    }
+  }
+]

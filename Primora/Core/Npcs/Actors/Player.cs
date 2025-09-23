@@ -92,7 +92,7 @@ namespace Primora.Core.Npcs.Actors
 
             // Set new zone as current location
             var prevLocationPosition = Location.WorldPosition;
-            Location = World.Instance.OpenZone(steps.Last(), movePlayerEntity: true);
+            Location = world.OpenZone(steps.Last(), movePlayerEntity: true);
 
             // Update zone position
             Position = FindSuitableZoneSpawnPositionFromTravel(steps, prevLocationPosition);
@@ -114,7 +114,7 @@ namespace Primora.Core.Npcs.Actors
 
             // Candidate positions along the border depending on direction
             // TODO: Make sure there is atleast a 1 tile radius around the candidates walkable
-            List<Point> candidates = new();
+            List<Point> candidates = [];
 
             if (dir.X == -1) // entering from left → spawn on right border
                 for (int y = 0; y < Location.Height; y++)
@@ -133,6 +133,7 @@ namespace Primora.Core.Npcs.Actors
             // Remove all non-walkable tiles from candidates
             candidates.RemoveAll(a => !Location.GetTileInfo(a).Walkable);
 
+            // TODO: Add more valid candidates
             if (candidates.Count == 0)
                 throw new Exception("No valid player spawn position tile found.");
 

@@ -1,4 +1,4 @@
-﻿namespace Primora.Core.Items
+﻿namespace Primora.Core.Items.Interfaces
 {
     internal interface IEquipable
     {

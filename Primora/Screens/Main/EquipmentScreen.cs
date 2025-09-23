@@ -32,7 +32,7 @@ namespace Primora.Screens.Main
                 if (equipment != null)
                 {
                     // Equipment item name
-                    View.Print(1, row++, $"- {equipment.Name}", "#adadad".HexToColor());
+                    View.Print(1, row++, $"- {((Item)equipment).Name}", "#adadad".HexToColor());
                 }
 
                 row++;

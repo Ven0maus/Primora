@@ -1,4 +1,6 @@
-﻿using Primora.Core.Npcs.Actors;
+﻿using Primora.Core.Items;
+using Primora.Core.Items.Types;
+using Primora.Core.Npcs.Actors;
 using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
 using SadConsole;
@@ -128,6 +130,12 @@ namespace Primora.Screens.Main
             // Set lowest weights for pathfinding
             WorldScreen.UpdateLowestWeightForWorldMap(World.WorldMap.GetLowestWeight());
             WorldScreen.UpdateLowestWeightForZone(World.CurrentZone.GetLowestWeight());
+
+#if DEBUG
+            // DEBUG equipment for player
+            Player.Instance.Equipment.Equip(Loot.Generate(World.CurrentZone.Random, ItemCategory.Equipment, ItemRarity.Common, a => a.EquipmentSlot == EquipmentSlot.Main_Hand) as Equipment);
+            Player.Instance.Equipment.Equip(Loot.Generate(World.CurrentZone.Random, ItemCategory.Equipment, ItemRarity.Common, a => a.EquipmentSlot == EquipmentSlot.Off_Hand) as Equipment);
+#endif
         }
     }
 }
