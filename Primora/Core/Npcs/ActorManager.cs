@@ -16,10 +16,11 @@ namespace Primora.Core.Npcs
         /// Register a new actor within the manager for tracking.
         /// </summary>
         /// <param name="actor"></param>
-        public static void Register(Actor actor)
+        public static void Register(Actor actor, ILocation location = null)
         {
-            if (!_actorMaps.TryGetValue(actor.Location, out var actorMap))
-                _actorMaps[actor.Location] = actorMap = [];
+            var loc = location ?? actor.Location;
+            if (!_actorMaps.TryGetValue(loc, out var actorMap))
+                _actorMaps[loc] = actorMap = [];
             actorMap.Add(actor);
         }
 

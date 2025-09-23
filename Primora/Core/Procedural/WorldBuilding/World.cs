@@ -133,7 +133,7 @@ namespace Primora.Core.Procedural.WorldBuilding
         /// </summary>
         /// <param name="worldPosition"></param>
         /// <param name="setAsCurrentZone"></param>
-        internal Zone OpenZone(Point worldPosition, bool setAsCurrentZone = true, bool cacheZone = true)
+        internal Zone OpenZone(Point worldPosition, bool setAsCurrentZone = true, bool cacheZone = true, bool movePlayerEntity = false)
         {
             if (!_zoneCache.TryGetValue(worldPosition, out var zone))
             {
@@ -155,6 +155,13 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             if (setAsCurrentZone)
             {
+                if (movePlayerEntity)
+                {
+                    // Adjust entity render for the player
+                    ActorManager.Unregister(Player.Instance);
+                    ActorManager.Register(Player.Instance, zone);
+                }
+
                 CurrentZone = zone;
                 ShowCurrentZone();
             }

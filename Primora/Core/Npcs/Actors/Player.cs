@@ -3,6 +3,7 @@ using Primora.Core.Procedural.WorldBuilding;
 using Primora.Screens.Main;
 using SadRogue.Primitives;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -90,9 +91,42 @@ namespace Primora.Core.Npcs.Actors
             }
 
             // Set new zone as current location
-            Location = World.Instance.OpenZone(steps.Last());
+            var prevLocationPosition = Location.WorldPosition;
+            Location = World.Instance.OpenZone(steps.Last(), movePlayerEntity: true);
 
             // TODO: Spawn player on the border of the zone from where we come
+            // If only one tile traveled, use the previous WorldPosition (current tile)
+            Point fromTile = steps.Length > 1 ? steps[^2] : prevLocationPosition;
+            Point toTile = steps[^1];
+
+            // Direction vector (normalized to -1, 0, 1)
+            Point dir = new Point(
+                Math.Sign(toTile.X - fromTile.X),
+                Math.Sign(toTile.Y - fromTile.Y)
+            );
+
+            // Candidate positions along the border depending on direction
+            List<Point> candidates = new();
+
+            if (dir.X == -1) // entering from left → spawn on right border
+                for (int y = 0; y < Location.Height; y++)
+                    candidates.Add(new Point(Location.Width - 1, y));
+            else if (dir.X == 1) // entering from right → spawn on left border
+                for (int y = 0; y < Location.Height; y++)
+                    candidates.Add(new Point(0, y));
+
+            if (dir.Y == -1) // entering from top → spawn on bottom border
+                for (int x = 0; x < Location.Width; x++)
+                    candidates.Add(new Point(x, Location.Height - 1));
+            else if (dir.Y == 1) // entering from bottom → spawn on top border
+                for (int x = 0; x < Location.Width; x++)
+                    candidates.Add(new Point(x, 0));
+
+            if (candidates.Count == 0)
+                candidates.Add(Point.Zero); // Fallback, but can't happen theoretically
+
+            Point spawnTile = candidates[Location.Random.Next(candidates.Count)];
+            Position = spawnTile;
 
             IsFastTraveling = false;
         }
