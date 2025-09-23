@@ -116,7 +116,7 @@ namespace Primora.Screens.Main
 
         private void VisualizeWorldMapPath(MouseScreenObjectState state)
         {
-            if (state.Mouse.LeftClicked && World.Instance.WorldMap.IsDisplayed)
+            if (state.IsOnScreenObject && state.Mouse.LeftClicked && World.Instance.WorldMap.IsDisplayed)
             {
                 // Check if in bounds
                 if (state.SurfaceCellPosition.X >= ViewWidth || state.SurfaceCellPosition.Y >= ViewHeight) return;
@@ -179,7 +179,7 @@ namespace Primora.Screens.Main
 
         private void VisualizeZonePath(MouseScreenObjectState state)
         {
-            if (World.Instance.WorldMap.IsDisplayed) return;
+            if (!state.IsOnScreenObject || World.Instance.WorldMap.IsDisplayed) return;
 
             // Only visualize zone pathing if aiming
             if (!Player.Instance.IsAiming) return;
