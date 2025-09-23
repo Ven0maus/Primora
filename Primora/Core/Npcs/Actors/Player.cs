@@ -106,6 +106,7 @@ namespace Primora.Core.Npcs.Actors
             );
 
             // Candidate positions along the border depending on direction
+            // TODO: Make sure there is atleast a 1 tile radius around the candidates walkable
             List<Point> candidates = new();
 
             if (dir.X == -1) // entering from left → spawn on right border
@@ -122,8 +123,11 @@ namespace Primora.Core.Npcs.Actors
                 for (int x = 0; x < Location.Width; x++)
                     candidates.Add(new Point(x, 0));
 
+            // Remove all non-walkable tiles from candidates
+            candidates.RemoveAll(a => !Location.GetTileInfo(a).Walkable);
+
             if (candidates.Count == 0)
-                candidates.Add(Point.Zero); // Fallback, but can't happen theoretically
+                throw new Exception("No valid player spawn position tile found.");
 
             Point spawnTile = candidates[Location.Random.Next(candidates.Count)];
             Position = spawnTile;

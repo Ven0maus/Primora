@@ -51,6 +51,13 @@ namespace Primora.Core.Procedural.WorldBuilding.Helpers
 
                             if (roadTemplate[ty, tx] == '=')
                             {
+                                // Make sure road tile is walkable
+                                var tileInfo = zone.GetTileInfo(x, y);
+                                tileInfo.Walkable = true;
+                                tileInfo.ObstructView = false;
+                                zone.SetTileInfo(x, y, tileInfo);
+
+                                // Set new road tile
                                 zone.Tilemap.SetTile(x, y, RoadTile(zone));
                             }
                         }

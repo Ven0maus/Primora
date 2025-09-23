@@ -185,9 +185,11 @@ namespace Primora.Core.Procedural.WorldBuilding
                     {
                         tile.Glyph = waterGlyphs[random.Next(waterGlyphs.Length)];
                         tile.Foreground = GetBiomeGlyphColor(tile.Background, worldTileInfo.Biome, random);
-                        zoneTileInfo.Walkable = false;
-                        zoneTileInfo.ObstructView = true;
                     }
+
+                    // Entire map is not walkable because of river biome
+                    zoneTileInfo.Walkable = false;
+                    zoneTileInfo.ObstructView = false;
 
                     zone.Tilemap.SetTile(x, y, tile);
                     zone.SetTileInfo(x, y, zoneTileInfo);
