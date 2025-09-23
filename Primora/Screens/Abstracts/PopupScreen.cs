@@ -16,10 +16,13 @@ namespace Primora.Screens.Abstracts
             Parent = parent;
         }
 
-        public void SetBasePosition(Point desiredTile, Point viewPosition)
+        public void SetBasePosition(Point basePosition, Point viewPosition)
         {
             if (Parent is not IScreenSurface parentSurface)
+            {
+                Position = basePosition;
                 return;
+            }
 
             var parentFont = parentSurface.FontSize;
             var childFont = FontSize;
@@ -36,8 +39,8 @@ namespace Primora.Screens.Abstracts
             int parentHeight = parentSurface.Surface.ViewHeight;
 
             // --- Step 2: ideal position (centered above tile) ---
-            int px = desiredTile.X - popupWidthInParentTiles / 2;
-            int py = desiredTile.Y - popupHeightInParentTiles - 1; // 1-tile gap above
+            int px = basePosition.X - popupWidthInParentTiles / 2;
+            int py = basePosition.Y - popupHeightInParentTiles - 1; // 1-tile gap above
 
             // --- Step 3: clamp to parent viewport ---
             px = Math.Clamp(px, 0, parentWidth - popupWidthInParentTiles);
@@ -66,21 +69,19 @@ namespace Primora.Screens.Abstracts
 
         public void EnableSync()
         {
-            if (!_viewPortSyncEnabled && Parent != null)
+            if (!_viewPortSyncEnabled && Parent != null && Parent is IScreenSurface screenSurface)
             {
-                var parent = (IScreenSurface)Parent;
-                _previousViewPosition = parent.Surface.ViewPosition;
-                parent.Surface.IsDirtyChanged += Surface_IsDirtyChanged;
+                _previousViewPosition = screenSurface.Surface.ViewPosition;
+                screenSurface.Surface.IsDirtyChanged += Surface_IsDirtyChanged;
                 _viewPortSyncEnabled = true;
             }
         }
 
         public void DisableSync()
         {
-            if (_viewPortSyncEnabled && Parent != null)
+            if (_viewPortSyncEnabled && Parent != null && Parent is IScreenSurface screenSurface)
             {
-                var parent = (IScreenSurface)Parent;
-                parent.Surface.IsDirtyChanged -= Surface_IsDirtyChanged;
+                screenSurface.Surface.IsDirtyChanged -= Surface_IsDirtyChanged;
                 _viewPortSyncEnabled = false;
             }
         }
