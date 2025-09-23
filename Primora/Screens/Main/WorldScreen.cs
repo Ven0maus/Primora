@@ -7,12 +7,10 @@ using Primora.Screens.Abstracts;
 using Primora.Screens.Helpers;
 using SadConsole;
 using SadConsole.Input;
-using SadConsole.UI;
 using SadRogue.Primitives;
 using SadRogue.Primitives.GridViews;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Primora.Screens.Main
@@ -35,6 +33,15 @@ namespace Primora.Screens.Main
         /// Screen size for worldmap display
         /// </summary>
         public readonly (int width, int height) WorldMapScreenSize;
+
+        /// <summary>
+        /// Allows to disable mouse dragging on world map.
+        /// </summary>
+        public bool DisableWorldMapDrag
+        {
+            get => !_mouseDragViewPortComponent.IsEnabled;
+            set => _mouseDragViewPortComponent.IsEnabled = !value;
+        }
 
         private readonly ScreenSurface _borderSurface;
         private readonly MouseDragViewPortCustom _mouseDragViewPortComponent;
@@ -73,7 +80,7 @@ namespace Primora.Screens.Main
                 MouseButtonForDragging = MouseDragViewPortCustom.MouseButtonType.Right 
             });
 
-            _mouseDragViewPortComponent.IsEnabled = false;
+            DisableWorldMapDrag = true;
             UseKeyboard = true;
             UseMouse = true;
             IsFocused = true;
@@ -110,6 +117,9 @@ namespace Primora.Screens.Main
 
         public override bool ProcessMouse(MouseScreenObjectState state)
         {
+            var player = Player.Instance;
+            if (player == null || player.IsFastTraveling) return base.ProcessMouse(state);
+
             VisualizeWorldMapPath(state);
             VisualizeZonePath(state);
             return base.ProcessMouse(state);
@@ -159,7 +169,7 @@ namespace Primora.Screens.Main
                         .AddTextLine($"Fast traveling here will take {travelDistanceInTurns} turns.")
                         .AddTextLine($"You will consume {foodConsumption} food during your journey.")
                         .SetAnchorPosition(endPos - ViewPosition)
-                        .AddButton("Travel", () => Player.Instance.Travel(endPos))
+                        .AddButton("Travel", () => _ = Player.Instance.Travel([.. path.Steps]))
                         .SurroundWithBorder()
                         .SyncWithViewport()
                         .BuildAndParent(this, onClose: () =>
@@ -224,14 +234,18 @@ namespace Primora.Screens.Main
 
         public override bool ProcessKeyboard(Keyboard keyboard)
         {
-            if (Player.Instance.Location.IsDisplayed)
+            var player = Player.Instance;
+            if (player == null || player.IsFastTraveling) 
+                return base.ProcessKeyboard(keyboard);
+
+            if (player.Location.IsDisplayed)
             {
                 // Player movement allowed only if it's zone is displayed
                 foreach (var key in _moveDirections)
                 {
                     if (keyboard.IsKeyPressed(key.Key))
                     {
-                        if (Player.Instance.Move(key.Value))
+                        if (player.Move(key.Value))
                         {
                             LogScreen.Add(LogEntry.New("Player moved ")
                                 .Append($"{key.Value.Type}", Color.DarkSlateBlue));
@@ -265,6 +279,8 @@ namespace Primora.Screens.Main
 
             // Resize all children too
             ResizeChildren(Surface.ViewWidth, Surface.ViewHeight, Surface.Width, Surface.Height, ViewPosition, FontSize);
+
+            IsFocused = true;
         }
 
         public void AdaptScreenForWorldMap()
@@ -305,7 +321,7 @@ namespace Primora.Screens.Main
             // Handle all shared screen swap logic
             OnScreenSwap();
 
-            _mouseDragViewPortComponent.IsEnabled = true;
+            DisableWorldMapDrag = false;
         }
 
         public void AdaptScreenForZone()
@@ -344,7 +360,7 @@ namespace Primora.Screens.Main
             // Handle all shared screen swap logic
             OnScreenSwap();
 
-            _mouseDragViewPortComponent.IsEnabled = false;
+            DisableWorldMapDrag = true;
         }
 
         private void ResizeChildren(int viewWidth, int viewHeight, int totalWidth, int totalHeight, Point viewPosition, Point fontSize)

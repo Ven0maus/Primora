@@ -227,6 +227,17 @@ namespace Primora.Core.Procedural.WorldBuilding
 
             // Player's WorldMap Entity
             PlayerWorldMapEntity = new WorldMapEntity(Player.Location.WorldPosition, Entities.Player);
+            PlayerWorldMapEntity.PositionChanged += PlayerWorldMapEntity_PositionChanged;
+        }
+
+        private void PlayerWorldMapEntity_PositionChanged(object sender, ValueChangedEventArgs<Point> e)
+        {
+            if (!WorldMap.IsDisplayed) return;
+
+            // Center view on player world map entity
+            RootScreen.Instance.WorldScreen.ViewPosition = PlayerWorldMapEntity.Position - new Point(
+                RootScreen.Instance.WorldScreen.ViewWidth / 2,
+                RootScreen.Instance.WorldScreen.ViewHeight / 2);
         }
 
         private static bool IsClearAround(Zone zone, int x, int y, int radius)
