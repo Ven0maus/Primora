@@ -94,8 +94,15 @@ namespace Primora.Core.Npcs.Actors
             var prevLocationPosition = Location.WorldPosition;
             Location = World.Instance.OpenZone(steps.Last(), movePlayerEntity: true);
 
-            // TODO: Spawn player on the border of the zone from where we come
-            // If only one tile traveled, use the previous WorldPosition (current tile)
+            // Update zone position
+            Position = FindSuitableZoneSpawnPositionFromTravel(steps, prevLocationPosition);
+
+            // No longer fast traveling
+            IsFastTraveling = false;
+        }
+
+        private Point FindSuitableZoneSpawnPositionFromTravel(Point[] steps, Point prevLocationPosition)
+        {
             Point fromTile = steps.Length > 1 ? steps[^2] : prevLocationPosition;
             Point toTile = steps[^1];
 
@@ -130,9 +137,7 @@ namespace Primora.Core.Npcs.Actors
                 throw new Exception("No valid player spawn position tile found.");
 
             Point spawnTile = candidates[Location.Random.Next(candidates.Count)];
-            Position = spawnTile;
-
-            IsFastTraveling = false;
+            return spawnTile;
         }
 
         private void Player_PositionChanged(object sender, ValueChangedEventArgs<Point> e)
