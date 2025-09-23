@@ -137,6 +137,31 @@ namespace Primora.Core.Procedural.WorldBuilding
 
         internal bool InBounds(Point position)
             => InBounds(position.X, position.Y);
+
+        /// <summary>
+        /// Calculates the distance to travel in turns based on the specified path and turns per tile.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="turnsPerTile"></param>
+        /// <returns></returns>
+        internal int CalculateTravelDistanceInTurns(IEnumerable<Point> path, int turnsPerTile)
+        {
+            // Sum the weights of all points in the path
+            var weights = path?.Select(a => Weights[a]).ToArray() ?? Array.Empty<double>();
+            if (weights.Length == 0) return 0;
+
+            double maxWeight = weights.Max();
+
+            // Normalize weights so the heaviest tile counts as 1.0
+            var normalizedWeights = weights.Select(w => w / maxWeight);
+
+            double totalNormalizedWeight = normalizedWeights.Sum();
+
+            // Multiply by turns per tile, round up to nearest whole turn
+            int totalTurns = (int)Math.Ceiling(totalNormalizedWeight * turnsPerTile);
+
+            return totalTurns;
+        }
         #endregion
 
         #region World Generation

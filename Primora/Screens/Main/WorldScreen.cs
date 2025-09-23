@@ -9,6 +9,7 @@ using SadConsole.Input;
 using SadConsole.UI;
 using SadRogue.Primitives;
 using SadRogue.Primitives.GridViews;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -147,11 +148,14 @@ namespace Primora.Screens.Main
                         _previousTravelScreen.IsEnabled = false;
                     }
 
+                    var travelDistanceInTurns = World.Instance.WorldMap.CalculateTravelDistanceInTurns(path.Steps, Constants.Worldmap.TurnsPerTile_FastTravel);
+                    var foodConsumption = (int)Math.Ceiling(travelDistanceInTurns * Constants.Worldmap.FoodConsumptionPerTurn_FastTravel); // 1 food every 10 turns
+                    
                     _previousTravelScreen = new ScreenBuilder()
                         .AddTitle("Fast Travel")
                         .EnableXButton()
-                        .AppendTextLine("Fast traveling here will take 120 turns.")
-                        .AppendTextLine("You will consume 15 days of food during your journey.")
+                        .AddTextLine($"Fast traveling here will take {travelDistanceInTurns} turns.")
+                        .AddTextLine($"You will consume {foodConsumption} food during your journey.")
                         .Position(endPos - ViewPosition)
                         .AddButton("Travel", () => Debug.WriteLine("Travel!"))
                         .SurroundWithBorder()

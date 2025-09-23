@@ -24,6 +24,8 @@ namespace Primora
         {
             internal const int DefaultWidth = 240;
             internal const int DefaultHeight = 120;
+            internal const int TurnsPerTile_FastTravel = 3; // This is affected by terrain weights too
+            internal const double FoodConsumptionPerTurn_FastTravel = 0.1;
         }
 
         internal static class Zone

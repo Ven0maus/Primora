@@ -28,7 +28,7 @@ namespace Primora.Screens.Helpers
             return this;
         }
 
-        public ScreenBuilder AppendTextLine(string text)
+        public ScreenBuilder AddTextLine(string text)
         {
             _texts.Add(text);
             return this;
