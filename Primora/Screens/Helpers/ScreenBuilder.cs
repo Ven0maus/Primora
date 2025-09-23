@@ -148,56 +148,13 @@ namespace Primora.Screens.Helpers
                 height += 2;
             }
 
-            // --- adjust position so popup fits inside parent ---
-            Point position;
-            if (parent != null)
-            {
-                var parentWidth = parent.Surface.ViewWidth;
-                var parentHeight = parent.Surface.ViewHeight;
-
-                // How many times larger is the parent font compared to the "base font"?
-                float scaleX = parent.FontSize.X / 8f;  // the screenbuilder windows are always 8x16
-                float scaleY = parent.FontSize.Y / 16f;
-
-                int px = _desiredPosition.X;
-                int py = _desiredPosition.Y;
-
-                // Push left by half width, up by height (scaled)
-                px -= (int)(width / (2f * scaleX));
-                py -= (int)(height / scaleY + 1);
-
-                // Clamp in tile space (not pixels!)
-                if (px < 0) px = 0;
-                if (py < 0) py = 0;
-
-                if (px + (int)(width / scaleX) > parentWidth)
-                    px = parentWidth - (int)(width / scaleX);
-
-                if (py + (int)(height / scaleY) > parentHeight)
-                    py = parentHeight - (int)(height / scaleY);
-
-                // Apply scale correction (for "8x16 issue")
-                px = (int)(px * scaleX);
-                py = (int)(py * scaleY);
-
-                // Clamp at least to 0
-                px = Math.Max(0, px);
-                py = Math.Max(0, py);
-
-                position = new Point(px, py);
-            }
-            else
-            {
-                position = _desiredPosition;
-            }
-
             // --- create console ---
             var console = new PopupScreen(width, height, parent)
             {
                 Font = Game.Instance.Fonts["IBM_8x16"],
                 FontSize = new(8, 16)
             };
-            console.SetBasePosition(position, parent.Surface.ViewPosition);
+            console.SetBasePosition(_desiredPosition, parent.Surface.ViewPosition);
 
             // Viewport sync
             if (_syncViewportPosition)
