@@ -270,12 +270,23 @@ namespace EditorTool
                     CmbItemAttributeValue.Items.Clear();
                     foreach (var atbValue in attribute.Values)
                         CmbItemAttributeValue.Items.Add(atbValue);
+
+                    if (ListBoxItems.SelectedItem is ItemObject itemO &&
+                        itemO.Attributes.TryGetValue(attribute.Name, out var dataValue))
+                    {
+                        CmbItemAttributeValue.SelectedItem = dataValue.ToString();
+                    }
+                    else
+                    {
+                        CmbItemAttributeValue.SelectedIndex = -1;
+                    }
                 }
                 else
                 {
                     CmbItemAttributeValue.Enabled = false;
                     CmbItemAttributeValue.Visible = false;
                     CmbItemAttributeValue.Items.Clear();
+                    CmbItemAttributeValue.SelectedIndex = -1;
                 }
             }
 
@@ -288,6 +299,7 @@ namespace EditorTool
                     CmbItemAttributeValue.Enabled = false;
                     CmbItemAttributeValue.Visible = false;
                     CmbItemAttributeValue.Items.Clear();
+                    CmbItemAttributeValue.SelectedIndex = -1;
                 }
             }
             else
@@ -322,7 +334,7 @@ namespace EditorTool
 
             ListBoxItems.Items.Add(itemObject);
             ListBoxItems.SelectedItem = itemObject;
-            CmbNpcItemPicker.Items.Add(itemObject.Name);
+            CmbNpcItemPicker.Items.Add(itemObject);
             _items[name] = itemObject;
         }
 
@@ -334,7 +346,7 @@ namespace EditorTool
                     ListBoxItems.SelectedIndex--;
                 ListBoxItems.Items.Remove(itemObject);
                 ListBoxDroppedItems.Items.Remove(itemObject.Name);
-                CmbNpcItemPicker.Items.Remove(itemObject.Name);
+                CmbNpcItemPicker.Items.Remove(itemObject);
                 _items.Remove(itemObject.Name);
 
                 // Remove from dropped items from all npcs
@@ -489,17 +501,17 @@ namespace EditorTool
 
         private void BtnAddNpcItem_Click(object sender, EventArgs e)
         {
-            if (CmbNpcItemPicker.SelectedItem is string itemName &&
+            if (CmbNpcItemPicker.SelectedItem is ItemObject itemObject &&
                 ListBoxNpcs.SelectedItem is NpcObject npcObject)
             {
-                if (npcObject.LootTable.Contains(itemName))
+                if (npcObject.LootTable.Contains(itemObject.Name))
                 {
                     MessageBox.Show("This npc already has this item in its drop table.");
                     return;
                 }
 
-                ListBoxDroppedItems.Items.Add(itemName);
-                _npcs[npcObject.Name].LootTable.Add(itemName);
+                ListBoxDroppedItems.Items.Add(itemObject.Name);
+                _npcs[npcObject.Name].LootTable.Add(itemObject.Name);
                 CmbNpcItemPicker.SelectedIndex = -1;
             }
         }
