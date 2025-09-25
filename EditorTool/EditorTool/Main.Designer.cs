@@ -74,10 +74,12 @@ namespace EditorTool
             label13 = new Label();
             ListBoxDroppedItems = new ListBox();
             label11 = new Label();
-            textBox1 = new TextBox();
+            TxtNpcName = new TextBox();
             label12 = new Label();
             ListBoxNpcs = new ListBox();
             BtnSaveConfiguration = new Button();
+            CmbNpcItemPicker = new ComboBox();
+            label4 = new Label();
             tabControl1.SuspendLayout();
             tabAttributes.SuspendLayout();
             tabItems.SuspendLayout();
@@ -391,6 +393,8 @@ namespace EditorTool
             // 
             // tabNpcs
             // 
+            tabNpcs.Controls.Add(CmbNpcItemPicker);
+            tabNpcs.Controls.Add(label4);
             tabNpcs.Controls.Add(BtnRemoveNpcItem);
             tabNpcs.Controls.Add(BtnAddNpcItem);
             tabNpcs.Controls.Add(BtnDeleteSelectedNpc);
@@ -404,7 +408,7 @@ namespace EditorTool
             tabNpcs.Controls.Add(label13);
             tabNpcs.Controls.Add(ListBoxDroppedItems);
             tabNpcs.Controls.Add(label11);
-            tabNpcs.Controls.Add(textBox1);
+            tabNpcs.Controls.Add(TxtNpcName);
             tabNpcs.Controls.Add(label12);
             tabNpcs.Controls.Add(ListBoxNpcs);
             tabNpcs.Location = new Point(4, 24);
@@ -417,21 +421,23 @@ namespace EditorTool
             // 
             // BtnRemoveNpcItem
             // 
-            BtnRemoveNpcItem.Location = new Point(100, 389);
+            BtnRemoveNpcItem.Location = new Point(83, 389);
             BtnRemoveNpcItem.Name = "BtnRemoveNpcItem";
-            BtnRemoveNpcItem.Size = new Size(122, 34);
+            BtnRemoveNpcItem.Size = new Size(139, 34);
             BtnRemoveNpcItem.TabIndex = 33;
-            BtnRemoveNpcItem.Text = "Remove Item";
+            BtnRemoveNpcItem.Text = "Remove Selected Item";
             BtnRemoveNpcItem.UseVisualStyleBackColor = true;
+            BtnRemoveNpcItem.Click += BtnRemoveNpcItem_Click;
             // 
             // BtnAddNpcItem
             // 
             BtnAddNpcItem.Location = new Point(6, 389);
             BtnAddNpcItem.Name = "BtnAddNpcItem";
-            BtnAddNpcItem.Size = new Size(88, 34);
+            BtnAddNpcItem.Size = new Size(71, 34);
             BtnAddNpcItem.TabIndex = 32;
             BtnAddNpcItem.Text = "Add Item";
             BtnAddNpcItem.UseVisualStyleBackColor = true;
+            BtnAddNpcItem.Click += BtnAddNpcItem_Click;
             // 
             // BtnDeleteSelectedNpc
             // 
@@ -441,6 +447,7 @@ namespace EditorTool
             BtnDeleteSelectedNpc.TabIndex = 31;
             BtnDeleteSelectedNpc.Text = "Delete Selected NPC";
             BtnDeleteSelectedNpc.UseVisualStyleBackColor = true;
+            BtnDeleteSelectedNpc.Click += BtnDeleteSelectedNpc_Click;
             // 
             // BtnCreateNpc
             // 
@@ -450,6 +457,7 @@ namespace EditorTool
             BtnCreateNpc.TabIndex = 30;
             BtnCreateNpc.Text = "Create NPC";
             BtnCreateNpc.UseVisualStyleBackColor = true;
+            BtnCreateNpc.Click += BtnCreateNpc_Click;
             // 
             // CmbNpcAttributeValue
             // 
@@ -484,6 +492,7 @@ namespace EditorTool
             BtnSetNpcAttributeValue.TabIndex = 26;
             BtnSetNpcAttributeValue.Text = "Set Value";
             BtnSetNpcAttributeValue.UseVisualStyleBackColor = true;
+            BtnSetNpcAttributeValue.Click += BtnSetNpcAttributeValue_Click;
             // 
             // label14
             // 
@@ -502,6 +511,7 @@ namespace EditorTool
             ListBoxNpcAttributes.Name = "ListBoxNpcAttributes";
             ListBoxNpcAttributes.Size = new Size(229, 154);
             ListBoxNpcAttributes.TabIndex = 24;
+            ListBoxNpcAttributes.SelectedIndexChanged += ListBoxNpcAttributes_SelectedIndexChanged;
             // 
             // label13
             // 
@@ -516,9 +526,9 @@ namespace EditorTool
             // ListBoxDroppedItems
             // 
             ListBoxDroppedItems.FormattingEnabled = true;
-            ListBoxDroppedItems.Location = new Point(6, 229);
+            ListBoxDroppedItems.Location = new Point(6, 226);
             ListBoxDroppedItems.Name = "ListBoxDroppedItems";
-            ListBoxDroppedItems.Size = new Size(216, 154);
+            ListBoxDroppedItems.Size = new Size(216, 109);
             ListBoxDroppedItems.TabIndex = 22;
             // 
             // label11
@@ -531,12 +541,12 @@ namespace EditorTool
             label11.TabIndex = 21;
             label11.Text = "Npcs:";
             // 
-            // textBox1
+            // TxtNpcName
             // 
-            textBox1.Location = new Point(228, 54);
-            textBox1.Name = "textBox1";
-            textBox1.Size = new Size(229, 23);
-            textBox1.TabIndex = 20;
+            TxtNpcName.Location = new Point(228, 54);
+            TxtNpcName.Name = "TxtNpcName";
+            TxtNpcName.Size = new Size(229, 23);
+            TxtNpcName.TabIndex = 20;
             // 
             // label12
             // 
@@ -555,6 +565,7 @@ namespace EditorTool
             ListBoxNpcs.Name = "ListBoxNpcs";
             ListBoxNpcs.Size = new Size(216, 169);
             ListBoxNpcs.TabIndex = 18;
+            ListBoxNpcs.SelectedIndexChanged += ListBoxNpcs_SelectedIndexChanged;
             // 
             // BtnSaveConfiguration
             // 
@@ -564,6 +575,24 @@ namespace EditorTool
             BtnSaveConfiguration.TabIndex = 3;
             BtnSaveConfiguration.Text = "Save Game Data Configuration";
             BtnSaveConfiguration.UseVisualStyleBackColor = true;
+            // 
+            // CmbNpcItemPicker
+            // 
+            CmbNpcItemPicker.FormattingEnabled = true;
+            CmbNpcItemPicker.Location = new Point(6, 360);
+            CmbNpcItemPicker.Name = "CmbNpcItemPicker";
+            CmbNpcItemPicker.Size = new Size(216, 23);
+            CmbNpcItemPicker.TabIndex = 36;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Font = new Font("Segoe UI", 10F);
+            label4.Location = new Point(6, 338);
+            label4.Name = "label4";
+            label4.Size = new Size(40, 19);
+            label4.TabIndex = 34;
+            label4.Text = "Item:";
             // 
             // Main
             // 
@@ -628,7 +657,7 @@ namespace EditorTool
         private Label label13;
         private ListBox ListBoxDroppedItems;
         private Label label11;
-        private TextBox textBox1;
+        private TextBox TxtNpcName;
         private Label label12;
         private ListBox ListBoxNpcs;
         private Button BtnRemoveNpcItem;
@@ -636,5 +665,7 @@ namespace EditorTool
         private ComboBox CmbAttributeAvailableFor;
         private Label label16;
         private Button BtnSaveConfiguration;
+        private ComboBox CmbNpcItemPicker;
+        private Label label4;
     }
 }
