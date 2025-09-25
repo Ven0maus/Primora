@@ -1,8 +1,12 @@
 ﻿using EditorTool.Objects;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Windows.Forms;
 
 namespace EditorTool
@@ -12,6 +16,11 @@ namespace EditorTool
         private readonly Dictionary<string, AttributeObject> _attributes;
         private readonly Dictionary<string, ItemObject> _items;
         private readonly Dictionary<string, NpcObject> _npcs;
+        private readonly string _gameDataPath;
+
+        private const string _attributesFileName = "Attributes.json";
+        private const string _itemsFileName = "Items.json";
+        private const string _npcsFileName = "Npcs.json";
 
         public Main()
         {
@@ -20,6 +29,11 @@ namespace EditorTool
             _attributes = new Dictionary<string, AttributeObject>(StringComparer.OrdinalIgnoreCase);
             _items = new Dictionary<string, ItemObject>(StringComparer.OrdinalIgnoreCase);
             _npcs = new Dictionary<string, NpcObject>(StringComparer.OrdinalIgnoreCase);
+
+            var configJson = JsonSerializer.Deserialize<JsonObject>(File.ReadAllText("configuration.json"));
+            _gameDataPath = Path.GetFullPath(configJson["GameDataPath"].GetValue<string>());
+            if (!Directory.Exists(_gameDataPath))
+                throw new Exception("Invalid GameDataPath specified in configuration.exe");
 
             // Disable and hide combobox for certain attribs
             CmbItemAttributeValue.Enabled = false;
@@ -38,30 +52,7 @@ namespace EditorTool
 
         private void Main_Load(object sender, EventArgs e)
         {
-            // Find game data folder
-            string exePath = AppContext.BaseDirectory;
-            var dir = new DirectoryInfo(exePath);
-
-            while (dir != null && dir.GetFiles("*.sln").Length == 0 && dir.GetDirectories("Primora").Length == 0)
-            {
-                dir = dir.Parent;
-            }
-
-            if (dir == null) throw new Exception("Cannot find solution root.");
-
-            // Found the root → build path
-            string gameDataPath = Path.Combine(dir.FullName, "Primora", "GameData");
-
-            // Collect attributes
-            var attributesPath = Path.Combine(gameDataPath, "Attributes.json");
-
-            // Collect items
-            var itemsPath = Path.Combine(gameDataPath, "Items.json");
-
-            // Collect npcs
-            var npcsPath = Path.Combine(gameDataPath, "Npcs.json");
-
-            // TODO:
+            LoadGameData();
         }
 
         #region Attributes
@@ -143,7 +134,7 @@ namespace EditorTool
 
             // Adjust filter to show the "For" that was added if not visible yet
             AdjustForFilter(attribute.For);
-            
+
         }
 
         private void AdjustForFilter(AttributeFor @for)
@@ -205,6 +196,42 @@ namespace EditorTool
                 TxtAttributeName.Text = attributeObject.Name;
                 CmbAttributeType.SelectedItem = attributeObject.Type;
                 CmbAttributeAvailableFor.SelectedItem = attributeObject.For;
+            }
+        }
+
+        private void CmbAttributeFilter_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (CmbAttributeFilter.SelectedItem is not string s) return;
+            ListBoxAttributes.Items.Clear();
+
+            switch (s)
+            {
+                case "Show All":
+                    // Add all
+                    foreach (var attribute in _attributes.Values)
+                        ListBoxAttributes.Items.Add(attribute);
+                    break;
+
+                case "Shared":
+                    // Add only shared
+                    foreach (var attribute in _attributes.Values.Where(a => a.For == AttributeFor.Shared))
+                        ListBoxAttributes.Items.Add(attribute);
+                    break;
+
+                case "Items":
+                    // Add only items
+                    foreach (var attribute in _attributes.Values.Where(a => a.For == AttributeFor.Items))
+                        ListBoxAttributes.Items.Add(attribute);
+                    break;
+
+                case "Npcs":
+                    // Add only npcs
+                    foreach (var attribute in _attributes.Values.Where(a => a.For == AttributeFor.Npcs))
+                        ListBoxAttributes.Items.Add(attribute);
+                    break;
+
+                default:
+                    throw new NotImplementedException($"Not implemented case \"{s}\".");
             }
         }
         #endregion
@@ -548,40 +575,130 @@ namespace EditorTool
         }
         #endregion
 
-        private void CmbAttributeFilter_SelectedIndexChanged(object sender, EventArgs e)
+        #region Saving and loading
+        private void BtnSaveConfiguration_Click(object sender, EventArgs e)
         {
-            if (CmbAttributeFilter.SelectedItem is not string s) return;
-            ListBoxAttributes.Items.Clear();
+            var result = MessageBox.Show("This will update all game data in Primora main directory, are you sure?!", 
+                "Are you sure?", MessageBoxButtons.YesNo);
+            if (result == DialogResult.No) return;
 
-            switch (s)
+            // Serialize all game data files
+            try
             {
-                case "Show All":
-                    // Add all
-                    foreach (var attribute in _attributes.Values)
-                        ListBoxAttributes.Items.Add(attribute);
-                    break;
-
-                case "Shared":
-                    // Add only shared
-                    foreach (var attribute in _attributes.Values.Where(a => a.For == AttributeFor.Shared))
-                        ListBoxAttributes.Items.Add(attribute);
-                    break;
-
-                case "Items":
-                    // Add only items
-                    foreach (var attribute in _attributes.Values.Where(a => a.For == AttributeFor.Items))
-                        ListBoxAttributes.Items.Add(attribute);
-                    break;
-
-                case "Npcs":
-                    // Add only npcs
-                    foreach (var attribute in _attributes.Values.Where(a => a.For == AttributeFor.Npcs))
-                        ListBoxAttributes.Items.Add(attribute);
-                    break;
-
-                default:
-                    throw new NotImplementedException($"Not implemented case \"{s}\".");
+                File.WriteAllText(Path.Combine(_gameDataPath, _attributesFileName), JsonSerializer.Serialize(_attributes, _serializerOptions));
+                File.WriteAllText(Path.Combine(_gameDataPath, _itemsFileName), JsonSerializer.Serialize(_items, _serializerOptions));
+                File.WriteAllText(Path.Combine(_gameDataPath, _npcsFileName), JsonSerializer.Serialize(_npcs, _serializerOptions));
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show("Unable to serialize gamedata: " + ex.Message);
             }
         }
+
+        private void LoadGameData()
+        {
+            // Found the root → build path
+            LoadAttributes(_gameDataPath);
+            LoadItems(_gameDataPath);
+            LoadNpcs(_gameDataPath);
+
+            // Visualize all loaded data
+            foreach (var attribute in _attributes.Values)
+            {
+                ListBoxAttributes.Items.Add(attribute);
+                if (attribute.For == AttributeFor.Items || attribute.For == AttributeFor.Shared)
+                    ListBoxItemAttributes.Items.Add(attribute);
+                if (attribute.For == AttributeFor.Npcs || attribute.For == AttributeFor.Shared)
+                    ListBoxNpcAttributes.Items.Add(attribute);
+            }
+            foreach (var item in _items.Values)
+            {
+                ListBoxItems.Items.Add(item);
+                CmbNpcItemPicker.Items.Add(item);
+            }
+            foreach (var npc in _npcs.Values)
+            {
+                ListBoxNpcs.Items.Add(npc);
+            }
+        }
+
+        private void LoadAttributes(string gameDataPath)
+        {
+            try
+            {
+                var attributesPath = Path.Combine(gameDataPath, _attributesFileName);
+                if (File.Exists(attributesPath))
+                {
+                    var content = Read<AttributeObject>(attributesPath);
+                    foreach (var value in content)
+                        _attributes[value.Key] = value.Value;
+                }
+                else
+                {
+                    Debug.WriteLine("File not found: " + attributesPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Unable to load attributes json: " + ex.Message);
+            }
+        }
+
+        private void LoadItems(string gameDataPath)
+        {
+            try
+            {
+                var itemsPath = Path.Combine(gameDataPath, _itemsFileName);
+                if (File.Exists(itemsPath))
+                {
+                    var content = Read<ItemObject>(itemsPath);
+                    foreach (var value in content)
+                        _items[value.Key] = value.Value;
+                }
+                else
+                {
+                    Debug.WriteLine("File not found: " + itemsPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Unable to load items json: " + ex.Message);
+            }
+        }
+
+        private void LoadNpcs(string gameDataPath)
+        {
+            try
+            {
+                var npcsPath = Path.Combine(gameDataPath, _npcsFileName);
+                if (File.Exists(npcsPath))
+                {
+                    var content = Read<NpcObject>(npcsPath);
+                    foreach (var value in content)
+                        _npcs[value.Key] = value.Value;
+                }
+                else
+                {
+                    Debug.WriteLine("File not found: " + npcsPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Unable to load npcs json: " + ex.Message);
+            }
+        }
+
+        private static Dictionary<string, T> Read<T>(string path)
+        {
+            var json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<Dictionary<string, T>>(json, _serializerOptions);
+        }
+
+        private static readonly JsonSerializerOptions _serializerOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+        #endregion
     }
 }

@@ -48,7 +48,7 @@ namespace Primora
         {
             internal const string Biomes = "GameData/Biomes.json";
             internal const string ActorDefinitions = "GameData/ActorDefinitions.json";
-            internal const string ItemDataFolder = "GameData/Items";
+            internal const string Items = "GameData/Items.json";
         }
     }
 }

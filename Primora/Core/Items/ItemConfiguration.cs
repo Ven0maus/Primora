@@ -25,12 +25,11 @@ namespace Primora.Core.Items
 
         static ItemConfiguration()
         {
-            _itemConfigurations = new Dictionary<ItemCategory, ItemConfiguration[]>
-            {
-                // Load data of each item category
-                [ItemCategory.Consumable] = LoadConsumables(),
-                [ItemCategory.Equipment] = LoadEquipment()
-            };
+            _itemConfigurations = [];
+
+            // Insert item configurations into cache
+            foreach (var item in LoadItems().GroupBy(a => a.Category))
+                _itemConfigurations[item.Key] = [.. item];
 
             // Informative debugging
             foreach (var kvp in _itemConfigurations)
@@ -44,68 +43,21 @@ namespace Primora.Core.Items
             throw new NotImplementedException($"Category \"{category}\" has not yet been implemented.");
         }
 
-        private static ItemConfiguration[] LoadConsumables()
+        private static List<ItemConfiguration> LoadItems()
         {
-            var consumableFiles = new[] { "Potions.json" };
+            if (!File.Exists(Constants.GameData.Items))
+                return [];
 
-            var configurations = new List<ItemConfiguration>();
-            foreach (var filename in consumableFiles)
+            try
             {
-                var filePath = Path.Combine(Constants.GameData.ItemDataFolder, "Consumables", filename);
-                if (!File.Exists(filePath)) continue;
-
-                try
-                {
-                    var json = File.ReadAllText(filePath);
-                    var configs = JsonSerializer.Deserialize<List<ItemConfiguration>>(json, Constants.General.SerializerOptions);
-
-                    // Set correct category
-                    foreach (var config in configs)
-                        config.Category = ItemCategory.Consumable;
-
-                    configurations.AddRange(configs);
-                }
-                catch (Exception e)
-                {
-                    throw new Exception($"Unable to process file \"{filePath}\": {e.Message}", e);
-                }
+                var json = File.ReadAllText(Constants.GameData.Items);
+                var configs = JsonSerializer.Deserialize<List<ItemConfiguration>>(json, Constants.General.SerializerOptions);
+                return configs;
             }
-
-            return [.. configurations];
-        }
-
-        private static ItemConfiguration[] LoadEquipment()
-        {
-            var equipmentSlots = Enum.GetValues<EquipmentSlot>()
-                .Where(a => a != EquipmentSlot.None)
-                .ToArray();
-
-            var configurations = new List<ItemConfiguration>();
-            foreach (var equipmentSlot in equipmentSlots)
+            catch (Exception e)
             {
-                var filePath = Path.Combine(Constants.GameData.ItemDataFolder, "Equipment", equipmentSlot.ToString() + ".json");
-                if (!File.Exists(filePath)) continue;
-
-                try
-                {
-                    var json = File.ReadAllText(filePath);
-                    var configs = JsonSerializer.Deserialize<List<ItemConfiguration>>(json, Constants.General.SerializerOptions);
-
-                    // Set correct equipment slot and category
-                    foreach (var config in configs)
-                    {
-                        config.Category = ItemCategory.Equipment;
-                        config.EquipmentSlot = equipmentSlot;
-                    }
-
-                    configurations.AddRange(configs);
-                }
-                catch (Exception e)
-                {
-                    throw new Exception($"Unable to process file \"{filePath}\": {e.Message}", e);
-                }
+                throw new Exception($"Unable to process file \"{Constants.GameData.Items}\": {e.Message}", e);
             }
-            return [.. configurations];
         }
     }
 }

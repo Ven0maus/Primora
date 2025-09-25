@@ -614,6 +614,7 @@ namespace EditorTool
             BtnSaveConfiguration.TabIndex = 3;
             BtnSaveConfiguration.Text = "Save Game Data Configuration";
             BtnSaveConfiguration.UseVisualStyleBackColor = true;
+            BtnSaveConfiguration.Click += BtnSaveConfiguration_Click;
             // 
             // Main
             // 
