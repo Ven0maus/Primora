@@ -123,7 +123,7 @@ namespace EditorTool
 
             _attributes[TxtAttributeName.Text] = attribute;
             ListBoxAttributes.Items.Add(attribute);
-            ListBoxAttributes.SelectedItem = attribute;
+            ListBoxAttributes.SelectedIndex = -1;
 
             if (attribute.For == AttributeFor.Items || attribute.For == AttributeFor.Shared)
                 ListBoxItemAttributes.Items.Add(attribute); // Add also for items
@@ -183,6 +183,9 @@ namespace EditorTool
 
         private void ListBoxAttributes_SelectedIndexChanged(object sender, EventArgs e)
         {
+            // This forces event to be raised
+            CmbAttributeType.SelectedIndex = -1;
+
             // Fill all values
             if (ListBoxAttributes.SelectedItem is not AttributeObject attributeObject)
             {
