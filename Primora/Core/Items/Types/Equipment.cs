@@ -11,6 +11,7 @@ namespace Primora.Core.Items.Types
         public Equipment(ItemConfiguration configuration) : base(configuration)
         {
             EquipmentSlot = configuration.EquipmentSlot;
+            ProvidedStats = configuration.ProvidedStats.DeepClone();
         }
     }
 }

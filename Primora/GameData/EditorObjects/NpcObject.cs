@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using Primora.Core.Items.Interfaces;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace Primora.Core.Items.EditorObjects
+namespace Primora.GameData.EditorObjects
 {
-    public class NpcObject
+    public class NpcObject : IEditorObject
     {
         [JsonIgnore]
         public string Name { get; set; }

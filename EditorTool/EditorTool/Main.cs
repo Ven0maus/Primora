@@ -1,4 +1,4 @@
-﻿using Primora.Core.Items.EditorObjects;
+﻿using Primora.GameData.EditorObjects;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
