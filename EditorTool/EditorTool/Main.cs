@@ -697,7 +697,8 @@ namespace EditorTool
         private static readonly JsonSerializerOptions _serializerOptions = new()
         {
             PropertyNameCaseInsensitive = true,
-            Converters = { new JsonStringEnumConverter() }
+            Converters = { new JsonStringEnumConverter() },
+            WriteIndented = true
         };
         #endregion
     }
