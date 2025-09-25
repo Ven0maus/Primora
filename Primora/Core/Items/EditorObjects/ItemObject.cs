@@ -1,14 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace EditorTool.Objects
+namespace Primora.Core.Items.EditorObjects
 {
-    public class NpcObject
+    public class ItemObject
     {
         [JsonIgnore]
         public string Name { get; set; }
         public Dictionary<string, object> Attributes { get; set; }
-        public List<string> LootTable { get; set; }
 
         public override string ToString()
         {

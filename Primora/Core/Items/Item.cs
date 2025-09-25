@@ -1,4 +1,6 @@
-﻿namespace Primora.Core.Items
+﻿using Primora.Core.Items.Objects;
+
+namespace Primora.Core.Items
 {
     /// <summary>
     /// Absolute base for all items

@@ -1,4 +1,4 @@
-﻿namespace Primora.Core.Items
+﻿namespace Primora.Core.Items.Objects
 {
     public enum EquipmentSlot
     {

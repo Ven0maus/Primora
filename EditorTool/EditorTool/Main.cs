@@ -1,4 +1,4 @@
-﻿using EditorTool.Objects;
+﻿using Primora.Core.Items.EditorObjects;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -134,7 +134,6 @@ namespace EditorTool
 
             // Adjust filter to show the "For" that was added if not visible yet
             AdjustForFilter(attribute.For);
-
         }
 
         private void AdjustForFilter(AttributeFor @for)

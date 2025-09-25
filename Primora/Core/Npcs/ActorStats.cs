@@ -1,4 +1,4 @@
-﻿using Primora.Core.Items;
+﻿using Primora.Core.Items.Objects;
 using Primora.Core.Npcs.EventArguments;
 using Primora.Core.Npcs.Objects;
 using System;

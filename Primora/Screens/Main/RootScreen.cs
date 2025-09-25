@@ -1,4 +1,5 @@
 ﻿using Primora.Core.Items;
+using Primora.Core.Items.Objects;
 using Primora.Core.Items.Types;
 using Primora.Core.Npcs.Actors;
 using Primora.Core.Procedural.WorldBuilding;

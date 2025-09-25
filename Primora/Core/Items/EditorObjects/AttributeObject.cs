@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace EditorTool.Objects
+namespace Primora.Core.Items.EditorObjects
 {
     public class AttributeObject
     {

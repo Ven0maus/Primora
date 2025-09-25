@@ -1,4 +1,4 @@
-﻿namespace Primora.Core.Items
+﻿namespace Primora.Core.Items.Objects
 {
     /// <summary>
     /// The main categories of items present in the world
