@@ -33,6 +33,8 @@ namespace EditorTool
         {
             tabControl1 = new TabControl();
             tabAttributes = new TabPage();
+            CmbAttributeFilter = new ComboBox();
+            label10 = new Label();
             CmbAttributeAvailableFor = new ComboBox();
             label16 = new Label();
             BtnRemoveSelectedValue = new Button();
@@ -61,6 +63,8 @@ namespace EditorTool
             BtnCreateItem = new Button();
             ListBoxItems = new ListBox();
             tabNpcs = new TabPage();
+            CmbNpcItemPicker = new ComboBox();
+            label4 = new Label();
             BtnRemoveNpcItem = new Button();
             BtnAddNpcItem = new Button();
             BtnDeleteSelectedNpc = new Button();
@@ -78,8 +82,6 @@ namespace EditorTool
             label12 = new Label();
             ListBoxNpcs = new ListBox();
             BtnSaveConfiguration = new Button();
-            CmbNpcItemPicker = new ComboBox();
-            label4 = new Label();
             tabControl1.SuspendLayout();
             tabAttributes.SuspendLayout();
             tabItems.SuspendLayout();
@@ -99,6 +101,8 @@ namespace EditorTool
             // 
             // tabAttributes
             // 
+            tabAttributes.Controls.Add(CmbAttributeFilter);
+            tabAttributes.Controls.Add(label10);
             tabAttributes.Controls.Add(CmbAttributeAvailableFor);
             tabAttributes.Controls.Add(label16);
             tabAttributes.Controls.Add(BtnRemoveSelectedValue);
@@ -121,15 +125,34 @@ namespace EditorTool
             tabAttributes.Text = "Attributes";
             tabAttributes.UseVisualStyleBackColor = true;
             // 
+            // CmbAttributeFilter
+            // 
+            CmbAttributeFilter.FormattingEnabled = true;
+            CmbAttributeFilter.Items.AddRange(new object[] { "Show All", "Shared", "Items", "Npcs" });
+            CmbAttributeFilter.Location = new Point(6, 31);
+            CmbAttributeFilter.Name = "CmbAttributeFilter";
+            CmbAttributeFilter.Size = new Size(216, 23);
+            CmbAttributeFilter.TabIndex = 15;
+            CmbAttributeFilter.Text = "Show All";
+            CmbAttributeFilter.SelectedIndexChanged += CmbAttributeFilter_SelectedIndexChanged;
+            // 
+            // label10
+            // 
+            label10.AutoSize = true;
+            label10.Font = new Font("Segoe UI", 10F);
+            label10.Location = new Point(6, 9);
+            label10.Name = "label10";
+            label10.Size = new Size(42, 19);
+            label10.TabIndex = 14;
+            label10.Text = "Filter:";
+            // 
             // CmbAttributeAvailableFor
             // 
             CmbAttributeAvailableFor.FormattingEnabled = true;
-            CmbAttributeAvailableFor.Items.AddRange(new object[] { "Shared", "Items", "Npcs" });
             CmbAttributeAvailableFor.Location = new Point(233, 129);
             CmbAttributeAvailableFor.Name = "CmbAttributeAvailableFor";
             CmbAttributeAvailableFor.Size = new Size(224, 23);
             CmbAttributeAvailableFor.TabIndex = 13;
-            CmbAttributeAvailableFor.Text = "Shared";
             // 
             // label16
             // 
@@ -184,12 +207,10 @@ namespace EditorTool
             // CmbAttributeType
             // 
             CmbAttributeType.FormattingEnabled = true;
-            CmbAttributeType.Items.AddRange(new object[] { "Text", "Char", "Number", "Boolean", "Enum" });
             CmbAttributeType.Location = new Point(233, 79);
             CmbAttributeType.Name = "CmbAttributeType";
             CmbAttributeType.Size = new Size(224, 23);
             CmbAttributeType.TabIndex = 7;
-            CmbAttributeType.Text = "Text";
             CmbAttributeType.SelectedIndexChanged += CmbAttributeType_SelectedIndexChanged;
             // 
             // label3
@@ -243,9 +264,9 @@ namespace EditorTool
             // ListBoxAttributes
             // 
             ListBoxAttributes.FormattingEnabled = true;
-            ListBoxAttributes.Location = new Point(6, 6);
+            ListBoxAttributes.Location = new Point(6, 66);
             ListBoxAttributes.Name = "ListBoxAttributes";
-            ListBoxAttributes.Size = new Size(216, 394);
+            ListBoxAttributes.Size = new Size(216, 334);
             ListBoxAttributes.TabIndex = 1;
             ListBoxAttributes.SelectedIndexChanged += ListBoxAttributes_SelectedIndexChanged;
             // 
@@ -419,6 +440,24 @@ namespace EditorTool
             tabNpcs.Text = "Npcs";
             tabNpcs.UseVisualStyleBackColor = true;
             // 
+            // CmbNpcItemPicker
+            // 
+            CmbNpcItemPicker.FormattingEnabled = true;
+            CmbNpcItemPicker.Location = new Point(6, 360);
+            CmbNpcItemPicker.Name = "CmbNpcItemPicker";
+            CmbNpcItemPicker.Size = new Size(216, 23);
+            CmbNpcItemPicker.TabIndex = 36;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Font = new Font("Segoe UI", 10F);
+            label4.Location = new Point(6, 338);
+            label4.Name = "label4";
+            label4.Size = new Size(40, 19);
+            label4.TabIndex = 34;
+            label4.Text = "Item:";
+            // 
             // BtnRemoveNpcItem
             // 
             BtnRemoveNpcItem.Location = new Point(83, 389);
@@ -576,24 +615,6 @@ namespace EditorTool
             BtnSaveConfiguration.Text = "Save Game Data Configuration";
             BtnSaveConfiguration.UseVisualStyleBackColor = true;
             // 
-            // CmbNpcItemPicker
-            // 
-            CmbNpcItemPicker.FormattingEnabled = true;
-            CmbNpcItemPicker.Location = new Point(6, 360);
-            CmbNpcItemPicker.Name = "CmbNpcItemPicker";
-            CmbNpcItemPicker.Size = new Size(216, 23);
-            CmbNpcItemPicker.TabIndex = 36;
-            // 
-            // label4
-            // 
-            label4.AutoSize = true;
-            label4.Font = new Font("Segoe UI", 10F);
-            label4.Location = new Point(6, 338);
-            label4.Name = "label4";
-            label4.Size = new Size(40, 19);
-            label4.TabIndex = 34;
-            label4.Text = "Item:";
-            // 
             // Main
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -667,5 +688,7 @@ namespace EditorTool
         private Button BtnSaveConfiguration;
         private ComboBox CmbNpcItemPicker;
         private Label label4;
+        private ComboBox CmbAttributeFilter;
+        private Label label10;
     }
 }

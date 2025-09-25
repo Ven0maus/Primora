@@ -26,6 +26,14 @@ namespace EditorTool
             CmbItemAttributeValue.Visible = false;
             CmbNpcAttributeValue.Enabled = false;
             CmbNpcAttributeValue.Visible = false;
+
+            // Init enum values
+            foreach (var value in Enum.GetValues<AttributeType>())
+                CmbAttributeType.Items.Add(value);
+            CmbAttributeType.SelectedItem = AttributeType.Text;
+            foreach (var value in Enum.GetValues<AttributeFor>())
+                CmbAttributeAvailableFor.Items.Add(value);
+            CmbAttributeAvailableFor.SelectedItem = AttributeFor.Shared;
         }
 
         private void Main_Load(object sender, EventArgs e)
@@ -59,7 +67,7 @@ namespace EditorTool
         #region Attributes
         private void CmbAttributeType_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var enumSelected = CmbAttributeType.SelectedItem is string s && s.Equals("enum", StringComparison.OrdinalIgnoreCase);
+            var enumSelected = CmbAttributeType.SelectedItem is AttributeType s && s == AttributeType.Enum;
 
             ListBoxAttributeValues.Items.Clear();
 
@@ -117,8 +125,8 @@ namespace EditorTool
             var attribute = new AttributeObject
             {
                 Name = TxtAttributeName.Text,
-                Type = Enum.Parse<AttributeType>(CmbAttributeType.SelectedItem as string, true),
-                For = Enum.Parse<AttributeFor>(CmbAttributeAvailableFor.SelectedItem as string, true),
+                Type = (AttributeType)CmbAttributeType.SelectedItem,
+                For = (AttributeFor)CmbAttributeAvailableFor.SelectedItem,
                 Values = ListBoxAttributeValues.Items.Count > 0 ? [.. ListBoxAttributeValues.Items.Cast<string>()] : null
             };
 
@@ -132,6 +140,27 @@ namespace EditorTool
                 ListBoxNpcAttributes.Items.Add(attribute); // Add also for npcs
 
             BtnRemoveSelectedAttribute.Enabled = true;
+
+            // Adjust filter to show the "For" that was added if not visible yet
+            AdjustForFilter(attribute.For);
+            
+        }
+
+        private void AdjustForFilter(AttributeFor @for)
+        {
+            var filter = CmbAttributeFilter.SelectedItem as string;
+
+            switch (@for)
+            {
+                case AttributeFor.Npcs:
+                    if (filter == "Items")
+                        CmbAttributeFilter.SelectedItem = "Npcs";
+                    break;
+                case AttributeFor.Items:
+                    if (filter == "Npcs")
+                        CmbAttributeFilter.SelectedItem = "Items";
+                    break;
+            }
         }
 
         private void BtnRemoveSelectedAttribute_Click(object sender, EventArgs e)
@@ -154,7 +183,7 @@ namespace EditorTool
                 if (attribute.For == AttributeFor.Npcs || attribute.For == AttributeFor.Shared)
                 {
                     // Remove also for npcs
-                    ListBoxNpcAttributes.Items.Remove(attribute); 
+                    ListBoxNpcAttributes.Items.Remove(attribute);
                     foreach (var npc in _npcs.Values)
                         npc.Attributes.Remove(attribute.Name);
                 }
@@ -431,7 +460,7 @@ namespace EditorTool
 
         private void BtnAddNpcItem_Click(object sender, EventArgs e)
         {
-            if (CmbNpcItemPicker.SelectedItem is string itemName && 
+            if (CmbNpcItemPicker.SelectedItem is string itemName &&
                 ListBoxNpcs.SelectedItem is NpcObject npcObject)
             {
                 if (npcObject.LootTable.Contains(itemName))
@@ -448,7 +477,7 @@ namespace EditorTool
 
         private void BtnRemoveNpcItem_Click(object sender, EventArgs e)
         {
-            if (ListBoxDroppedItems.SelectedItem is string itemName && 
+            if (ListBoxDroppedItems.SelectedItem is string itemName &&
                 ListBoxNpcs.SelectedItem is NpcObject npcObject)
             {
                 ListBoxDroppedItems.Items.Remove(itemName);
@@ -518,5 +547,41 @@ namespace EditorTool
             }
         }
         #endregion
+
+        private void CmbAttributeFilter_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (CmbAttributeFilter.SelectedItem is not string s) return;
+            ListBoxAttributes.Items.Clear();
+
+            switch (s)
+            {
+                case "Show All":
+                    // Add all
+                    foreach (var attribute in _attributes.Values)
+                        ListBoxAttributes.Items.Add(attribute);
+                    break;
+
+                case "Shared":
+                    // Add only shared
+                    foreach (var attribute in _attributes.Values.Where(a => a.For == AttributeFor.Shared))
+                        ListBoxAttributes.Items.Add(attribute);
+                    break;
+
+                case "Items":
+                    // Add only items
+                    foreach (var attribute in _attributes.Values.Where(a => a.For == AttributeFor.Items))
+                        ListBoxAttributes.Items.Add(attribute);
+                    break;
+
+                case "Npcs":
+                    // Add only npcs
+                    foreach (var attribute in _attributes.Values.Where(a => a.For == AttributeFor.Npcs))
+                        ListBoxAttributes.Items.Add(attribute);
+                    break;
+
+                default:
+                    throw new NotImplementedException($"Not implemented case \"{s}\".");
+            }
+        }
     }
 }
