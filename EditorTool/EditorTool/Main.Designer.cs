@@ -442,11 +442,14 @@ namespace EditorTool
             // 
             // CmbNpcItemPicker
             // 
+            CmbNpcItemPicker.AutoCompleteSource = AutoCompleteSource.ListItems;
             CmbNpcItemPicker.FormattingEnabled = true;
             CmbNpcItemPicker.Location = new Point(6, 360);
             CmbNpcItemPicker.Name = "CmbNpcItemPicker";
             CmbNpcItemPicker.Size = new Size(216, 23);
             CmbNpcItemPicker.TabIndex = 36;
+            CmbNpcItemPicker.DropDown += CmbNpcItemPicker_DropDown;
+            CmbNpcItemPicker.TextChanged += CmbNpcItemPicker_TextChanged;
             // 
             // label4
             // 

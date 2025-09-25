@@ -2,8 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -334,7 +336,6 @@ namespace EditorTool
 
             ListBoxItems.Items.Add(itemObject);
             ListBoxItems.SelectedItem = itemObject;
-            CmbNpcItemPicker.Items.Add(itemObject);
             _items[name] = itemObject;
         }
 
@@ -346,7 +347,6 @@ namespace EditorTool
                     ListBoxItems.SelectedIndex--;
                 ListBoxItems.Items.Remove(itemObject);
                 ListBoxDroppedItems.Items.Remove(itemObject.Name);
-                CmbNpcItemPicker.Items.Remove(itemObject);
                 _items.Remove(itemObject.Name);
 
                 // Remove from dropped items from all npcs
@@ -587,12 +587,63 @@ namespace EditorTool
                     TxtNpcAttributeValue.Text = string.Empty;
             }
         }
+
+        private void CmbNpcItemPicker_TextChanged(object sender, EventArgs e)
+        {
+            string text = CmbNpcItemPicker.Text;
+
+            // If text already matches an item, skip filtering
+            if (_items.ContainsKey(text))
+                return;
+
+            // Filter
+            ItemObject[] filtered;
+            if (string.IsNullOrEmpty(text))
+            {
+                filtered = _items.Values.ToArray();
+            }
+            else
+            {
+                filtered = _items
+                    .Where(item => item.Key.StartsWith(text, StringComparison.InvariantCultureIgnoreCase))
+                    .Select(a => a.Value)
+                    .ToArray();
+            }
+
+            // Save cursor position
+            int selectionStart = CmbNpcItemPicker.SelectionStart;
+
+            // Update dropdown
+            CmbNpcItemPicker.BeginUpdate();
+            CmbNpcItemPicker.Items.Clear();
+            CmbNpcItemPicker.Items.AddRange(filtered);
+            CmbNpcItemPicker.EndUpdate();
+
+            // Restore typed text
+            CmbNpcItemPicker.SelectionStart = selectionStart;
+            CmbNpcItemPicker.SelectionLength = 0;
+
+            CmbNpcItemPicker.DroppedDown = true;
+            Cursor.Current = Cursors.Default; // fixes flicker
+        }
+
+        private void CmbNpcItemPicker_DropDown(object sender, EventArgs e)
+        {
+            // If nothing typed, always show the full list
+            if (string.IsNullOrEmpty(CmbNpcItemPicker.Text))
+            {
+                CmbNpcItemPicker.BeginUpdate();
+                CmbNpcItemPicker.Items.Clear();
+                CmbNpcItemPicker.Items.AddRange([.. _items.Values]);
+                CmbNpcItemPicker.EndUpdate();
+            }
+        }
         #endregion
 
         #region Saving and loading
         private void BtnSaveConfiguration_Click(object sender, EventArgs e)
         {
-            var result = MessageBox.Show("This will update all game data in Primora main directory, are you sure?!", 
+            var result = MessageBox.Show("This will update all game data in Primora main directory, are you sure?!",
                 "Are you sure?", MessageBoxButtons.YesNo);
             if (result == DialogResult.No) return;
 
@@ -603,7 +654,7 @@ namespace EditorTool
                 File.WriteAllText(Path.Combine(_gameDataPath, _itemsFileName), JsonSerializer.Serialize(_items, _serializerOptions));
                 File.WriteAllText(Path.Combine(_gameDataPath, _npcsFileName), JsonSerializer.Serialize(_npcs, _serializerOptions));
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show("Unable to serialize gamedata: " + ex.Message);
             }
@@ -628,7 +679,6 @@ namespace EditorTool
             foreach (var item in _items.Values)
             {
                 ListBoxItems.Items.Add(item);
-                CmbNpcItemPicker.Items.Add(item);
             }
             foreach (var npc in _npcs.Values)
             {
