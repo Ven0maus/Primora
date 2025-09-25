@@ -631,7 +631,10 @@ namespace EditorTool
                 {
                     var content = Read<AttributeObject>(attributesPath);
                     foreach (var value in content)
+                    {
+                        value.Value.Name = value.Key;
                         _attributes[value.Key] = value.Value;
+                    }
                 }
                 else
                 {
@@ -653,7 +656,10 @@ namespace EditorTool
                 {
                     var content = Read<ItemObject>(itemsPath);
                     foreach (var value in content)
+                    {
+                        value.Value.Name = value.Key;
                         _items[value.Key] = value.Value;
+                    }
                 }
                 else
                 {
@@ -675,7 +681,10 @@ namespace EditorTool
                 {
                     var content = Read<NpcObject>(npcsPath);
                     foreach (var value in content)
+                    {
+                        value.Value.Name = value.Key;
                         _npcs[value.Key] = value.Value;
+                    }
                 }
                 else
                 {

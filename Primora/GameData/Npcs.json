@@ -1,6 +1,5 @@
 {
   "Goblin": {
-    "Name": "Goblin",
     "Attributes": {
       "Health": 10,
       "Glyph": "g"
@@ -13,7 +12,6 @@
     ]
   },
   "Skeleton": {
-    "Name": "Skeleton",
     "Attributes": {
       "Health": 5,
       "Glyph": "s"

@@ -1,36 +1,30 @@
 {
   "Health": {
-    "Name": "Health",
     "Type": "Number",
     "For": "Npcs",
     "Values": null
   },
   "Damage": {
-    "Name": "Damage",
     "Type": "Number",
     "For": "Items",
     "Values": null
   },
   "Armour": {
-    "Name": "Armour",
     "Type": "Number",
     "For": "Items",
     "Values": null
   },
   "Evasion": {
-    "Name": "Evasion",
     "Type": "Number",
     "For": "Items",
     "Values": null
   },
   "Glyph": {
-    "Name": "Glyph",
     "Type": "Char",
     "For": "Npcs",
     "Values": null
   },
   "EquipmentSlot": {
-    "Name": "EquipmentSlot",
     "Type": "Enum",
     "For": "Items",
     "Values": [
@@ -47,7 +41,6 @@
     ]
   },
   "ItemCategory": {
-    "Name": "ItemCategory",
     "Type": "Enum",
     "For": "Items",
     "Values": [
@@ -56,7 +49,6 @@
     ]
   },
   "ItemRarity": {
-    "Name": "ItemRarity",
     "Type": "Enum",
     "For": "Items",
     "Values": [

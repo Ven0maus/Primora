@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace EditorTool.Objects
 {
     public class AttributeObject
     {
+        [JsonIgnore]
         public string Name { get; set; }
         public AttributeType Type { get; set; }
         public AttributeFor For { get; set; }
