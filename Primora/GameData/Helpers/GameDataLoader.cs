@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 
 namespace Primora.GameData.Helpers
@@ -78,6 +79,20 @@ namespace Primora.GameData.Helpers
                     throw new Exception($"Not support double conversion to type \"{type.Name}\".");
                 }
 
+                // string array to enum support
+                if (value is string[] sArray && type.IsArray && type.GetElementType().IsEnum)
+                {
+                    var elementType = type.GetElementType();
+                    var enumArray = Array.CreateInstance(elementType, sArray.Length);
+
+                    for (int i = 0; i < sArray.Length; i++)
+                    {
+                        enumArray.SetValue(Enum.Parse(elementType, sArray[i], true), i);
+                    }
+
+                    return (T)(object)enumArray;
+                }
+
                 if (value is string sValue && !string.IsNullOrWhiteSpace(sValue))
                 {
                     // Enum, color, char, int support
@@ -106,6 +121,7 @@ namespace Primora.GameData.Helpers
                 JsonValueKind.True => true,
                 JsonValueKind.False => false,
                 JsonValueKind.Null => null,
+                JsonValueKind.Array => jo.EnumerateArray().Select(a => a.GetString()).ToArray(),
                 _ => jo
             };
         }
