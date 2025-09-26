@@ -55,6 +55,7 @@ namespace Primora.Core.Items.Objects
             }
 
             // Informative debugging
+            Debug.WriteLine("Total unique items loaded: " + _itemConfigurations.Values.SelectMany(a => a).Count());
             foreach (var kvp in _itemConfigurations)
                 Debug.WriteLine($"Loaded {kvp.Value.Length} \"{kvp.Key}\" items");
         }

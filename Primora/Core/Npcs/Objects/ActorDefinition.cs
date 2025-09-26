@@ -49,7 +49,17 @@ namespace Primora.Core.Npcs.Objects
             }
 
             // Informative debugging
-            Debug.WriteLine($"Loaded {_actorDefinitions.Count} npcs");
+            var groups = _actorDefinitions.Values
+                .SelectMany(e =>
+                    (e.SpawnInBiomes != null
+                        ? e.SpawnInBiomes.Cast<Biome?>()
+                        : [null])
+                    .Select(b => new { Biome = b, ActorDefinition = e }))
+                .GroupBy(x => x.Biome, x => x.ActorDefinition);
+
+            Debug.WriteLine("Total unique npcs loaded: " + _actorDefinitions.Count);
+            foreach (var group in groups)
+                Debug.WriteLine($"Loaded {group.Count()} npcs for Biome type \"{(group.Key == null ? "undefined" : group.Key)}\".");
         }
 
         /// <summary>
