@@ -1,26 +1,31 @@
 {
-  "Health": {
+  "MaxHealth": {
     "Type": "Number",
     "For": "Npcs",
     "Values": null
   },
   "Damage": {
     "Type": "Number",
-    "For": "Items",
+    "For": "Shared",
     "Values": null
   },
   "Armour": {
     "Type": "Number",
-    "For": "Items",
+    "For": "Shared",
     "Values": null
   },
   "Evasion": {
     "Type": "Number",
-    "For": "Items",
+    "For": "Shared",
     "Values": null
   },
   "Glyph": {
     "Type": "Char",
+    "For": "Npcs",
+    "Values": null
+  },
+  "Color": {
+    "Type": "Color",
     "For": "Npcs",
     "Values": null
   },

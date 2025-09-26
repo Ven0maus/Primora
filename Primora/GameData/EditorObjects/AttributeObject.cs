@@ -39,6 +39,7 @@ namespace Primora.GameData.EditorObjects
         Char,
         Number,
         Boolean,
-        Enum
+        Enum,
+        Color
     }
 }

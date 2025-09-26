@@ -1,26 +1,33 @@
 {
+  "Player": {
+    "Attributes": {
+      "MaxHealth": 50,
+      "Glyph": "@",
+      "Color": "#ffffff"
+    },
+    "LootTable": []
+  },
   "Goblin": {
     "Attributes": {
-      "Health": 10,
-      "Glyph": "g"
+      "MaxHealth": 5,
+      "Glyph": "g",
+      "Color": "#00FF00"
     },
     "LootTable": [
-      "Wooden Shield",
-      "Iron Hatchet",
-      "Iron Sword",
-      "Parrying Dagger"
+      "Parrying Dagger",
+      "Iron Knife"
     ]
   },
   "Skeleton": {
     "Attributes": {
-      "Health": 5,
-      "Glyph": "s"
+      "MaxHealth": 8,
+      "Glyph": "s",
+      "Color": "#9999A4"
     },
     "LootTable": [
       "Iron Hatchet",
       "Iron Sword",
-      "Wooden Shield",
-      "Parrying Dagger"
+      "Wooden Shield"
     ]
   }
 }

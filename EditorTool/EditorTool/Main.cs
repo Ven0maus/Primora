@@ -1,4 +1,6 @@
 ﻿using Primora.GameData.EditorObjects;
+using Primora.Extensions;
+using SadConsole.UI.Controls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -370,6 +372,18 @@ namespace EditorTool
 
                 itemObject.Attributes[attribute.Name] = CmbItemAttributeValue.SelectedItem as string;
             }
+            else if (attribute.Type == AttributeType.Color)
+            {
+                if (string.IsNullOrWhiteSpace(TxtItemAttributeValue.Text) || !TxtItemAttributeValue.Text.IsValidHexColor())
+                {
+                    using var colorDialog = new ColorDialog();
+                    if (colorDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        TxtItemAttributeValue.Text = colorDialog.Color.ToHex();
+                        itemObject.Attributes[attribute.Name] = TxtItemAttributeValue.Text;
+                    }
+                }
+            }
             else
             {
                 var value = TxtItemAttributeValue.Text;
@@ -461,6 +475,18 @@ namespace EditorTool
                 }
 
                 npcObject.Attributes[attribute.Name] = CmbNpcAttributeValue.SelectedItem as string;
+            }
+            else if (attribute.Type == AttributeType.Color)
+            {
+                if (string.IsNullOrWhiteSpace(TxtNpcAttributeValue.Text) || !TxtNpcAttributeValue.Text.IsValidHexColor())
+                {
+                    using var colorDialog = new ColorDialog();
+                    if (colorDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        TxtNpcAttributeValue.Text = colorDialog.Color.ToHex();
+                        npcObject.Attributes[attribute.Name] = TxtNpcAttributeValue.Text;
+                    }
+                }
             }
             else
             {
@@ -600,14 +626,13 @@ namespace EditorTool
             ItemObject[] filtered;
             if (string.IsNullOrEmpty(text))
             {
-                filtered = _items.Values.ToArray();
+                filtered = [.. _items.Values];
             }
             else
             {
-                filtered = _items
+                filtered = [.. _items
                     .Where(item => item.Key.StartsWith(text, StringComparison.InvariantCultureIgnoreCase))
-                    .Select(a => a.Value)
-                    .ToArray();
+                    .Select(a => a.Value)];
             }
 
             // Save cursor position

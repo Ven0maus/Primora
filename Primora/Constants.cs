@@ -47,7 +47,7 @@ namespace Primora
         internal static class GameData
         {
             internal const string Biomes = "GameData/Biomes.json";
-            internal const string ActorDefinitions = "GameData/ActorDefinitions.json";
+            internal const string Npcs = "GameData/Npcs.json";
             internal const string Items = "GameData/Items.json";
         }
     }

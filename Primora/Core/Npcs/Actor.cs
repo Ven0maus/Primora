@@ -1,6 +1,5 @@
 ﻿using Primora.Core.Npcs.EventArguments;
 using Primora.Core.Npcs.Objects;
-using Primora.Core.Npcs.Registries;
 using Primora.Core.Procedural.Objects;
 using SadConsole.Entities;
 using SadRogue.Primitives;
@@ -24,7 +23,7 @@ namespace Primora.Core.Npcs
         public ILocation Location { get; protected set; }
 
         private Actor(ILocation location, Point position, ActorDefinition actorDefinition) : 
-            base(foreground: actorDefinition.Foreground,
+            base(foreground: actorDefinition.Color,
                   background: Color.Transparent,
                   glyph: actorDefinition.Glyph,
                   zIndex: Constants.Npcs.NpcZIndex)
@@ -46,8 +45,8 @@ namespace Primora.Core.Npcs
             ActorManager.Unregister(this);
         }
 
-        public Actor(ILocation location, Point position, Entities npc) : 
-            this(location, position, ActorRegistry.Get(npc))
+        public Actor(ILocation location, Point position, string npc) : 
+            this(location, position, ActorDefinition.Get(npc))
         { }
 
         /// <summary>

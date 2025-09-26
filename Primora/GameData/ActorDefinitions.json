@@ -1,8 +1,0 @@
-﻿[
-  {
-    "entity": "Player",
-    "foreground": "#ffffff",
-    "glyph": "@",
-    "maxHealth": 100
-  }
-]

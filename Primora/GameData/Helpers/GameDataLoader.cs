@@ -1,4 +1,6 @@
 ﻿using Primora.Core.Items.Interfaces;
+using Primora.Extensions;
+using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -46,6 +48,51 @@ namespace Primora.GameData.Helpers
             }
 
             return configs;
+        }
+
+        /// <summary>
+        /// Read helper to parse attributes to the correct type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="attributes"></param>
+        /// <param name="attributeKey"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        internal static T GetAttribute<T>(Dictionary<string, object> attributes, string attributeKey)
+        {
+            if (attributes != null && attributes.TryGetValue(attributeKey, out var value))
+            {
+                // Direct type support (int, long, double)
+                if (value is not string && value is T tValue)
+                    return tValue;
+
+                var type = typeof(T);
+
+                // Double conversion support
+                if (value is double fValue)
+                {
+                    if (type == typeof(float))
+                        return (T)Convert.ChangeType((float)fValue, type);
+
+                    throw new Exception($"Not support double conversion to type \"{type.Name}\".");
+                }
+
+                if (value is string sValue && !string.IsNullOrWhiteSpace(sValue))
+                {
+                    // Enum, color, char, int support
+                    if (type.IsEnum)
+                        return (T)Enum.Parse(type, sValue, true);
+                    if (type == typeof(Color))
+                        return (T)Convert.ChangeType(sValue.HexToColor(), type);
+                    if (type == typeof(char) && sValue.Length == 1)
+                        return (T)Convert.ChangeType(sValue[0], type);
+                    if (type == typeof(int) && int.TryParse(sValue, out var intResult))
+                        return (T)Convert.ChangeType(intResult, type);
+                }
+
+                throw new Exception($"Not supported attribute value conversion for key \"{attributeKey}\" from \"{value.GetType().Name}\" to \"{type.Name}\".");
+            }
+            return default;
         }
 
         /// <summary>

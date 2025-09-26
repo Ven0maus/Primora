@@ -1,11 +1,48 @@
 ﻿using SadRogue.Primitives;
 using System;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Primora.Extensions
 {
-    internal static class MathUtils
+    public static partial class MathUtils
     {
+        // HEX without alpha (#RRGGBB)
+        public static string ToHex(this Color color)
+        {
+            return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
+
+        // HEX with alpha (#AARRGGBB)
+        public static string ToHexWithAlpha(this Color color)
+        {
+            return $"#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
+
+        // HEX without alpha (#RRGGBB)
+        public static string ToHex(this System.Drawing.Color color)
+        {
+            return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
+
+        // HEX with alpha (#AARRGGBB)
+        public static string ToHexWithAlpha(this System.Drawing.Color color)
+        {
+            return $"#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
+
+        /// <summary>
+        /// Checks if a string is a valid hex color (#RRGGBB or #AARRGGBB).
+        /// </summary>
+        public static bool IsValidHexColor(this string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return false;
+
+            // Match #RGB, #RRGGBB, or #AARRGGBB
+            return HexColorRegex().IsMatch(text);
+        }
+
         /// <summary>
         /// Returns a deterministic hash value.
         /// </summary>
@@ -81,5 +118,8 @@ namespace Primora.Extensions
 
             return new Color(r, g, b);
         }
+
+        [GeneratedRegex(@"^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$")]
+        private static partial Regex HexColorRegex();
     }
 }

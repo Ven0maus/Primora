@@ -9,10 +9,10 @@
   },
   "Iron Sword": {
     "Attributes": {
-      "Damage": 1,
+      "Damage": 2,
       "EquipmentSlot": "Main_Hand",
       "ItemCategory": "Equipment",
-      "ItemRarity": "Common"
+      "ItemRarity": "Uncommon"
     }
   },
   "Parrying Dagger": {
@@ -30,6 +30,14 @@
       "EquipmentSlot": "Off_Hand",
       "ItemCategory": "Equipment",
       "ItemRarity": "Common"
+    }
+  },
+  "Iron Knife": {
+    "Attributes": {
+      "Damage": 1,
+      "ItemCategory": "Equipment",
+      "ItemRarity": "Common",
+      "EquipmentSlot": "Main_Hand"
     }
   }
 }

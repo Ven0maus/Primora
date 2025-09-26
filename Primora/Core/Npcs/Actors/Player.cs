@@ -38,7 +38,7 @@ namespace Primora.Core.Npcs.Actors
         public bool IsFastTraveling { get; private set; } = false;
 
         public Player(Zone zone, Point position) : 
-            base(zone, position, Entities.Player)
+            base(zone, position, nameof(Player))
         {
             if (Instance != null)
                 throw new Exception("An instance of the player already exists.");

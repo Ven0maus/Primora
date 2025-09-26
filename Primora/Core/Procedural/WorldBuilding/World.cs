@@ -233,7 +233,7 @@ namespace Primora.Core.Procedural.WorldBuilding
             Player = new Player(zone, candidateZonePositions[random.Next(candidateZonePositions.Count)]);
 
             // Player's WorldMap Entity
-            PlayerWorldMapEntity = new WorldMapEntity(Player.Location.WorldPosition, Entities.Player);
+            PlayerWorldMapEntity = new WorldMapEntity(Player.Location.WorldPosition, nameof(Player));
             PlayerWorldMapEntity.PositionChanged += PlayerWorldMapEntity_PositionChanged;
         }
 

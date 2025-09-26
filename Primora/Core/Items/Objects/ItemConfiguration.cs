@@ -1,12 +1,11 @@
-﻿using Primora.Core.Items.Objects;
-using Primora.GameData.EditorObjects;
+﻿using Primora.GameData.EditorObjects;
 using Primora.GameData.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Primora.Core.Items
+namespace Primora.Core.Items.Objects
 {
     /// <summary>
     /// Configuration holder, deserialized from items.json configuration
@@ -24,6 +23,21 @@ namespace Primora.Core.Items
 
         // Quick access stats
         public ItemStats ProvidedStats { get; set; }
+
+        public ItemConfiguration(ItemObject itemObject)
+        {
+            // Set base data
+            Name = itemObject.Name;
+            Attributes = itemObject.Attributes;
+
+            // Load quick access variables
+            Rarity = GameDataLoader.GetAttribute<ItemRarity>(Attributes, nameof(ItemRarity));
+            Category = GameDataLoader.GetAttribute<ItemCategory>(Attributes, nameof(ItemCategory));
+            EquipmentSlot = GameDataLoader.GetAttribute<EquipmentSlot>(Attributes, nameof(EquipmentSlot));
+
+            // Load quick access stats
+            ProvidedStats = new ItemStats(Attributes);
+        }
 
         // Static cache
         private static readonly Dictionary<ItemCategory, ItemConfiguration[]> _itemConfigurations;
@@ -43,21 +57,6 @@ namespace Primora.Core.Items
             // Informative debugging
             foreach (var kvp in _itemConfigurations)
                 Debug.WriteLine($"Loaded {kvp.Value.Length} \"{kvp.Key}\" items");
-        }
-
-        public ItemConfiguration(ItemObject itemObject)
-        {
-            // Set base data
-            Name = itemObject.Name;
-            Attributes = itemObject.Attributes;
-
-            // Load quick access variables
-            Rarity = Enum.Parse<ItemRarity>((string)Attributes["ItemRarity"], true);
-            Category = Enum.Parse<ItemCategory>((string)Attributes["ItemCategory"], true);
-            EquipmentSlot = Enum.Parse<EquipmentSlot>((string)Attributes["EquipmentSlot"], true);
-
-            // Load quick access stats
-            ProvidedStats = new ItemStats(Attributes);
         }
 
         public static ItemConfiguration[] Get(ItemCategory category)
