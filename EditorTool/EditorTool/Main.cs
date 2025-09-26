@@ -752,6 +752,32 @@ namespace EditorTool
                 }
             }
         }
+
+        private void ListBoxItems_DoubleClick(object sender, EventArgs e)
+        {
+            if (ListBoxItems.SelectedItem is ItemObject itemObject && itemObject != null)
+            {
+                var name = InputBox.Show("Rename item:")?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    MessageBox.Show("Invalid name, must not be empty.");
+                    return;
+                }
+
+                if (_items.ContainsKey(name))
+                {
+                    MessageBox.Show($"An item with the name \"{name}\" already exists.");
+                    return;
+                }
+
+                _items[name] = itemObject;
+                _items.Remove(itemObject.Name);
+                var i = ListBoxItems.Items.IndexOf(itemObject);
+                ListBoxItems.Items.RemoveAt(i);
+                itemObject.Name = name;
+                ListBoxItems.Items.Insert(i, itemObject);
+            }
+        }
         #endregion
 
         #region Npcs
@@ -1079,6 +1105,32 @@ namespace EditorTool
                 CmbNpcItemPicker.Items.Clear();
                 CmbNpcItemPicker.Items.AddRange([.. _items.Values]);
                 CmbNpcItemPicker.EndUpdate();
+            }
+        }
+
+        private void ListBoxNpcs_DoubleClick(object sender, EventArgs e)
+        {
+            if (ListBoxNpcs.SelectedItem is NpcObject npcObject && npcObject != null)
+            {
+                var name = InputBox.Show("Rename npc:")?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    MessageBox.Show("Invalid name, must not be empty.");
+                    return;
+                }
+
+                if (_npcs.ContainsKey(name))
+                {
+                    MessageBox.Show($"An npc with the name \"{name}\" already exists.");
+                    return;
+                }
+
+                _npcs[name] = npcObject;
+                _npcs.Remove(npcObject.Name);
+                var i = ListBoxNpcs.Items.IndexOf(npcObject);
+                ListBoxNpcs.Items.RemoveAt(i);
+                npcObject.Name = name;
+                ListBoxNpcs.Items.Insert(i, npcObject);
             }
         }
         #endregion

@@ -453,6 +453,7 @@ namespace EditorTool
             ListBoxItems.Size = new Size(216, 199);
             ListBoxItems.TabIndex = 8;
             ListBoxItems.SelectedIndexChanged += ListBoxItems_SelectedIndexChanged;
+            ListBoxItems.DoubleClick += ListBoxItems_DoubleClick;
             // 
             // tabNpcs
             // 
@@ -659,6 +660,7 @@ namespace EditorTool
             ListBoxNpcs.Size = new Size(216, 169);
             ListBoxNpcs.TabIndex = 18;
             ListBoxNpcs.SelectedIndexChanged += ListBoxNpcs_SelectedIndexChanged;
+            ListBoxNpcs.DoubleClick += ListBoxNpcs_DoubleClick;
             // 
             // BtnSaveConfiguration
             // 
