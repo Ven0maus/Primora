@@ -86,6 +86,10 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal void EndTurn()
         {
             _zoneCache.Tick();
+
+            // Raise end turn method for all actors in player zone (player included, make sure player goes first)
+            foreach (var actor in ActorManager.GetActors(Player.Location, includePlayerActor: false).Prepend(Player.Instance))
+                actor.EndTurn();
         }
 
         /// <summary>

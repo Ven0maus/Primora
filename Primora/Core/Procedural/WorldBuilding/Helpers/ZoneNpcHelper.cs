@@ -83,8 +83,10 @@ namespace Primora.Core.Procedural.WorldBuilding.Helpers
             return pos;
         }
 
-        private static (float min, float max) GetZoneDensity(Zone zone)
+        public static (float min, float max) GetZoneDensity(Zone zone)
         {
+            // TODO: Increase density further away from settlements
+            // But to a certain cap, and still make it random
             return zone.WorldTileInfo.Biome switch
             {
                 Biome.Grassland => (0.05f, 0.3f),

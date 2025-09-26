@@ -47,6 +47,11 @@ namespace Primora.Core.Npcs.Actors
             PositionChanged += Player_PositionChanged;
         }
 
+        public override void EndTurn()
+        {
+            // TODO: Some player behaviour each turn?
+        }
+
         /// <summary>
         /// Travels the player into a new zone.
         /// </summary>

@@ -52,6 +52,8 @@ namespace Primora.Core.Npcs
             ActorManager.Unregister(this);
         }
 
+        public abstract void EndTurn();
+
         /// <summary>
         /// Move the actor to the specified position.
         /// </summary>

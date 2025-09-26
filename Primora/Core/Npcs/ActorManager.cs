@@ -87,6 +87,29 @@ namespace Primora.Core.Npcs
             return actors;
         }
 
+        /// <summary>
+        /// Get all actors in a given location.
+        /// </summary>
+        /// <param name="location"></param>
+        /// <param name="includePlayerActor"></param>
+        /// <returns></returns>
+        public static IEnumerable<Actor> GetActors(ILocation location, bool includePlayerActor = false)
+        {
+            if (!_actorMaps.TryGetValue(location, out var actorMap))
+                yield break;
+
+            foreach (var actor in actorMap.Items)
+            {
+                if (!includePlayerActor && actor is Player)
+                    continue;
+                yield return actor;
+            }
+        }
+
+        /// <summary>
+        /// Renders all the actors to the entity manager of a specified location.
+        /// </summary>
+        /// <param name="location"></param>
         public static void RenderLocation(ILocation location)
         {
             var entityManager = RootScreen.Instance.EntityManager;
