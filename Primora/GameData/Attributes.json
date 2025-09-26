@@ -1,35 +1,42 @@
 {
   "MaxHealth": {
+    "DefaultValue": null,
     "Type": "Number",
     "For": "Npcs",
     "Values": null
   },
   "Damage": {
+    "DefaultValue": null,
     "Type": "Number",
     "For": "Shared",
     "Values": null
   },
   "Armour": {
+    "DefaultValue": null,
     "Type": "Number",
     "For": "Shared",
     "Values": null
   },
   "Evasion": {
+    "DefaultValue": null,
     "Type": "Number",
     "For": "Shared",
     "Values": null
   },
   "Glyph": {
+    "DefaultValue": null,
     "Type": "Char",
     "For": "Npcs",
     "Values": null
   },
   "Color": {
+    "DefaultValue": null,
     "Type": "Color",
     "For": "Npcs",
     "Values": null
   },
   "EquipmentSlot": {
+    "DefaultValue": null,
     "Type": "Enum",
     "For": "Items",
     "Values": [
@@ -46,6 +53,7 @@
     ]
   },
   "ItemCategory": {
+    "DefaultValue": null,
     "Type": "Enum",
     "For": "Items",
     "Values": [
@@ -55,6 +63,7 @@
     ]
   },
   "ItemRarity": {
+    "DefaultValue": null,
     "Type": "Enum",
     "For": "Items",
     "Values": [
@@ -66,6 +75,7 @@
     ]
   },
   "UseEquipment": {
+    "DefaultValue": null,
     "Type": "Boolean",
     "For": "Npcs",
     "Values": null
