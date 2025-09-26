@@ -1,4 +1,5 @@
-﻿using Primora.GameData.EditorObjects;
+﻿using Primora.Core.Procedural.Objects;
+using Primora.GameData.EditorObjects;
 using Primora.GameData.Helpers;
 using Primora.Serialization;
 using SadRogue.Primitives;
@@ -17,10 +18,9 @@ namespace Primora.Core.Npcs.Objects
         public int Damage { get; set; }
         public int Armour { get; set; }
         public int Evasion { get; set; }
-        [JsonConverter(typeof(ColorJsonConverter))]
         public Color Color { get; set; }
-        [JsonConverter(typeof(GlyphJsonConverter))]
         public int Glyph { get; set; }
+        public Biome[] SpawnInBiomes { get; set; }
 
         public ActorDefinition(NpcObject npcObject)
         {
@@ -31,6 +31,7 @@ namespace Primora.Core.Npcs.Objects
             Evasion = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(Evasion));
             Color = GameDataLoader.GetAttribute<Color>(npcObject.Attributes, nameof(Color));
             Glyph = GameDataLoader.GetAttribute<char>(npcObject.Attributes, nameof(Glyph));
+            SpawnInBiomes = GameDataLoader.GetAttribute<Biome[]>(npcObject.Attributes, nameof(SpawnInBiomes));
         }
 
         // Static cache
@@ -62,6 +63,17 @@ namespace Primora.Core.Npcs.Objects
             if (_actorDefinitions.TryGetValue(npc, out var definition))
                 return definition;
             throw new NotImplementedException($"Entity \"{npc}\" is not implemented.");
+        }
+
+        /// <summary>
+        /// Gets the cached actor definition for the specified entity.
+        /// </summary>
+        /// <param name="npc"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static ActorDefinition[] Get(Biome biome)
+        {
+            return [.. _actorDefinitions.Values.Where(a => a.SpawnInBiomes != null && a.SpawnInBiomes.Contains(biome))];
         }
     }
 }

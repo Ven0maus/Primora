@@ -13,7 +13,11 @@
       "Glyph": "g",
       "Color": "#00FF00",
       "UseEquipment": true,
-      "Damage": 1
+      "Damage": 1,
+      "SpawnInBiomes": [
+        "Grassland",
+        "Forest"
+      ]
     },
     "LootTable": [
       "Parrying Dagger",
@@ -51,7 +55,12 @@
       "Glyph": "w",
       "Color": "#CEB6B3",
       "UseEquipment": false,
-      "Evasion": 1
+      "Evasion": 1,
+      "SpawnInBiomes": [
+        "Forest",
+        "Mountains",
+        "Hills"
+      ]
     },
     "LootTable": [
       "Animal Pelt"
@@ -64,7 +73,10 @@
       "Evasion": 1,
       "Glyph": "b",
       "Color": "#808000",
-      "UseEquipment": false
+      "UseEquipment": false,
+      "SpawnInBiomes": [
+        "Forest"
+      ]
     },
     "LootTable": [
       "Animal Pelt"

@@ -1,6 +1,5 @@
 ﻿using Primora.Core.Items.Interfaces;
 using Primora.Extensions;
-using Primora.GameData.EditorObjects;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -65,7 +64,7 @@ namespace Primora.GameData.Helpers
             if (attributes != null && attributes.TryGetValue(attributeKey, out var value))
             {
                 // Direct type support (int, long, double)
-                if (value is not string && value is T tValue)
+                if (value is T tValue)
                     return tValue;
 
                 var type = typeof(T);
@@ -75,8 +74,19 @@ namespace Primora.GameData.Helpers
                 {
                     if (type == typeof(float))
                         return (T)Convert.ChangeType((float)fValue, type);
+                    if (type == typeof(int))
+                        return (T)Convert.ChangeType((int)fValue, type);
 
-                    throw new Exception($"Not support double conversion to type \"{type.Name}\".");
+                    throw new Exception($"No support for double conversion to type \"{type.Name}\".");
+                }
+                else if (value is int iValue)
+                {
+                    if (type == typeof(float))
+                        return (T)Convert.ChangeType((float)iValue, type);
+                    if (type == typeof(double))
+                        return (T)Convert.ChangeType((double)iValue, type);
+
+                    throw new Exception($"No support for int conversion to type \"{type.Name}\".");
                 }
 
                 // string array to enum support

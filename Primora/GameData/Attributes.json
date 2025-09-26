@@ -79,5 +79,17 @@
     "Type": "Boolean",
     "For": "Npcs",
     "Values": null
+  },
+  "SpawnInBiomes": {
+    "DefaultValue": null,
+    "Type": "Array",
+    "For": "Npcs",
+    "Values": [
+      "Grassland",
+      "Forest",
+      "Hills",
+      "Mountains",
+      "River"
+    ]
   }
 }
