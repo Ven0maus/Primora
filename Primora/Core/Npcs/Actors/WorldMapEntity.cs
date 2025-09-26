@@ -1,4 +1,5 @@
-﻿using Primora.Core.Procedural.WorldBuilding;
+﻿using Primora.Core.Npcs.Objects;
+using Primora.Core.Procedural.WorldBuilding;
 using SadRogue.Primitives;
 using System;
 

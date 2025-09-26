@@ -15,7 +15,7 @@ namespace Primora.Core.Npcs
         /// <summary>
         /// Contains all the equipment the actor is wielding.
         /// </summary>
-        public EquipmentHandler Equipment { get; }
+        public EquipmentManager Equipment { get; }
 
         /// <summary>
         /// Returns the zone or worldmap that the actor is active in.

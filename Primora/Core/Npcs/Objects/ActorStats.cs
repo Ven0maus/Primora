@@ -1,9 +1,8 @@
 ﻿using Primora.Core.Items.Objects;
 using Primora.Core.Npcs.EventArguments;
-using Primora.Core.Npcs.Objects;
 using System;
 
-namespace Primora.Core.Npcs
+namespace Primora.Core.Npcs.Objects
 {
     internal sealed class ActorStats
     {

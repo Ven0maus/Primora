@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace Primora.Core.Npcs
 {
-    internal class EquipmentHandler : IEnumerable<(EquipmentSlot slot, IEquipable item)>
+    internal class EquipmentManager : IEnumerable<(EquipmentSlot slot, IEquipable item)>
     {
         private readonly Dictionary<EquipmentSlot, IEquipable> _equipedItems = new(Enum.GetValues<EquipmentSlot>().Length);
 
