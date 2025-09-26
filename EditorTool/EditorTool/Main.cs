@@ -823,8 +823,19 @@ namespace EditorTool
                 _items.Remove(itemObject.Name);
                 var i = ListBoxItems.Items.IndexOf(itemObject);
                 ListBoxItems.Items.RemoveAt(i);
+                var oldName = itemObject.Name;
                 itemObject.Name = name;
                 ListBoxItems.Items.Insert(i, itemObject);
+
+                foreach (var npc in _npcs)
+                {
+                    var index = npc.Value.LootTable.IndexOf(oldName);
+                    if (index != -1)
+                    {
+                        npc.Value.LootTable.RemoveAt(index);
+                        npc.Value.LootTable.Insert(index, name);
+                    }
+                }
             }
         }
         #endregion
