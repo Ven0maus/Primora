@@ -51,6 +51,7 @@ namespace EditorTool
             ListBoxAttributes = new ListBox();
             label1 = new Label();
             tabItems = new TabPage();
+            MCmbItemAttributeValue = new EditorTool.Components.MultiSelectCombo.NoDropDownComboBox();
             CmbItemAttributeValue = new ComboBox();
             TxtItemAttributeValue = new TextBox();
             label8 = new Label();
@@ -83,7 +84,7 @@ namespace EditorTool
             label12 = new Label();
             ListBoxNpcs = new ListBox();
             BtnSaveConfiguration = new Button();
-            MCmbItemAttributeValue = new MultiSelectCombo.NoDropDownComboBox();
+            MCmbNpcAttributeValue = new MultiSelectCombo.NoDropDownComboBox();
             tabControl1.SuspendLayout();
             tabAttributes.SuspendLayout();
             tabItems.SuspendLayout();
@@ -305,6 +306,14 @@ namespace EditorTool
             tabItems.Text = "Items";
             tabItems.UseVisualStyleBackColor = true;
             // 
+            // MCmbItemAttributeValue
+            // 
+            MCmbItemAttributeValue.FormattingEnabled = true;
+            MCmbItemAttributeValue.Location = new Point(228, 282);
+            MCmbItemAttributeValue.Name = "MCmbItemAttributeValue";
+            MCmbItemAttributeValue.Size = new Size(229, 23);
+            MCmbItemAttributeValue.TabIndex = 24;
+            // 
             // CmbItemAttributeValue
             // 
             CmbItemAttributeValue.FormattingEnabled = true;
@@ -417,6 +426,7 @@ namespace EditorTool
             // 
             // tabNpcs
             // 
+            tabNpcs.Controls.Add(MCmbNpcAttributeValue);
             tabNpcs.Controls.Add(CmbNpcItemPicker);
             tabNpcs.Controls.Add(label4);
             tabNpcs.Controls.Add(BtnRemoveNpcItem);
@@ -622,13 +632,13 @@ namespace EditorTool
             BtnSaveConfiguration.UseVisualStyleBackColor = true;
             BtnSaveConfiguration.Click += BtnSaveConfiguration_Click;
             // 
-            // MCmbItemAttributeValue
+            // MCmbNpcAttributeValue
             // 
-            MCmbItemAttributeValue.FormattingEnabled = true;
-            MCmbItemAttributeValue.Location = new Point(228, 282);
-            MCmbItemAttributeValue.Name = "MCmbItemAttributeValue";
-            MCmbItemAttributeValue.Size = new Size(229, 23);
-            MCmbItemAttributeValue.TabIndex = 24;
+            MCmbNpcAttributeValue.FormattingEnabled = true;
+            MCmbNpcAttributeValue.Location = new Point(228, 360);
+            MCmbNpcAttributeValue.Name = "MCmbNpcAttributeValue";
+            MCmbNpcAttributeValue.Size = new Size(229, 23);
+            MCmbNpcAttributeValue.TabIndex = 37;
             // 
             // Main
             // 
@@ -706,5 +716,6 @@ namespace EditorTool
         private ComboBox CmbAttributeFilter;
         private Label label10;
         private MultiSelectCombo.NoDropDownComboBox MCmbItemAttributeValue;
+        private MultiSelectCombo.NoDropDownComboBox MCmbNpcAttributeValue;
     }
 }

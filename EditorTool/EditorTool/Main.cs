@@ -1,5 +1,4 @@
 ﻿using EditorTool.Components;
-using Newtonsoft.Json.Linq;
 using Primora.Extensions;
 using Primora.GameData.EditorObjects;
 using SadConsole.UI.Controls;
@@ -26,7 +25,7 @@ namespace EditorTool
         private const string _itemsFileName = "Items.json";
         private const string _npcsFileName = "Npcs.json";
 
-        private readonly MultiSelectCombo _mcmbItemAttributeValue;
+        private readonly MultiSelectCombo _mcmbItemAttributeValue, _mcmbNpcAttributeValue;
 
         public Main()
         {
@@ -51,6 +50,11 @@ namespace EditorTool
             MCmbItemAttributeValue.Enabled = false;
             MCmbItemAttributeValue.Visible = false;
             _mcmbItemAttributeValue = new MultiSelectCombo(MCmbItemAttributeValue);
+
+            // Npc attribute value multi selector for array
+            MCmbNpcAttributeValue.Enabled = false;
+            MCmbNpcAttributeValue.Visible = false;
+            _mcmbNpcAttributeValue = new MultiSelectCombo(MCmbNpcAttributeValue);
 
             // Init enum values
             foreach (var value in Enum.GetValues<AttributeType>())
@@ -552,6 +556,14 @@ namespace EditorTool
 
                 npcObject.Attributes[attribute.Name] = CmbNpcAttributeValue.SelectedItem as string;
             }
+            else if (attribute.Type == AttributeType.Array)
+            {
+                var values = _mcmbNpcAttributeValue.SelectedItems.Cast<string>().ToArray();
+                if (values.Length == 0)
+                    npcObject.Attributes.Remove(attribute.Name);
+                else
+                    npcObject.Attributes[attribute.Name] = values;
+            }
             else if (attribute.Type == AttributeType.Color)
             {
                 if (string.IsNullOrWhiteSpace(TxtNpcAttributeValue.Text) || !TxtNpcAttributeValue.Text.IsValidHexColor())
@@ -654,6 +666,16 @@ namespace EditorTool
             var attribute = ListBoxNpcAttributes.SelectedItem as AttributeObject;
             if (attribute != null)
             {
+                // Hide all fields first
+                CmbNpcAttributeValue.Enabled = false;
+                CmbNpcAttributeValue.Visible = false;
+                CmbNpcAttributeValue.Items.Clear();
+
+                // Npc attributes multi picker
+                MCmbNpcAttributeValue.Enabled = false;
+                MCmbNpcAttributeValue.Visible = false;
+                _mcmbNpcAttributeValue.ResetSelection();
+
                 if (attribute.Type == AttributeType.Enum)
                 {
                     CmbNpcAttributeValue.Enabled = true;
@@ -662,11 +684,33 @@ namespace EditorTool
                     foreach (var atbValue in attribute.Values)
                         CmbNpcAttributeValue.Items.Add(atbValue);
                 }
-                else
+                else if (attribute.Type == AttributeType.Array)
                 {
-                    CmbNpcAttributeValue.Enabled = false;
-                    CmbNpcAttributeValue.Visible = false;
-                    CmbNpcAttributeValue.Items.Clear();
+                    MCmbNpcAttributeValue.Enabled = true;
+                    MCmbNpcAttributeValue.Visible = true;
+                    MCmbNpcAttributeValue.Items.Clear();
+                    foreach (var atbValue in attribute.Values)
+                        MCmbNpcAttributeValue.Items.Add(atbValue);
+                    _mcmbNpcAttributeValue.ReInit();
+
+                    if (ListBoxNpcs.SelectedItem is NpcObject npcO &&
+                        npcO.Attributes.TryGetValue(attribute.Name, out var dataValue))
+                    {
+                        string[] data = [];
+                        if (dataValue is JsonElement je)
+                            data = [.. ((JsonElement)dataValue).EnumerateArray().Select(a => a.GetString())];
+                        else if (dataValue is string[] sA)
+                            data = sA;
+
+                        if (data.Length == 0)
+                            _mcmbNpcAttributeValue.ResetSelection();
+                        else
+                            _mcmbNpcAttributeValue.Select(data);
+                    }
+                    else
+                    {
+                        _mcmbNpcAttributeValue.ResetSelection();
+                    }
                 }
             }
 
@@ -679,6 +723,11 @@ namespace EditorTool
                     CmbNpcAttributeValue.Enabled = false;
                     CmbNpcAttributeValue.Visible = false;
                     CmbNpcAttributeValue.Items.Clear();
+
+                    // Npc attributes multi picker
+                    MCmbNpcAttributeValue.Enabled = false;
+                    MCmbNpcAttributeValue.Visible = false;
+                    _mcmbNpcAttributeValue.ResetSelection();
                 }
             }
             else
