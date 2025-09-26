@@ -1,4 +1,5 @@
-﻿using Primora.Core.Procedural.Objects;
+﻿using Primora.Core.Npcs.AIModules;
+using Primora.Core.Procedural.Objects;
 using Primora.GameData.EditorObjects;
 using Primora.GameData.Helpers;
 using SadRogue.Primitives;
@@ -13,6 +14,7 @@ namespace Primora.Core.Npcs.Objects
     {
         public string Name { get; set; }
         public Dictionary<string, object> Attributes { get; set; }
+        public HashSet<IAIModule> AIModules { get; set; }
 
         // Constitution
         public int MaxHealth { get; set; }

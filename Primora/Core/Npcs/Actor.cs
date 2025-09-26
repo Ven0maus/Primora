@@ -9,6 +9,10 @@ namespace Primora.Core.Npcs
     internal abstract class Actor : Entity
     {
         /// <summary>
+        /// The controller that handles AI modules.
+        /// </summary>
+        public AIController AIController { get; protected set; }
+        /// <summary>
         /// Contains the modifiable stats of the actor.
         /// </summary>
         public ActorStats Stats { get; }
@@ -29,6 +33,7 @@ namespace Primora.Core.Npcs
                   zIndex: Constants.Npcs.NpcZIndex)
         {
             // Handlers
+            AIController = new(this, actorDefinition.AIModules);
             Stats = new ActorStats(this, actorDefinition);
             Equipment = new();
 
@@ -52,7 +57,10 @@ namespace Primora.Core.Npcs
             ActorManager.Unregister(this);
         }
 
-        public abstract void EndTurn();
+        public virtual void EndTurn()
+        {
+            AIController?.Update();
+        }
 
         /// <summary>
         /// Move the actor to the specified position.

@@ -9,10 +9,5 @@ namespace Primora.Core.Npcs.Actors
         public GenericNpc(ILocation location, Point position, ActorDefinition actorDefinition) 
             : base(location, position, actorDefinition)
         { }
-
-        public override void EndTurn()
-        {
-            // TODO: Define AI actions
-        }
     }
 }

@@ -43,13 +43,9 @@ namespace Primora.Core.Npcs.Actors
             if (Instance != null)
                 throw new Exception("An instance of the player already exists.");
             Instance = this;
+            AIController = null; // Player doesn't need an AI Controller.
 
             PositionChanged += Player_PositionChanged;
-        }
-
-        public override void EndTurn()
-        {
-            // TODO: Some player behaviour each turn?
         }
 
         /// <summary>
