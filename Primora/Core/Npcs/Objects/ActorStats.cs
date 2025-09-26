@@ -7,9 +7,15 @@ namespace Primora.Core.Npcs.Objects
     internal sealed class ActorStats
     {
         public Actor Actor { get; }
+
+        // Constitution
         public int MaxHealth { get; set; }
         public int Health { get; private set; }
+
+        // Offensive stats
         public int Damage { get; private set; }
+
+        // Defensive stats
         public int Armour { get; private set; }
         public int Evasion { get; private set; }
 
@@ -21,9 +27,15 @@ namespace Primora.Core.Npcs.Objects
         public ActorStats(Actor actor, ActorDefinition actorDefinition)
         {
             Actor = actor;
+
+            // Constitution
             MaxHealth = actorDefinition.MaxHealth;
             Health = MaxHealth;
+
+            // Offensive
             Damage = Math.Min(1, actorDefinition.Damage);
+
+            // Defensive
             Armour = actorDefinition.Armour;
             Evasion = actorDefinition.Evasion;
         }

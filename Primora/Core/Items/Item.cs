@@ -16,7 +16,7 @@ namespace Primora.Core.Items
         { 
             Name = configuration.Name;
             Category = configuration.Category;
-            Rarity = configuration.ItemRarity;
+            Rarity = configuration.Rarity;
         }
     }
 }

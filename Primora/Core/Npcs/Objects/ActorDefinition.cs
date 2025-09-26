@@ -20,6 +20,7 @@ namespace Primora.Core.Npcs.Objects
         public int Evasion { get; set; }
         public Color Color { get; set; }
         public int Glyph { get; set; }
+        public Rarity Rarity { get; set; }
         public Biome[] SpawnInBiomes { get; set; }
 
         public ActorDefinition(NpcObject npcObject)
@@ -31,6 +32,7 @@ namespace Primora.Core.Npcs.Objects
             Evasion = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(Evasion));
             Color = GameDataLoader.GetAttribute<Color>(npcObject.Attributes, nameof(Color));
             Glyph = GameDataLoader.GetAttribute<char>(npcObject.Attributes, nameof(Glyph));
+            Rarity = GameDataLoader.GetAttribute<Rarity>(npcObject.Attributes, nameof(Rarity));
             SpawnInBiomes = GameDataLoader.GetAttribute<Biome[]>(npcObject.Attributes, nameof(SpawnInBiomes));
         }
 

@@ -1,6 +1,7 @@
 ﻿using Primora.Core.Npcs.EventArguments;
 using Primora.Core.Npcs.Objects;
 using Primora.Core.Procedural.Objects;
+using Primora.GameData.EditorObjects;
 using SadConsole.Entities;
 using SadRogue.Primitives;
 
@@ -28,8 +29,11 @@ namespace Primora.Core.Npcs
                   glyph: actorDefinition.Glyph,
                   zIndex: Constants.Npcs.NpcZIndex)
         {
+            // Handlers
             Stats = new ActorStats(this, actorDefinition);
             Equipment = new();
+
+            // Positioning and location
             Location = location;
             Position = position;
 

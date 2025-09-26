@@ -20,7 +20,7 @@ namespace Primora.Core.Items
         internal static Item Generate(Random random, ItemCategory category, Rarity rarity, Func<ItemConfiguration, bool> criteria = null)
         {
             var configurations = ItemConfiguration.Get(category)
-                .Where(a => a.ItemRarity == rarity)
+                .Where(a => a.Rarity == rarity)
                 .ToList();
 
             // Further refine based on criteria
