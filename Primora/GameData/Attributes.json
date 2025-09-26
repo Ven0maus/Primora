@@ -91,5 +91,11 @@
       "Epic",
       "Mystic"
     ]
+  },
+  "RollWeight": {
+    "DefaultValue": null,
+    "Type": "Number",
+    "For": "Shared",
+    "Values": null
   }
 }

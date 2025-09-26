@@ -18,7 +18,8 @@
         "Grassland",
         "Forest"
       ],
-      "Rarity": "Common"
+      "Rarity": "Common",
+      "RollWeight": 1
     },
     "LootTable": [
       "Parrying Dagger",
@@ -32,7 +33,8 @@
       "Color": "#9999A4",
       "UseEquipment": true,
       "Damage": 1,
-      "Rarity": "Common"
+      "Rarity": "Common",
+      "RollWeight": 1
     },
     "LootTable": [
       "Iron Hatchet",
@@ -47,7 +49,8 @@
       "Glyph": "r",
       "Color": "#80FF80",
       "UseEquipment": false,
-      "Rarity": "Uncommon"
+      "Rarity": "Uncommon",
+      "RollWeight": 1
     },
     "LootTable": []
   },
@@ -64,7 +67,8 @@
         "Mountains",
         "Hills"
       ],
-      "Rarity": "Uncommon"
+      "Rarity": "Uncommon",
+      "RollWeight": 10
     },
     "LootTable": [
       "Animal Pelt"
@@ -81,7 +85,8 @@
       "SpawnInBiomes": [
         "Forest"
       ],
-      "Rarity": "Uncommon"
+      "Rarity": "Uncommon",
+      "RollWeight": 8
     },
     "LootTable": [
       "Animal Pelt"

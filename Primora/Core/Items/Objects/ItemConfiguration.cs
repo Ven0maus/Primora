@@ -16,12 +16,15 @@ namespace Primora.Core.Items.Objects
         public string Name { get; set; }
         public Dictionary<string, object> Attributes { get; set; }
 
-        // Quick access variables
-        public Rarity Rarity { get; set; }
-        public ItemCategory Category { get; set; }
+        // Equipment
         public EquipmentSlot EquipmentSlot { get; set; }
 
-        // Quick access stats
+        // Spawning, rarity, rollweights
+        public Rarity Rarity { get; set; }
+        public ItemCategory Category { get; set; }
+        public int RollWeight { get; set; }
+
+        // Item stat provider
         public ItemStats ProvidedStats { get; set; }
 
         public ItemConfiguration(ItemObject itemObject)
@@ -30,12 +33,15 @@ namespace Primora.Core.Items.Objects
             Name = itemObject.Name;
             Attributes = itemObject.Attributes;
 
-            // Load quick access variables
-            Rarity = GameDataLoader.GetAttribute<Rarity>(Attributes, nameof(Rarity));
-            Category = GameDataLoader.GetAttribute<ItemCategory>(Attributes, nameof(ItemCategory));
+            // Equipment
             EquipmentSlot = GameDataLoader.GetAttribute<EquipmentSlot>(Attributes, nameof(EquipmentSlot));
 
-            // Load quick access stats
+            // Spawning, rarity, rollweights
+            Rarity = GameDataLoader.GetAttribute<Rarity>(Attributes, nameof(Rarity));
+            Category = GameDataLoader.GetAttribute<ItemCategory>(Attributes, nameof(ItemCategory));
+            RollWeight = GameDataLoader.GetAttribute<int>(Attributes, nameof(RollWeight));
+
+            // Item stat provider
             ProvidedStats = new ItemStats(Attributes);
         }
 

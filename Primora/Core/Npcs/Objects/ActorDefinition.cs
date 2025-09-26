@@ -1,39 +1,61 @@
 ﻿using Primora.Core.Procedural.Objects;
 using Primora.GameData.EditorObjects;
 using Primora.GameData.Helpers;
-using Primora.Serialization;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace Primora.Core.Npcs.Objects
 {
     internal sealed class ActorDefinition
     {
         public string Name { get; set; }
+        public Dictionary<string, object> Attributes { get; set; }
+
+        // Constitution
         public int MaxHealth { get; set; }
+
+        // Offensive
         public int Damage { get; set; }
+
+        // Defensive
         public int Armour { get; set; }
         public int Evasion { get; set; }
+
+        // Rendering
         public Color Color { get; set; }
         public int Glyph { get; set; }
+
+        // Spawning / Rarity / RollWeights
         public Rarity Rarity { get; set; }
         public Biome[] SpawnInBiomes { get; set; }
+        public int RollWeight { get; set; }
 
         public ActorDefinition(NpcObject npcObject)
         {
             Name = npcObject.Name;
+            Attributes = npcObject.Attributes;
+
+            // Constitution
             MaxHealth = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(MaxHealth));
+
+            // Offensive
             Damage = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(Damage));
+
+            // Defensive
             Armour = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(Armour));
             Evasion = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(Evasion));
+
+            // Rendering
             Color = GameDataLoader.GetAttribute<Color>(npcObject.Attributes, nameof(Color));
             Glyph = GameDataLoader.GetAttribute<char>(npcObject.Attributes, nameof(Glyph));
+
+            // Spawning, rarity, rollweights
             Rarity = GameDataLoader.GetAttribute<Rarity>(npcObject.Attributes, nameof(Rarity));
             SpawnInBiomes = GameDataLoader.GetAttribute<Biome[]>(npcObject.Attributes, nameof(SpawnInBiomes));
+            RollWeight = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(RollWeight));
         }
 
         // Static cache
