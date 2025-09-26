@@ -35,6 +35,7 @@ namespace Primora.Core.Items
             {
                 ItemCategory.Consumable => new Consumable(selectedConfiguration),
                 ItemCategory.Equipment => new Equipment(selectedConfiguration),
+                ItemCategory.Material => new Material(selectedConfiguration),
                 _ => throw new NotImplementedException($"Category \"{category}\" has no loot generation method available."),
             };
         }

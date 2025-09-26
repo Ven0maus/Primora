@@ -308,9 +308,12 @@ namespace EditorTool
                 CmbItemAttributeValue.Visible = false;
                 CmbItemAttributeValue.Items.Clear();
                 CmbItemAttributeValue.SelectedIndex = -1;
+                CmbItemAttributeValue.Text = string.Empty;
+
                 // Item attributes multi picker
                 MCmbItemAttributeValue.Enabled = false;
                 MCmbItemAttributeValue.Visible = false;
+                _mcmbItemAttributeValue.ReInit();
                 _mcmbItemAttributeValue.ResetSelection();
 
                 if (attribute.Type == AttributeType.Enum)
@@ -329,6 +332,7 @@ namespace EditorTool
                     else
                     {
                         CmbItemAttributeValue.SelectedIndex = -1;
+                        CmbItemAttributeValue.Text = string.Empty;
                     }
                 }
                 else if (attribute.Type == AttributeType.Array)
@@ -371,10 +375,12 @@ namespace EditorTool
                     CmbItemAttributeValue.Visible = false;
                     CmbItemAttributeValue.Items.Clear();
                     CmbItemAttributeValue.SelectedIndex = -1;
+                    CmbItemAttributeValue.Text = string.Empty;
 
                     // Item attributes multi picker
                     MCmbItemAttributeValue.Enabled = false;
                     MCmbItemAttributeValue.Visible = false;
+                    _mcmbItemAttributeValue.ReInit();
                     _mcmbItemAttributeValue.ResetSelection();
                 }
             }
@@ -438,7 +444,7 @@ namespace EditorTool
             {
                 if (CmbItemAttributeValue.SelectedIndex == -1)
                 {
-                    MessageBox.Show("Please select a valid value.");
+                    itemObject.Attributes.Remove(attribute.Name);
                     return;
                 }
 
@@ -456,6 +462,12 @@ namespace EditorTool
             {
                 if (string.IsNullOrWhiteSpace(TxtItemAttributeValue.Text) || !TxtItemAttributeValue.Text.IsValidHexColor())
                 {
+                    if (string.IsNullOrWhiteSpace(TxtItemAttributeValue.Text) && itemObject.Attributes.ContainsKey(attribute.Name))
+                    {
+                        itemObject.Attributes.Remove(attribute.Name);
+                        return;
+                    }
+
                     using var colorDialog = new ColorDialog();
                     if (colorDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -466,7 +478,13 @@ namespace EditorTool
             }
             else
             {
-                var value = TxtItemAttributeValue.Text;
+                var value = TxtItemAttributeValue.Text.Trim();
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    itemObject.Attributes.Remove(attribute.Name);
+                    return;
+                }
+
                 if (attribute.Type == AttributeType.Char)
                 {
                     if (!char.TryParse(value, out var c))
@@ -550,11 +568,12 @@ namespace EditorTool
             {
                 if (CmbNpcAttributeValue.SelectedIndex == -1)
                 {
-                    MessageBox.Show("Please select a valid value.");
-                    return;
+                    npcObject.Attributes.Remove(attribute.Name);
                 }
-
-                npcObject.Attributes[attribute.Name] = CmbNpcAttributeValue.SelectedItem as string;
+                else
+                {
+                    npcObject.Attributes[attribute.Name] = (string)CmbNpcAttributeValue.SelectedItem;
+                } 
             }
             else if (attribute.Type == AttributeType.Array)
             {
@@ -568,6 +587,12 @@ namespace EditorTool
             {
                 if (string.IsNullOrWhiteSpace(TxtNpcAttributeValue.Text) || !TxtNpcAttributeValue.Text.IsValidHexColor())
                 {
+                    if (string.IsNullOrWhiteSpace(TxtNpcAttributeValue.Text) && npcObject.Attributes.ContainsKey(attribute.Name))
+                    {
+                        npcObject.Attributes.Remove(attribute.Name);
+                        return;
+                    }
+
                     using var colorDialog = new ColorDialog();
                     if (colorDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -578,7 +603,13 @@ namespace EditorTool
             }
             else
             {
-                var value = TxtNpcAttributeValue.Text;
+                var value = TxtNpcAttributeValue.Text.Trim();
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    npcObject.Attributes.Remove(attribute.Name);
+                    return;
+                }
+
                 if (attribute.Type == AttributeType.Char)
                 {
                     if (!char.TryParse(value, out var c))
@@ -670,6 +701,8 @@ namespace EditorTool
                 CmbNpcAttributeValue.Enabled = false;
                 CmbNpcAttributeValue.Visible = false;
                 CmbNpcAttributeValue.Items.Clear();
+                CmbNpcAttributeValue.SelectedIndex = -1;
+                CmbNpcAttributeValue.Text = string.Empty;
 
                 // Npc attributes multi picker
                 MCmbNpcAttributeValue.Enabled = false;
@@ -683,6 +716,18 @@ namespace EditorTool
                     CmbNpcAttributeValue.Items.Clear();
                     foreach (var atbValue in attribute.Values)
                         CmbNpcAttributeValue.Items.Add(atbValue);
+
+                    if (ListBoxNpcs.SelectedItem is NpcObject npcO &&
+                        npcO.Attributes.TryGetValue(attribute.Name, out var dataValue))
+                    {
+                        CmbNpcAttributeValue.SelectedItem = dataValue.ToString();
+                    }
+                    else
+                    {
+                        CmbNpcAttributeValue.SelectedIndex = -1;
+                        CmbNpcAttributeValue.Text = string.Empty;
+                    }
+
                 }
                 else if (attribute.Type == AttributeType.Array)
                 {
@@ -723,6 +768,8 @@ namespace EditorTool
                     CmbNpcAttributeValue.Enabled = false;
                     CmbNpcAttributeValue.Visible = false;
                     CmbNpcAttributeValue.Items.Clear();
+                    CmbNpcAttributeValue.SelectedIndex = -1;
+                    CmbNpcAttributeValue.Text = string.Empty;
 
                     // Npc attributes multi picker
                     MCmbNpcAttributeValue.Enabled = false;

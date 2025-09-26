@@ -7,10 +7,9 @@
     {
         Equipment,
         Consumable,
+        Material
         /* //TO IMPLEMENT:
-        Material,
         Quest,
-        Currency,
         Tool
         */
     }

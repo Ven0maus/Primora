@@ -11,7 +11,9 @@
     "Attributes": {
       "MaxHealth": 5,
       "Glyph": "g",
-      "Color": "#00FF00"
+      "Color": "#00FF00",
+      "UseEquipment": true,
+      "Damage": 1
     },
     "LootTable": [
       "Parrying Dagger",
@@ -22,12 +24,50 @@
     "Attributes": {
       "MaxHealth": 8,
       "Glyph": "s",
-      "Color": "#9999A4"
+      "Color": "#9999A4",
+      "UseEquipment": true,
+      "Damage": 1
     },
     "LootTable": [
       "Iron Hatchet",
       "Iron Sword",
       "Wooden Shield"
+    ]
+  },
+  "Rat": {
+    "Attributes": {
+      "MaxHealth": 3,
+      "Damage": 1,
+      "Glyph": "r",
+      "Color": "#80FF80",
+      "UseEquipment": false
+    },
+    "LootTable": []
+  },
+  "Wolf": {
+    "Attributes": {
+      "MaxHealth": 10,
+      "Damage": 2,
+      "Glyph": "w",
+      "Color": "#CEB6B3",
+      "UseEquipment": false,
+      "Evasion": 1
+    },
+    "LootTable": [
+      "Animal Pelt"
+    ]
+  },
+  "Boar": {
+    "Attributes": {
+      "MaxHealth": 7,
+      "Damage": 1,
+      "Evasion": 1,
+      "Glyph": "b",
+      "Color": "#808000",
+      "UseEquipment": false
+    },
+    "LootTable": [
+      "Animal Pelt"
     ]
   }
 }

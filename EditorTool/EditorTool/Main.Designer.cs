@@ -65,6 +65,7 @@ namespace EditorTool
             BtnCreateItem = new Button();
             ListBoxItems = new ListBox();
             tabNpcs = new TabPage();
+            MCmbNpcAttributeValue = new EditorTool.Components.MultiSelectCombo.NoDropDownComboBox();
             CmbNpcItemPicker = new ComboBox();
             label4 = new Label();
             BtnRemoveNpcItem = new Button();
@@ -84,7 +85,6 @@ namespace EditorTool
             label12 = new Label();
             ListBoxNpcs = new ListBox();
             BtnSaveConfiguration = new Button();
-            MCmbNpcAttributeValue = new MultiSelectCombo.NoDropDownComboBox();
             tabControl1.SuspendLayout();
             tabAttributes.SuspendLayout();
             tabItems.SuspendLayout();
@@ -453,6 +453,14 @@ namespace EditorTool
             tabNpcs.Text = "Npcs";
             tabNpcs.UseVisualStyleBackColor = true;
             // 
+            // MCmbNpcAttributeValue
+            // 
+            MCmbNpcAttributeValue.FormattingEnabled = true;
+            MCmbNpcAttributeValue.Location = new Point(228, 360);
+            MCmbNpcAttributeValue.Name = "MCmbNpcAttributeValue";
+            MCmbNpcAttributeValue.Size = new Size(229, 23);
+            MCmbNpcAttributeValue.TabIndex = 37;
+            // 
             // CmbNpcItemPicker
             // 
             CmbNpcItemPicker.AutoCompleteSource = AutoCompleteSource.ListItems;
@@ -631,14 +639,6 @@ namespace EditorTool
             BtnSaveConfiguration.Text = "Save Game Data Configuration";
             BtnSaveConfiguration.UseVisualStyleBackColor = true;
             BtnSaveConfiguration.Click += BtnSaveConfiguration_Click;
-            // 
-            // MCmbNpcAttributeValue
-            // 
-            MCmbNpcAttributeValue.FormattingEnabled = true;
-            MCmbNpcAttributeValue.Location = new Point(228, 360);
-            MCmbNpcAttributeValue.Name = "MCmbNpcAttributeValue";
-            MCmbNpcAttributeValue.Size = new Size(229, 23);
-            MCmbNpcAttributeValue.TabIndex = 37;
             // 
             // Main
             // 

@@ -50,7 +50,8 @@
     "For": "Items",
     "Values": [
       "Equipment",
-      "Consumable"
+      "Consumable",
+      "Material"
     ]
   },
   "ItemRarity": {
@@ -63,5 +64,10 @@
       "Epic",
       "Mystic"
     ]
+  },
+  "UseEquipment": {
+    "Type": "Boolean",
+    "For": "Npcs",
+    "Values": null
   }
 }

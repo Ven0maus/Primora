@@ -39,5 +39,11 @@
       "ItemRarity": "Common",
       "EquipmentSlot": "Main_Hand"
     }
+  },
+  "Animal Pelt": {
+    "Attributes": {
+      "ItemRarity": "Common",
+      "ItemCategory": "Material"
+    }
   }
 }
