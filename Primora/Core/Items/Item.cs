@@ -1,4 +1,5 @@
 ﻿using Primora.Core.Items.Objects;
+using Primora.GameData.EditorObjects;
 
 namespace Primora.Core.Items
 {
@@ -9,13 +10,13 @@ namespace Primora.Core.Items
     {
         public string Name { get; set; }
         public ItemCategory Category { get; set; }
-        public ItemRarity Rarity { get; set; }
+        public Rarity Rarity { get; set; }
 
         public Item(ItemConfiguration configuration) 
         { 
             Name = configuration.Name;
             Category = configuration.Category;
-            Rarity = configuration.Rarity;
+            Rarity = configuration.ItemRarity;
         }
     }
 }

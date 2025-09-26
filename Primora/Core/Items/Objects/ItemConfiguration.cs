@@ -17,7 +17,7 @@ namespace Primora.Core.Items.Objects
         public Dictionary<string, object> Attributes { get; set; }
 
         // Quick access variables
-        public ItemRarity Rarity { get; set; }
+        public Rarity ItemRarity { get; set; }
         public ItemCategory Category { get; set; }
         public EquipmentSlot EquipmentSlot { get; set; }
 
@@ -31,7 +31,7 @@ namespace Primora.Core.Items.Objects
             Attributes = itemObject.Attributes;
 
             // Load quick access variables
-            Rarity = GameDataLoader.GetAttribute<ItemRarity>(Attributes, nameof(ItemRarity));
+            ItemRarity = GameDataLoader.GetAttribute<Rarity>(Attributes, nameof(ItemRarity));
             Category = GameDataLoader.GetAttribute<ItemCategory>(Attributes, nameof(ItemCategory));
             EquipmentSlot = GameDataLoader.GetAttribute<EquipmentSlot>(Attributes, nameof(EquipmentSlot));
 

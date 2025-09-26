@@ -4,6 +4,7 @@ using Primora.Core.Items.Types;
 using Primora.Core.Npcs.Actors;
 using Primora.Core.Procedural.WorldBuilding;
 using Primora.Extensions;
+using Primora.GameData.EditorObjects;
 using SadConsole;
 using SadConsole.Components;
 using SadConsole.Entities;
@@ -134,8 +135,8 @@ namespace Primora.Screens.Main
 
 #if DEBUG
             // DEBUG equipment for player
-            Player.Instance.Equipment.Equip(Loot.Generate(World.CurrentZone.Random, ItemCategory.Equipment, ItemRarity.Common, a => a.EquipmentSlot == EquipmentSlot.Main_Hand) as Equipment);
-            Player.Instance.Equipment.Equip(Loot.Generate(World.CurrentZone.Random, ItemCategory.Equipment, ItemRarity.Common, a => a.EquipmentSlot == EquipmentSlot.Off_Hand) as Equipment);
+            Player.Instance.Equipment.Equip(Loot.Generate(World.CurrentZone.Random, ItemCategory.Equipment, Rarity.Common, a => a.EquipmentSlot == EquipmentSlot.Main_Hand) as Equipment);
+            Player.Instance.Equipment.Equip(Loot.Generate(World.CurrentZone.Random, ItemCategory.Equipment, Rarity.Common, a => a.EquipmentSlot == EquipmentSlot.Off_Hand) as Equipment);
 #endif
         }
     }

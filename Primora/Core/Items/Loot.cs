@@ -1,5 +1,6 @@
 ﻿using Primora.Core.Items.Objects;
 using Primora.Core.Items.Types;
+using Primora.GameData.EditorObjects;
 using System;
 using System.Linq;
 
@@ -16,10 +17,10 @@ namespace Primora.Core.Items
         /// <param name="category"></param>
         /// <param name="criteria"></param>
         /// <returns></returns>
-        internal static Item Generate(Random random, ItemCategory category, ItemRarity rarity, Func<ItemConfiguration, bool> criteria = null)
+        internal static Item Generate(Random random, ItemCategory category, Rarity rarity, Func<ItemConfiguration, bool> criteria = null)
         {
             var configurations = ItemConfiguration.Get(category)
-                .Where(a => a.Rarity == rarity)
+                .Where(a => a.ItemRarity == rarity)
                 .ToList();
 
             // Further refine based on criteria

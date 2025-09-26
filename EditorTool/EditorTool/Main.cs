@@ -108,7 +108,7 @@ namespace EditorTool
                             CmbDefaultValue.Items.Add(value);
 
                         if (attribute.DefaultValue != null)
-                            CmbDefaultValue.SelectedItem = (string)attribute.DefaultValue;
+                            CmbDefaultValue.SelectedItem = attribute.DefaultValue.ToString();
                     }
                     else if (attribute.Type == AttributeType.Array)
                     {
@@ -121,12 +121,17 @@ namespace EditorTool
                         _mcmbDefaultValue.ResetSelection();
 
                         if (attribute.DefaultValue != null)
-                            _mcmbDefaultValue.Select((string[])attribute.DefaultValue);
+                        {
+                            if (attribute.DefaultValue is JsonElement je)
+                                _mcmbDefaultValue.Select([.. je.EnumerateArray().Select(a => a.GetString())]);
+                            else
+                                _mcmbDefaultValue.Select((string[])attribute.DefaultValue);
+                        }
                     }
                     else
                     {
                         if (attribute.DefaultValue != null)
-                            TxtDefaultValue.Text = (string)attribute.DefaultValue;
+                            TxtDefaultValue.Text = attribute.DefaultValue.ToString();
                         else
                             TxtDefaultValue.Text = string.Empty;
                     }
@@ -412,7 +417,7 @@ namespace EditorTool
                         CmbDefaultValue.Items.Add(value);
 
                     if (attributeObject.DefaultValue != null)
-                        CmbDefaultValue.SelectedItem = (string)attributeObject.DefaultValue;
+                        CmbDefaultValue.SelectedItem = attributeObject.DefaultValue.ToString();
                 }
                 else if (attributeObject.Type == AttributeType.Array)
                 {
@@ -424,12 +429,17 @@ namespace EditorTool
                     _mcmbDefaultValue.ReInit();
 
                     if (attributeObject.DefaultValue != null)
-                        _mcmbDefaultValue.Select((string[])attributeObject.DefaultValue);
+                    {
+                        if (attributeObject.DefaultValue is JsonElement je)
+                            _mcmbDefaultValue.Select([.. je.EnumerateArray().Select(a => a.GetString())]);
+                        else
+                            _mcmbDefaultValue.Select((string[])attributeObject.DefaultValue);
+                    }
                 }
                 else
                 {
                     if (attributeObject.DefaultValue != null)
-                        TxtDefaultValue.Text = (string)attributeObject.DefaultValue;
+                        TxtDefaultValue.Text = attributeObject.DefaultValue.ToString();
                     else
                         TxtDefaultValue.Text = string.Empty;
                 }
@@ -1239,6 +1249,8 @@ namespace EditorTool
             {
                 ListBoxNpcs.Items.Add(npc);
             }
+
+            BtnRemoveSelectedAttribute.Enabled = _attributes.Count > 0;
         }
 
         private void LoadAttributes(string gameDataPath)

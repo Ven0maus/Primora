@@ -4,7 +4,7 @@
       "Damage": 1,
       "EquipmentSlot": "Main_Hand",
       "ItemCategory": "Equipment",
-      "ItemRarity": "Common"
+      "Rarity": "Common"
     }
   },
   "Iron Sword": {
@@ -12,7 +12,7 @@
       "Damage": 2,
       "EquipmentSlot": "Main_Hand",
       "ItemCategory": "Equipment",
-      "ItemRarity": "Uncommon"
+      "Rarity": "Uncommon"
     }
   },
   "Parrying Dagger": {
@@ -21,7 +21,7 @@
       "Damage": 1,
       "EquipmentSlot": "Off_Hand",
       "ItemCategory": "Equipment",
-      "ItemRarity": "Uncommon"
+      "Rarity": "Uncommon"
     }
   },
   "Wooden Shield": {
@@ -29,20 +29,20 @@
       "Armour": 1,
       "EquipmentSlot": "Off_Hand",
       "ItemCategory": "Equipment",
-      "ItemRarity": "Common"
+      "Rarity": "Common"
     }
   },
   "Iron Knife": {
     "Attributes": {
       "Damage": 1,
       "ItemCategory": "Equipment",
-      "ItemRarity": "Common",
+      "Rarity": "Common",
       "EquipmentSlot": "Main_Hand"
     }
   },
   "Animal Pelt": {
     "Attributes": {
-      "ItemRarity": "Common",
+      "Rarity": "Common",
       "ItemCategory": "Material"
     }
   }

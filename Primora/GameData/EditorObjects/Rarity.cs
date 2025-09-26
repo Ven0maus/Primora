@@ -1,6 +1,6 @@
-﻿namespace Primora.Core.Items.Objects
+﻿namespace Primora.GameData.EditorObjects
 {
-    public enum ItemRarity
+    public enum Rarity
     {
         Common,
         Uncommon,
