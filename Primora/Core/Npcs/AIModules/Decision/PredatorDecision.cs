@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Primora.Core.Npcs.AIModules.Decision
 {
-    internal class OpportunisticDecision : IDecisionModule
+    internal class PredatorDecision : IDecisionModule
     {
         public void Decide(Actor self, IEnumerable<Actor> detectedTargets)
         {

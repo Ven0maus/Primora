@@ -1,9 +1,9 @@
-﻿using Primora.Core.Npcs.AIModules;
+﻿using System.Collections.Generic;
 
 namespace Primora.Core.Npcs.Interfaces
 {
-    internal interface IDecisionModule : IAIModule
+    internal interface IDecisionModule
     {
-        void Decide(Actor self, Actor target);
+        void Decide(Actor self, IEnumerable<Actor> detectedTargets);
     }
 }

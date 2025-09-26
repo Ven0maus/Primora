@@ -1,9 +1,7 @@
-﻿using Primora.Core.Npcs.AIModules;
-
-namespace Primora.Core.Npcs.Interfaces
+﻿namespace Primora.Core.Npcs.Interfaces
 {
-    internal interface ICombatModule : IAIModule
+    internal interface ICombatModule
     {
-        void UpdateCombat(Actor self, Actor target);
+        void UpdateCombat(Actor self);
     }
 }

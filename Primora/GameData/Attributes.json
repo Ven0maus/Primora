@@ -97,5 +97,26 @@
     "Type": "Number",
     "For": "Shared",
     "Values": null
+  },
+  "AwarenessTypes": {
+    "DefaultValue": [
+      "Sight"
+    ],
+    "Type": "Array",
+    "For": "Npcs",
+    "Values": [
+      "Sight"
+    ]
+  },
+  "DecisionType": {
+    "DefaultValue": "Opportunistic",
+    "Type": "Enum",
+    "For": "Npcs",
+    "Values": [
+      "Prey",
+      "Predator",
+      "Opportunistic",
+      "Aggressive"
+    ]
   }
 }

@@ -19,7 +19,11 @@
         "Forest"
       ],
       "Rarity": "Common",
-      "RollWeight": 1
+      "RollWeight": 1,
+      "AwarenessTypes": [
+        "Sight"
+      ],
+      "DecisionType": "Opportunistic"
     },
     "LootTable": [
       "Parrying Dagger",
@@ -34,7 +38,11 @@
       "UseEquipment": true,
       "Damage": 1,
       "Rarity": "Common",
-      "RollWeight": 1
+      "RollWeight": 1,
+      "AwarenessTypes": [
+        "Sight"
+      ],
+      "DecisionType": "Aggressive"
     },
     "LootTable": [
       "Iron Hatchet",
@@ -50,7 +58,11 @@
       "Color": "#80FF80",
       "UseEquipment": false,
       "Rarity": "Uncommon",
-      "RollWeight": 1
+      "RollWeight": 1,
+      "DecisionType": "Prey",
+      "AwarenessTypes": [
+        "Sight"
+      ]
     },
     "LootTable": []
   },
@@ -68,7 +80,11 @@
         "Hills"
       ],
       "Rarity": "Uncommon",
-      "RollWeight": 10
+      "RollWeight": 10,
+      "AwarenessTypes": [
+        "Sight"
+      ],
+      "DecisionType": "Predator"
     },
     "LootTable": [
       "Animal Pelt"
@@ -86,7 +102,11 @@
         "Forest"
       ],
       "Rarity": "Uncommon",
-      "RollWeight": 8
+      "RollWeight": 8,
+      "DecisionType": "Predator",
+      "AwarenessTypes": [
+        "Sight"
+      ]
     },
     "LootTable": [
       "Animal Pelt"

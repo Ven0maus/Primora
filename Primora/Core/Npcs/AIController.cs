@@ -1,63 +1,64 @@
-﻿using Primora.Core.Npcs.AIModules;
-using Primora.Core.Npcs.Interfaces;
+﻿using Primora.Core.Npcs.Interfaces;
+using Primora.Core.Npcs.Objects;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Primora.Core.Npcs
 {
     internal class AIController
     {
         public Actor Actor { get; }
-
-        private readonly List<IMovementModule> _movementModules = [];
-        private readonly List<IAwarenessModule> _awarenessModules = [];
-        private readonly List<ICombatModule> _combatModules = [];
-        private readonly List<IDecisionModule> _decisionModules = [];
-
-        public IReadOnlyCollection<IMovementModule> MovementModules => _movementModules;
-        public IReadOnlyCollection<IAwarenessModule> AwarenessModules => _awarenessModules;
-        public IReadOnlyCollection<ICombatModule> CombatModules => _combatModules;
-        public IReadOnlyCollection<IDecisionModule> DecisionModules => _decisionModules;
-
-        public Actor CurrentTarget { get; private set; }
+        public Actor CurrentTarget { get; set; }
+        public AIState AIState { get; set; }
 
         // Cached hashset for performance
         private readonly HashSet<Actor> _detectedTargets = [];
 
-        public AIController(Actor actor, HashSet<IAIModule> aiModules)
+        // AI Modules
+        private IMovementModule _movementModule;
+        private readonly ICombatModule _combatModule;
+        private readonly IDecisionModule _decisionModule;
+        private readonly IAwarenessModule[] _awarenessModules;
+
+        public AIController(Actor actor, ActorDefinition actorDefinition)
         {
             Actor = actor;
 
-            // Assign all AI Modules properly
-            foreach (var module in aiModules ?? [])
-                AssignModule(module);
+            // These modules don't change anymore
+            _decisionModule = AIBehaviour.GetDecisionModule(actorDefinition.DecisionType);
+            _awarenessModules = [.. actorDefinition.AwarenessTypes.Select(AIBehaviour.GetAwarenessModule)];
+            _combatModule = AIBehaviour.HybridCombatModule;
         }
 
         public void Update()
         {
-            // Step 0: Collect all nearby targets, TODO: adjust based on aggro range?
-            var nearbyActors = ActorManager.GetActorsAround(Actor.Location, Actor.Position, 4, true);
-
-            // Step 1: Awareness — collect targets
+            // Step 1: Detect surroundings based on awareness
             _detectedTargets.Clear();
-            foreach (var module in AwarenessModules)
+            foreach (var module in _awarenessModules)
             {
-                var target = module.Detect(Actor, nearbyActors);
-                if (target != null)
+                var targets = module.Detect(Actor);
+                foreach (var target in targets)
                     _detectedTargets.Add(target);
             }
 
-            // Step 2: Decision — choose actions and steer modules
-            foreach (var decision in DecisionModules)
-                decision.Decide(Actor, SelectClosestTarget(_detectedTargets));
+            var prevState = AIState;
 
-            // Step 3: Movement — follow the currently active movement module
-            foreach (var movement in MovementModules)
-                movement.UpdateMovement(Actor, CurrentTarget);
+            // Step 2: Decide what to do with current information
+            _decisionModule?.Decide(Actor, _detectedTargets);
 
-            // Step 4: Combat — attack if in range
-            foreach (var combat in CombatModules)
-                combat.UpdateCombat(Actor, CurrentTarget);
+            // Step 3: Assign movement module to be used based on state
+            if (prevState != AIState)
+            {
+                _movementModule = AIBehaviour.GetMovementModule(AIState);
+            }
+
+            // Step 4: Execute movement logic
+            _movementModule?.UpdateMovement(Actor);
+
+            // Step 5: Execute combat logic if in combat state
+            if (AIState == AIState.Combat)
+                _combatModule?.UpdateCombat(Actor);
         }
 
         private Actor SelectClosestTarget(IEnumerable<Actor> targets)
@@ -79,18 +80,6 @@ namespace Primora.Core.Npcs
             }
 
             return closest;
-        }
-
-        private void AssignModule(IAIModule module)
-        {
-            if (module is IMovementModule movementModule)
-                _movementModules.Add(movementModule);
-            else if (module is IAwarenessModule awarenessModule)
-                _awarenessModules.Add(awarenessModule);
-            else if(module is ICombatModule combatModule)
-                _combatModules.Add(combatModule);
-            else if(module is IDecisionModule decisionModule)
-                _decisionModules.Add(decisionModule);
         }
     }
 }

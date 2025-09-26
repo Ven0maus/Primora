@@ -33,7 +33,6 @@ namespace Primora.Core.Npcs
                   zIndex: Constants.Npcs.NpcZIndex)
         {
             // Handlers
-            AIController = new(this, actorDefinition.AIModules);
             Stats = new ActorStats(this, actorDefinition);
             Equipment = new();
 

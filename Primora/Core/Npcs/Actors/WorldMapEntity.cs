@@ -7,9 +7,6 @@ namespace Primora.Core.Npcs.Actors
     {
         public WorldMapEntity(Point position, string npc) : 
             base(World.Instance.WorldMap, position, npc)
-        {
-            // World map entities do not use a normal AI Controller.
-            AIController = null;
-        }
+        { }
     }
 }

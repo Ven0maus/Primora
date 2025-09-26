@@ -8,6 +8,8 @@ namespace Primora.Core.Npcs.Actors
     {
         public GenericNpc(ILocation location, Point position, ActorDefinition actorDefinition) 
             : base(location, position, actorDefinition)
-        { }
+        {
+            AIController = new AIController(this, actorDefinition);
+        }
     }
 }

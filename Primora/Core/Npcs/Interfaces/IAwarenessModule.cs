@@ -1,10 +1,9 @@
-﻿using Primora.Core.Npcs.AIModules;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Primora.Core.Npcs.Interfaces
 {
-    internal interface IAwarenessModule : IAIModule
+    internal interface IAwarenessModule
     {
-        Actor Detect(Actor self, IEnumerable<Actor> potentionTargets);
+        IEnumerable<Actor> Detect(Actor self);
     }
 }
