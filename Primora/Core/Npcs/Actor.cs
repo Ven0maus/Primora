@@ -1,7 +1,6 @@
 ﻿using Primora.Core.Npcs.EventArguments;
 using Primora.Core.Npcs.Objects;
 using Primora.Core.Procedural.Objects;
-using Primora.GameData.EditorObjects;
 using SadConsole.Entities;
 using SadRogue.Primitives;
 
@@ -23,7 +22,7 @@ namespace Primora.Core.Npcs
         /// </summary>
         public ILocation Location { get; protected set; }
 
-        private Actor(ILocation location, Point position, ActorDefinition actorDefinition) : 
+        public Actor(ILocation location, Point position, ActorDefinition actorDefinition) : 
             base(foreground: actorDefinition.Color,
                   background: Color.Transparent,
                   glyph: actorDefinition.Glyph,
@@ -42,16 +41,16 @@ namespace Primora.Core.Npcs
             Stats.OnDeath += Actor_OnDeath;
         }
 
+        public Actor(ILocation location, Point position, string npc) :
+            this(location, position, ActorDefinition.Get(npc))
+        { }
+
         private void Actor_OnDeath(object sender, DeathArgs e)
         {
             // Unregister from manager and eventlistener
             Stats.OnDeath -= Actor_OnDeath;
             ActorManager.Unregister(this);
         }
-
-        public Actor(ILocation location, Point position, string npc) : 
-            this(location, position, ActorDefinition.Get(npc))
-        { }
 
         /// <summary>
         /// Move the actor to the specified position.

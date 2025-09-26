@@ -1,5 +1,6 @@
 ﻿using Primora.Core.Procedural.Common;
 using Primora.Core.Procedural.Objects;
+using Primora.Core.Procedural.WorldBuilding.Helpers;
 using Primora.Extensions;
 using SadRogue.Primitives;
 using System;
@@ -18,6 +19,11 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal readonly Point WorldPosition;
         internal readonly Random Random; 
         internal readonly Tilemap Tilemap;
+
+        /// <summary>
+        /// The info of the world tile itself that this zone is generated from.
+        /// </summary>
+        internal WorldTileInfo WorldTileInfo => World.Instance.WorldMap.GetTileInfo(WorldPosition);
 
         /// <summary>
         /// Keeps a counter, so each distinct generation will be unique. But still based on the game seed.
@@ -53,10 +59,11 @@ namespace Primora.Core.Procedural.WorldBuilding
             // Initial zone layout generation
             ZoneGenerator.Generate(this);
 
-            // TODO: Additionally generate areas of interest (chests, barrels, lost items, quests)
-
-
             // TODO: Generate NPCS
+            ZoneNpcHelper.GenerateNpcs(this);
+
+            // TODO: Additionally generate areas of interest (chests, barrels, lost items, quests)
+            // Might have to generate this part first, then npcs to find a suitable location.
         }
 
         internal double GetLowestWeight()

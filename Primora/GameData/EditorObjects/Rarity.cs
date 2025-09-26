@@ -6,6 +6,6 @@
         Uncommon,
         Rare,
         Epic,
-        Mystic
+        Mythic
     }
 }
