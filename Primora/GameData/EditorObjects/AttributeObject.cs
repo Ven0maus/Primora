@@ -9,6 +9,7 @@ namespace Primora.GameData.EditorObjects
     {
         [JsonIgnore]
         public string Name { get; set; }
+        public object DefaultValue { get; set; }
         public AttributeType Type { get; set; }
         public AttributeFor For { get; set; }
         public List<string> Values { get; set; }

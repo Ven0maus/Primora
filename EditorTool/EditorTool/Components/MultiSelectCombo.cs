@@ -46,6 +46,7 @@ namespace EditorTool.Components
             {
                 _ = _container.Items.Add(item);
             }
+            ResetSelection();
         }
 
         public void Select(params object[] objs)

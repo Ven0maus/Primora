@@ -1,4 +1,5 @@
 ﻿using EditorTool.Components;
+using Newtonsoft.Json.Linq;
 using Primora.Extensions;
 using Primora.GameData.EditorObjects;
 using SadConsole.UI.Controls;
@@ -11,6 +12,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Windows.Forms;
+using static SadConsole.Settings;
 
 namespace EditorTool
 {
@@ -25,7 +27,7 @@ namespace EditorTool
         private const string _itemsFileName = "Items.json";
         private const string _npcsFileName = "Npcs.json";
 
-        private readonly MultiSelectCombo _mcmbItemAttributeValue, _mcmbNpcAttributeValue;
+        private readonly MultiSelectCombo _mcmbItemAttributeValue, _mcmbNpcAttributeValue, _mcmbDefaultValue;
 
         public Main()
         {
@@ -45,16 +47,19 @@ namespace EditorTool
             CmbItemAttributeValue.Visible = false;
             CmbNpcAttributeValue.Enabled = false;
             CmbNpcAttributeValue.Visible = false;
-
-            // Item attribute value multi selector for array
             MCmbItemAttributeValue.Enabled = false;
             MCmbItemAttributeValue.Visible = false;
             _mcmbItemAttributeValue = new MultiSelectCombo(MCmbItemAttributeValue);
-
-            // Npc attribute value multi selector for array
             MCmbNpcAttributeValue.Enabled = false;
             MCmbNpcAttributeValue.Visible = false;
             _mcmbNpcAttributeValue = new MultiSelectCombo(MCmbNpcAttributeValue);
+
+            // Default value
+            CmbDefaultValue.Enabled = false;
+            CmbDefaultValue.Visible = false;
+            MCmbDefaultValue.Enabled = false;
+            MCmbDefaultValue.Visible = false;
+            _mcmbDefaultValue = new MultiSelectCombo(MCmbDefaultValue);
 
             // Init enum values
             foreach (var value in Enum.GetValues<AttributeType>())
@@ -73,8 +78,8 @@ namespace EditorTool
         #region Attributes
         private void CmbAttributeType_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var enumOrArraySelected = CmbAttributeType.SelectedItem is AttributeType s && 
-                (s == AttributeType.Enum || s == AttributeType.Array);
+            if (CmbAttributeType.SelectedItem is not AttributeType s) return;
+            var enumOrArraySelected = s == AttributeType.Enum || s == AttributeType.Array;
 
             ListBoxAttributeValues.Items.Clear();
 
@@ -92,6 +97,65 @@ namespace EditorTool
                         // Preload existing values
                         foreach (var value in attribute?.Values ?? [])
                             ListBoxAttributeValues.Items.Add(value);
+                    }
+
+                    if (attribute.Type == AttributeType.Enum)
+                    {
+                        CmbDefaultValue.Visible = true;
+                        CmbDefaultValue.Enabled = true;
+                        CmbDefaultValue.Items.Clear();
+                        foreach (var value in attribute?.Values ?? [])
+                            CmbDefaultValue.Items.Add(value);
+
+                        if (attribute.DefaultValue != null)
+                            CmbDefaultValue.SelectedItem = (string)attribute.DefaultValue;
+                    }
+                    else if (attribute.Type == AttributeType.Array)
+                    {
+                        MCmbDefaultValue.Visible = true;
+                        MCmbDefaultValue.Enabled = true;
+                        MCmbDefaultValue.Items.Clear();
+                        foreach (var value in attribute?.Values ?? [])
+                            MCmbDefaultValue.Items.Add(value);
+                        _mcmbDefaultValue.ReInit();
+                        _mcmbDefaultValue.ResetSelection();
+
+                        if (attribute.DefaultValue != null)
+                            _mcmbDefaultValue.Select((string[])attribute.DefaultValue);
+                    }
+                    else
+                    {
+                        if (attribute.DefaultValue != null)
+                            TxtDefaultValue.Text = (string)attribute.DefaultValue;
+                        else
+                            TxtDefaultValue.Text = string.Empty;
+                    }
+                }
+                else
+                {
+                    if (s == AttributeType.Enum)
+                    {
+                        CmbDefaultValue.Visible = true;
+                        CmbDefaultValue.Enabled = true;
+                        CmbDefaultValue.Items.Clear();
+                        foreach (var value in attribute?.Values ?? [])
+                            CmbDefaultValue.Items.Add(value);
+
+                        CmbDefaultValue.SelectedItem = null;
+                    }
+                    else if (s == AttributeType.Array)
+                    {
+                        MCmbDefaultValue.Visible = true;
+                        MCmbDefaultValue.Enabled = true;
+                        MCmbDefaultValue.Items.Clear();
+                        foreach (var value in attribute?.Values ?? [])
+                            MCmbDefaultValue.Items.Add(value);
+                        _mcmbDefaultValue.ReInit();
+                        _mcmbDefaultValue.ResetSelection();
+                    }
+                    else
+                    {
+                        TxtDefaultValue.Text = string.Empty;
                     }
                 }
 
@@ -117,6 +181,26 @@ namespace EditorTool
                 ListBoxAttributeValues.Items.Add(value);
             }
 
+            if (CmbAttributeType.SelectedItem is AttributeType s)
+            {
+                if (s == AttributeType.Enum)
+                {
+                    CmbDefaultValue.Items.Add(value);
+
+                    if (attribute != null && attribute.DefaultValue != null)
+                        CmbDefaultValue.SelectedItem = (string)attribute.DefaultValue;
+                }
+                else if (s == AttributeType.Array)
+                {
+                    MCmbDefaultValue.Items.Add(value);
+                    _mcmbDefaultValue.ReInit();
+                    _mcmbDefaultValue.ResetSelection();
+
+                    if (attribute != null && attribute.DefaultValue != null)
+                        _mcmbDefaultValue.Select((string[])attribute.DefaultValue);
+                }
+            }
+
             BtnRemoveSelectedValue.Enabled = true;
         }
 
@@ -125,14 +209,48 @@ namespace EditorTool
             if (ListBoxAttributeValues.SelectedIndex == -1) return;
 
             var atrib = TxtAttributeName.Text.Trim();
+            var value = (string)ListBoxAttributeValues.SelectedItem;
             if (_attributes.TryGetValue(atrib, out var attribute))
             {
-                attribute.Values?.Remove((string)ListBoxAttributeValues.SelectedItem);
+                attribute.Values?.Remove(value);
                 ListBoxAttributeValues.Items.RemoveAt(ListBoxAttributeValues.SelectedIndex);
             }
             else
             {
                 ListBoxAttributeValues.Items.RemoveAt(ListBoxAttributeValues.SelectedIndex);
+            }
+
+            if (CmbAttributeType.SelectedItem is AttributeType s)
+            {
+                if (s == AttributeType.Enum)
+                {
+                    CmbDefaultValue.Items.Remove(value);
+
+                    if (attribute != null && attribute.DefaultValue != null && ((string)attribute.DefaultValue) == value)
+                        attribute.DefaultValue = null;
+
+                    if (attribute != null && attribute.DefaultValue != null)
+                        CmbDefaultValue.SelectedItem = (string)attribute.DefaultValue;
+                }
+                else if (s == AttributeType.Array)
+                {
+                    MCmbDefaultValue.Items.Remove(value);
+                    _mcmbDefaultValue.ReInit();
+                    _mcmbDefaultValue.ResetSelection();
+
+                    if (attribute != null && attribute.DefaultValue != null)
+                    {
+                        var values = (string[])attribute.DefaultValue;
+                        values = [.. values.Where(a => !a.Equals(value))];
+                        if (values.Length == 0)
+                            values = null;
+
+                        attribute.DefaultValue = values;
+                    }
+
+                    if (attribute != null && attribute.DefaultValue != null)
+                        _mcmbDefaultValue.Select((string[])attribute.DefaultValue);
+                }
             }
 
             BtnRemoveSelectedValue.Enabled = ListBoxAttributeValues.Items.Count > 0;
@@ -146,19 +264,55 @@ namespace EditorTool
                 return;
             }
 
-            if (_attributes.ContainsKey(TxtAttributeName.Text.Trim()))
+            if (_attributes.TryGetValue(TxtAttributeName.Text.Trim(), out var attribute))
             {
-                MessageBox.Show("An attribute with this name already exists.");
+                if (MessageBox.Show("An attribute with this name already exists, you will update this attribute, are you sure?",
+                    "Are you sure?", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    // Update
+                    attribute.Name = TxtAttributeName.Text;
+                    attribute.Type = (AttributeType)CmbAttributeType.SelectedItem;
+                    attribute.For = (AttributeFor)CmbAttributeAvailableFor.SelectedItem;
+                    attribute.Values = ListBoxAttributeValues.Items.Count > 0 ? [.. ListBoxAttributeValues.Items.Cast<string>()] : null;
+
+                    if (attribute.Type == AttributeType.Enum)
+                    {
+                        attribute.DefaultValue = CmbDefaultValue.SelectedItem == null ? null : (string)CmbDefaultValue.SelectedItem;
+                    }
+                    else if (attribute.Type == AttributeType.Array)
+                    {
+                        var values = _mcmbDefaultValue.SelectedItems.Cast<string>().ToArray();
+                        attribute.DefaultValue = values.Length == 0 ? null : values;
+                    }
+                    else
+                    {
+                        attribute.DefaultValue = string.IsNullOrWhiteSpace(TxtDefaultValue.Text) ? null : TxtDefaultValue.Text;
+                    }
+                }
                 return;
             }
 
-            var attribute = new AttributeObject
+            attribute = new AttributeObject
             {
                 Name = TxtAttributeName.Text,
                 Type = (AttributeType)CmbAttributeType.SelectedItem,
                 For = (AttributeFor)CmbAttributeAvailableFor.SelectedItem,
-                Values = ListBoxAttributeValues.Items.Count > 0 ? [.. ListBoxAttributeValues.Items.Cast<string>()] : null
+                Values = ListBoxAttributeValues.Items.Count > 0 ? [.. ListBoxAttributeValues.Items.Cast<string>()] : null,
             };
+
+            if (attribute.Type == AttributeType.Enum)
+            {
+                attribute.DefaultValue = CmbDefaultValue.SelectedItem == null ? null : (string)CmbDefaultValue.SelectedItem;
+            }
+            else if (attribute.Type == AttributeType.Array)
+            {
+                var values = _mcmbDefaultValue.SelectedItems.Cast<string>().ToArray();
+                attribute.DefaultValue = values.Length == 0 ? null : values;
+            }
+            else
+            {
+                attribute.DefaultValue = string.IsNullOrWhiteSpace(TxtDefaultValue.Text) ? null : TxtDefaultValue.Text;
+            }
 
             _attributes[TxtAttributeName.Text] = attribute;
             ListBoxAttributes.Items.Add(attribute);
@@ -224,6 +378,11 @@ namespace EditorTool
             // This forces event to be raised
             CmbAttributeType.SelectedIndex = -1;
 
+            CmbDefaultValue.Visible = false;
+            CmbDefaultValue.Enabled = false;
+            MCmbDefaultValue.Visible = false;
+            MCmbDefaultValue.Enabled = false;
+
             // Fill all values
             if (ListBoxAttributes.SelectedItem is not AttributeObject attributeObject)
             {
@@ -231,12 +390,49 @@ namespace EditorTool
                 TxtAttributeName.Text = string.Empty;
                 CmbAttributeType.SelectedItem = AttributeType.Text;
                 CmbAttributeAvailableFor.SelectedItem = AttributeFor.Shared;
+                TxtDefaultValue.Text = string.Empty;
+                CmbDefaultValue.SelectedIndex = -1;
+                CmbDefaultValue.Items.Clear();
+                MCmbDefaultValue.Items.Clear();
+                _mcmbDefaultValue.ReInit();
+                _mcmbDefaultValue.ResetSelection();
             }
             else
             {
                 TxtAttributeName.Text = attributeObject.Name;
                 CmbAttributeType.SelectedItem = attributeObject.Type;
                 CmbAttributeAvailableFor.SelectedItem = attributeObject.For;
+
+                if (attributeObject.Type == AttributeType.Enum)
+                {
+                    CmbDefaultValue.Visible = true;
+                    CmbDefaultValue.Enabled = true;
+                    CmbDefaultValue.Items.Clear();
+                    foreach (var value in attributeObject?.Values ?? [])
+                        CmbDefaultValue.Items.Add(value);
+
+                    if (attributeObject.DefaultValue != null)
+                        CmbDefaultValue.SelectedItem = (string)attributeObject.DefaultValue;
+                }
+                else if (attributeObject.Type == AttributeType.Array)
+                {
+                    MCmbDefaultValue.Visible = true;
+                    MCmbDefaultValue.Enabled = true;
+                    MCmbDefaultValue.Items.Clear();
+                    foreach (var value in attributeObject?.Values ?? [])
+                        MCmbDefaultValue.Items.Add(value);
+                    _mcmbDefaultValue.ReInit();
+
+                    if (attributeObject.DefaultValue != null)
+                        _mcmbDefaultValue.Select((string[])attributeObject.DefaultValue);
+                }
+                else
+                {
+                    if (attributeObject.DefaultValue != null)
+                        TxtDefaultValue.Text = (string)attributeObject.DefaultValue;
+                    else
+                        TxtDefaultValue.Text = string.Empty;
+                }
             }
         }
 
@@ -273,6 +469,32 @@ namespace EditorTool
 
                 default:
                     throw new NotImplementedException($"Not implemented case \"{s}\".");
+            }
+        }
+
+        private void ListBoxAttributes_DoubleClick(object sender, EventArgs e)
+        {
+            if (ListBoxAttributes.SelectedItem is AttributeObject ao && ao != null)
+            {
+                var name = InputBox.Show("Rename attribute:")?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    MessageBox.Show("Invalid name, must not be empty.");
+                    return;
+                }
+
+                if (_attributes.ContainsKey(name))
+                {
+                    MessageBox.Show($"An attribute with the name \"{name}\" already exists.");
+                    return;
+                }
+
+                _attributes[name] = ao;
+                _attributes.Remove(ao.Name);
+                var i = ListBoxAttributes.Items.IndexOf(ao);
+                ListBoxAttributes.Items.RemoveAt(i);
+                ao.Name = name;
+                ListBoxAttributes.Items.Insert(i, ao);
             }
         }
         #endregion
@@ -573,7 +795,7 @@ namespace EditorTool
                 else
                 {
                     npcObject.Attributes[attribute.Name] = (string)CmbNpcAttributeValue.SelectedItem;
-                } 
+                }
             }
             else if (attribute.Type == AttributeType.Array)
             {
