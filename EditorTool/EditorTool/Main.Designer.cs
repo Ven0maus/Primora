@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using EditorTool.Components;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace EditorTool
@@ -82,6 +83,7 @@ namespace EditorTool
             label12 = new Label();
             ListBoxNpcs = new ListBox();
             BtnSaveConfiguration = new Button();
+            MCmbItemAttributeValue = new MultiSelectCombo.NoDropDownComboBox();
             tabControl1.SuspendLayout();
             tabAttributes.SuspendLayout();
             tabItems.SuspendLayout();
@@ -282,6 +284,7 @@ namespace EditorTool
             // 
             // tabItems
             // 
+            tabItems.Controls.Add(MCmbItemAttributeValue);
             tabItems.Controls.Add(CmbItemAttributeValue);
             tabItems.Controls.Add(TxtItemAttributeValue);
             tabItems.Controls.Add(label8);
@@ -619,6 +622,14 @@ namespace EditorTool
             BtnSaveConfiguration.UseVisualStyleBackColor = true;
             BtnSaveConfiguration.Click += BtnSaveConfiguration_Click;
             // 
+            // MCmbItemAttributeValue
+            // 
+            MCmbItemAttributeValue.FormattingEnabled = true;
+            MCmbItemAttributeValue.Location = new Point(228, 282);
+            MCmbItemAttributeValue.Name = "MCmbItemAttributeValue";
+            MCmbItemAttributeValue.Size = new Size(229, 23);
+            MCmbItemAttributeValue.TabIndex = 24;
+            // 
             // Main
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -694,5 +705,6 @@ namespace EditorTool
         private Label label4;
         private ComboBox CmbAttributeFilter;
         private Label label10;
+        private MultiSelectCombo.NoDropDownComboBox MCmbItemAttributeValue;
     }
 }

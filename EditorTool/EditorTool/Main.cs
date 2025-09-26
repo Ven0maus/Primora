@@ -1,13 +1,13 @@
-﻿using Primora.GameData.EditorObjects;
+﻿using EditorTool.Components;
+using Newtonsoft.Json.Linq;
 using Primora.Extensions;
+using Primora.GameData.EditorObjects;
 using SadConsole.UI.Controls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -25,6 +25,8 @@ namespace EditorTool
         private const string _attributesFileName = "Attributes.json";
         private const string _itemsFileName = "Items.json";
         private const string _npcsFileName = "Npcs.json";
+
+        private readonly MultiSelectCombo _mcmbItemAttributeValue;
 
         public Main()
         {
@@ -45,6 +47,11 @@ namespace EditorTool
             CmbNpcAttributeValue.Enabled = false;
             CmbNpcAttributeValue.Visible = false;
 
+            // Item attribute value multi selector for array
+            MCmbItemAttributeValue.Enabled = false;
+            MCmbItemAttributeValue.Visible = false;
+            _mcmbItemAttributeValue = new MultiSelectCombo(MCmbItemAttributeValue);
+
             // Init enum values
             foreach (var value in Enum.GetValues<AttributeType>())
                 CmbAttributeType.Items.Add(value);
@@ -62,11 +69,12 @@ namespace EditorTool
         #region Attributes
         private void CmbAttributeType_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var enumSelected = CmbAttributeType.SelectedItem is AttributeType s && s == AttributeType.Enum;
+            var enumOrArraySelected = CmbAttributeType.SelectedItem is AttributeType s && 
+                (s == AttributeType.Enum || s == AttributeType.Array);
 
             ListBoxAttributeValues.Items.Clear();
 
-            if (!enumSelected)
+            if (!enumOrArraySelected)
             {
                 BtnCreateNewValue.Enabled = false;
                 BtnRemoveSelectedValue.Enabled = false;
@@ -75,10 +83,10 @@ namespace EditorTool
             {
                 if (_attributes.TryGetValue(TxtAttributeName.Text, out var attribute))
                 {
-                    if (attribute.Type == AttributeType.Enum)
+                    if (attribute.Type == AttributeType.Enum || attribute.Type == AttributeType.Array)
                     {
                         // Preload existing values
-                        foreach (var value in attribute.Values)
+                        foreach (var value in attribute?.Values ?? [])
                             ListBoxAttributeValues.Items.Add(value);
                     }
                 }
@@ -92,14 +100,37 @@ namespace EditorTool
         {
             var value = InputBox.Show("New value:");
             if (string.IsNullOrWhiteSpace(value)) return;
-            ListBoxAttributeValues.Items.Add(value);
+
+            var atrib = TxtAttributeName.Text.Trim();
+            if (_attributes.TryGetValue(atrib, out var attribute))
+            {
+                ListBoxAttributeValues.Items.Add(value);
+                attribute.Values ??= [];
+                attribute.Values.Add(value);
+            }
+            else
+            {
+                ListBoxAttributeValues.Items.Add(value);
+            }
+
             BtnRemoveSelectedValue.Enabled = true;
         }
 
         private void BtnRemoveSelectedValue_Click(object sender, EventArgs e)
         {
             if (ListBoxAttributeValues.SelectedIndex == -1) return;
-            ListBoxAttributeValues.Items.RemoveAt(ListBoxAttributeValues.SelectedIndex);
+
+            var atrib = TxtAttributeName.Text.Trim();
+            if (_attributes.TryGetValue(atrib, out var attribute))
+            {
+                attribute.Values?.Remove((string)ListBoxAttributeValues.SelectedItem);
+                ListBoxAttributeValues.Items.RemoveAt(ListBoxAttributeValues.SelectedIndex);
+            }
+            else
+            {
+                ListBoxAttributeValues.Items.RemoveAt(ListBoxAttributeValues.SelectedIndex);
+            }
+
             BtnRemoveSelectedValue.Enabled = ListBoxAttributeValues.Items.Count > 0;
         }
 
@@ -267,6 +298,17 @@ namespace EditorTool
             var attribute = ListBoxItemAttributes.SelectedItem as AttributeObject;
             if (attribute != null)
             {
+                // Hide all fields first
+                // Hide regular item combo
+                CmbItemAttributeValue.Enabled = false;
+                CmbItemAttributeValue.Visible = false;
+                CmbItemAttributeValue.Items.Clear();
+                CmbItemAttributeValue.SelectedIndex = -1;
+                // Item attributes multi picker
+                MCmbItemAttributeValue.Enabled = false;
+                MCmbItemAttributeValue.Visible = false;
+                _mcmbItemAttributeValue.ResetSelection();
+
                 if (attribute.Type == AttributeType.Enum)
                 {
                     CmbItemAttributeValue.Enabled = true;
@@ -285,12 +327,33 @@ namespace EditorTool
                         CmbItemAttributeValue.SelectedIndex = -1;
                     }
                 }
-                else
+                else if (attribute.Type == AttributeType.Array)
                 {
-                    CmbItemAttributeValue.Enabled = false;
-                    CmbItemAttributeValue.Visible = false;
-                    CmbItemAttributeValue.Items.Clear();
-                    CmbItemAttributeValue.SelectedIndex = -1;
+                    MCmbItemAttributeValue.Enabled = true;
+                    MCmbItemAttributeValue.Visible = true;
+                    MCmbItemAttributeValue.Items.Clear();
+                    foreach (var atbValue in attribute.Values)
+                        MCmbItemAttributeValue.Items.Add(atbValue);
+                    _mcmbItemAttributeValue.ReInit();
+
+                    if (ListBoxItems.SelectedItem is ItemObject itemO &&
+                        itemO.Attributes.TryGetValue(attribute.Name, out var dataValue))
+                    {
+                        string[] data = [];
+                        if (dataValue is JsonElement je)
+                            data = [.. ((JsonElement)dataValue).EnumerateArray().Select(a => a.GetString())];
+                        else if (dataValue is string[] sA)
+                            data = sA;
+
+                        if (data.Length == 0)
+                            _mcmbItemAttributeValue.ResetSelection();
+                        else
+                            _mcmbItemAttributeValue.Select(data);
+                    }
+                    else
+                    {
+                        _mcmbItemAttributeValue.ResetSelection();
+                    }
                 }
             }
 
@@ -304,6 +367,11 @@ namespace EditorTool
                     CmbItemAttributeValue.Visible = false;
                     CmbItemAttributeValue.Items.Clear();
                     CmbItemAttributeValue.SelectedIndex = -1;
+
+                    // Item attributes multi picker
+                    MCmbItemAttributeValue.Enabled = false;
+                    MCmbItemAttributeValue.Visible = false;
+                    _mcmbItemAttributeValue.ResetSelection();
                 }
             }
             else
@@ -371,6 +439,14 @@ namespace EditorTool
                 }
 
                 itemObject.Attributes[attribute.Name] = CmbItemAttributeValue.SelectedItem as string;
+            }
+            else if (attribute.Type == AttributeType.Array)
+            {
+                var values = _mcmbItemAttributeValue.SelectedItems.Cast<string>().ToArray();
+                if (values.Length == 0)
+                    itemObject.Attributes.Remove(attribute.Name);
+                else
+                    itemObject.Attributes[attribute.Name] = values;
             }
             else if (attribute.Type == AttributeType.Color)
             {
