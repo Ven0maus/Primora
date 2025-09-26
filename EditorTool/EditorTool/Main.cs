@@ -491,10 +491,59 @@ namespace EditorTool
 
                 _attributes[name] = ao;
                 _attributes.Remove(ao.Name);
-                var i = ListBoxAttributes.Items.IndexOf(ao);
-                ListBoxAttributes.Items.RemoveAt(i);
-                ao.Name = name;
-                ListBoxAttributes.Items.Insert(i, ao);
+
+                var oldName = ao.Name;
+
+                // Rename attribute for items and npcs
+                if (ao.For == AttributeFor.Shared || ao.For == AttributeFor.Items)
+                {
+                    foreach (var item in _items)
+                    {
+                        if (item.Value.Attributes.TryGetValue(oldName, out var iv))
+                        {
+                            item.Value.Attributes.Remove(oldName);
+                            item.Value.Attributes[name] = iv;
+                        }
+                    }
+                }
+                if (ao.For == AttributeFor.Shared || ao.For == AttributeFor.Npcs)
+                {
+                    foreach (var npc in _npcs)
+                    {
+                        if (npc.Value.Attributes.TryGetValue(oldName, out var iv))
+                        {
+                            npc.Value.Attributes.Remove(oldName);
+                            npc.Value.Attributes[name] = iv;
+                        }
+                    }
+                }
+
+                void ResetListBoxes(System.Windows.Forms.ListBox listBox, string oldName)
+                {
+                    int index = -1;
+                    bool found = false;
+                    foreach (var item in listBox.Items)
+                    {
+                        if (((AttributeObject)item).Name == oldName)
+                        {
+                            index++;
+                            found = true;
+                            ao.Name = name;
+                            break;
+                        }
+                        index++;
+                    }
+
+                    if (found)
+                    {
+                        listBox.Items.RemoveAt(index);
+                        listBox.Items.Insert(index, ao);
+                    }
+                }
+
+                ResetListBoxes(ListBoxAttributes, oldName);
+                ResetListBoxes(ListBoxItemAttributes, oldName);
+                ResetListBoxes(ListBoxNpcAttributes, oldName);
             }
         }
         #endregion
