@@ -1,5 +1,6 @@
 ﻿using Primora.Core.Items.Interfaces;
 using Primora.Extensions;
+using Primora.GameData.EditorObjects;
 using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
@@ -95,6 +96,20 @@ namespace Primora.GameData.Helpers
             return default;
         }
 
+        private static object ConvertJsonElement(object obj)
+        {
+            if (obj is not JsonElement jo) return obj;
+            return jo.ValueKind switch
+            {
+                JsonValueKind.String => jo.GetString(),
+                JsonValueKind.Number => ConvertNumber(jo),
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.Null => null,
+                _ => jo
+            };
+        }
+
         /// <summary>
         /// Helper to convert attributes element into its real object types.
         /// </summary>
@@ -107,19 +122,7 @@ namespace Primora.GameData.Helpers
 
             var newData = new Dictionary<string, object>();
             foreach (var kv in deserializedData)
-            {
-                var jsonElement = (JsonElement)kv.Value;
-                object value = jsonElement.ValueKind switch
-                {
-                    JsonValueKind.String => jsonElement.GetString(),
-                    JsonValueKind.Number => ConvertNumber(jsonElement),
-                    JsonValueKind.True => true,
-                    JsonValueKind.False => false,
-                    JsonValueKind.Null => null,
-                    _ => jsonElement
-                };
-                newData[kv.Key] = value;
-            }
+                newData[kv.Key] = ConvertJsonElement(kv.Value);
             return newData;
         }
 

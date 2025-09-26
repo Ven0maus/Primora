@@ -636,6 +636,18 @@ namespace EditorTool
                 Attributes = []
             };
 
+            // Init defaults
+            foreach (var attribute in _attributes)
+            {
+                if (attribute.Value.For != AttributeFor.Shared || attribute.Value.For != AttributeFor.Items)
+                    continue;
+
+                if (attribute.Value.DefaultValue != null)
+                {
+                    itemObject.Attributes[attribute.Key] = attribute.Value.DefaultValue;
+                }
+            }
+
             ListBoxItems.Items.Add(itemObject);
             ListBoxItems.SelectedItem = itemObject;
             _items[name] = itemObject;
@@ -764,6 +776,18 @@ namespace EditorTool
                 Attributes = [],
                 LootTable = []
             };
+
+            // Init defaults
+            foreach (var attribute in _attributes)
+            {
+                if (attribute.Value.For != AttributeFor.Shared || attribute.Value.For != AttributeFor.Npcs)
+                    continue;
+
+                if (attribute.Value.DefaultValue != null)
+                {
+                    npcObject.Attributes[attribute.Key] = attribute.Value.DefaultValue;
+                }
+            }
 
             ListBoxNpcs.Items.Add(npcObject);
             ListBoxNpcs.SelectedItem = npcObject;
