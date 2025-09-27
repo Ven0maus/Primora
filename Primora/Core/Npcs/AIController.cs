@@ -43,6 +43,11 @@ namespace Primora.Core.Npcs
         /// The current route the actor is patrolling.
         /// </summary>
         public List<Point> PatrolRoute { get; set; }
+        /// <summary>
+        /// Helper to track stamina for flee and chase states.
+        /// <br>This prevents infinite fleeing and chasing.</br>
+        /// </summary>
+        public int RunningStamina { get; set; } = 100;
 
         /// <summary>
         /// Defines if the current AIController behaves as a prey.

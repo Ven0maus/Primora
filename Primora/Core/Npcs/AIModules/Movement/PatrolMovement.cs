@@ -15,6 +15,9 @@ namespace Primora.Core.Npcs.AIModules.Movement
                 return;
             }
 
+            // Increase stamina when patrolling by one
+            self.AIController.RunningStamina = Math.Min(self.AIController.RunningStamina + 1, 100);
+
             // If we're waiting at a patrol point, decrement pause counter
             if (self.AIController.PatrolPauseCounter > 0)
             {

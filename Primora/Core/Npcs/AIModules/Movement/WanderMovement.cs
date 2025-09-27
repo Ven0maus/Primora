@@ -1,4 +1,6 @@
-﻿namespace Primora.Core.Npcs.AIModules.Movement
+﻿using System;
+
+namespace Primora.Core.Npcs.AIModules.Movement
 {
     /// <summary>
     /// Constant random wandering movement
@@ -20,6 +22,9 @@
                 if (!self.Move(self.AIController.CurrentPath.Dequeue()))
                     self.AIController.CurrentPath.Clear();
             }
+
+            // Increase stamina when wandering by one
+            self.AIController.RunningStamina = Math.Min(self.AIController.RunningStamina + 1, 100);
         }
     }
 }

@@ -3,7 +3,9 @@
     "Attributes": {
       "MaxHealth": 50,
       "Glyph": "@",
-      "Color": "#ffffff"
+      "Color": "#ffffff",
+      "Faction": "Neutral",
+      "VisionRange": 10
     },
     "LootTable": []
   },
@@ -23,7 +25,9 @@
       "AwarenessTypes": [
         "Sight"
       ],
-      "DecisionType": "Opportunistic"
+      "DecisionType": "Opportunistic",
+      "Faction": "Goblins",
+      "VisionRange": 4
     },
     "LootTable": [
       "Parrying Dagger",
@@ -42,7 +46,9 @@
       "AwarenessTypes": [
         "Sight"
       ],
-      "DecisionType": "Aggressive"
+      "DecisionType": "Aggressive",
+      "Faction": "Monsters",
+      "VisionRange": 4
     },
     "LootTable": [
       "Iron Hatchet",
@@ -62,7 +68,9 @@
       "DecisionType": "Prey",
       "AwarenessTypes": [
         "Sight"
-      ]
+      ],
+      "Faction": "Neutral",
+      "VisionRange": 2
     },
     "LootTable": []
   },
@@ -84,7 +92,9 @@
       "AwarenessTypes": [
         "Sight"
       ],
-      "DecisionType": "Predator"
+      "DecisionType": "Predator",
+      "Faction": "Neutral",
+      "VisionRange": 7
     },
     "LootTable": [
       "Animal Pelt"
@@ -106,7 +116,9 @@
       "DecisionType": "Predator",
       "AwarenessTypes": [
         "Sight"
-      ]
+      ],
+      "Faction": "Neutral",
+      "VisionRange": 5
     },
     "LootTable": [
       "Animal Pelt"

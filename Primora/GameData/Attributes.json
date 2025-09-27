@@ -118,5 +118,29 @@
       "Opportunistic",
       "Aggressive"
     ]
+  },
+  "Faction": {
+    "DefaultValue": "Neutral",
+    "Type": "Enum",
+    "For": "Npcs",
+    "Values": [
+      "Neutral",
+      "Bandits",
+      "Kingdom",
+      "Monsters",
+      "Goblins"
+    ]
+  },
+  "AttackRange": {
+    "DefaultValue": "1",
+    "Type": "Number",
+    "For": "Items",
+    "Values": null
+  },
+  "VisionRange": {
+    "DefaultValue": "1",
+    "Type": "Number",
+    "For": "Npcs",
+    "Values": null
   }
 }

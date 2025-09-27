@@ -15,6 +15,7 @@ namespace Primora.Core.Npcs.Objects
         public Dictionary<string, object> Attributes { get; set; }
         public AwarenessType[] AwarenessTypes { get; set; }
         public DecisionType DecisionType { get; set; }
+        public Faction Faction { get; set; }
 
         // Constitution
         public int MaxHealth { get; set; }
@@ -40,6 +41,7 @@ namespace Primora.Core.Npcs.Objects
         {
             Name = npcObject.Name;
             Attributes = npcObject.Attributes;
+            Faction = GameDataLoader.GetAttribute<Faction>(npcObject.Attributes, nameof(Faction));
 
             // Constitution
             MaxHealth = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(MaxHealth));

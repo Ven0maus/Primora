@@ -1,4 +1,6 @@
-﻿namespace Primora.Core.Npcs.AIModules.Movement
+﻿using System;
+
+namespace Primora.Core.Npcs.AIModules.Movement
 {
     internal class HuntMovement : MovementBase
     {
@@ -9,6 +11,9 @@
                 // Enqueue a new path, larger than wander range
                 EnqueuePath(self, RandomPositionWithinRange(self, 15));
             }
+
+            // Increase stamina when hunting by one
+            self.AIController.RunningStamina = Math.Min(self.AIController.RunningStamina + 1, 100);
 
             MoveOnCurrentPath(self);
         }

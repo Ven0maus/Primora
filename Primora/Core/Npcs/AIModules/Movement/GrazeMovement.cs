@@ -16,6 +16,9 @@ namespace Primora.Core.Npcs.AIModules.Movement
                 EnqueuePath(self, target);
             }
 
+            // Increase stamina when grazing by one
+            self.AIController.RunningStamina = Math.Min(self.AIController.RunningStamina + 1, 100);
+
             MoveOnCurrentPath(self);
         }
     }

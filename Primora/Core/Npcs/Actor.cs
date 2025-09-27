@@ -32,6 +32,7 @@ namespace Primora.Core.Npcs
         /// Represents the field of view for the actor.
         /// </summary>
         public IFOV FieldOfView { get; protected set; }
+        public Faction Faction { get; protected set; }
 
         /// <summary>
         /// Returns the zone or worldmap that the actor is active in.
@@ -46,6 +47,7 @@ namespace Primora.Core.Npcs
         {
             // General
             Name = actorDefinition.Name;
+            Faction = actorDefinition.Faction;
 
             // Handlers
             Stats = new ActorStats(this, actorDefinition);
@@ -90,12 +92,16 @@ namespace Primora.Core.Npcs
 
         public bool IsHostileTowards(Actor target)
         {
-            // If we are a predator and hungry
-            if (AIController.IsPredator && Stats.Hunger > 80) return true;
+            // Same faction will never fight eachother (unless neutral faction)
+            if (Faction != Faction.Neutral && target.Faction == Faction)
+                return false;
+
             // If we are considered aggressive
             if (AIController.IsAggressive) return true;
-            // If our current target is the same target
-            if (AIController.CurrentTarget == target) return true;
+            // If our current target is the same target or visa versa
+            if (AIController.CurrentTarget == target || target.AIController.CurrentTarget == target) return true;
+            // If we are a predator and hungry
+            if (AIController.IsPredator && Stats.Hunger > 80) return true;
 
             // Expand more later
             return false;
