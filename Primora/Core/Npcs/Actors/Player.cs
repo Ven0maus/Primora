@@ -1,9 +1,6 @@
-﻿using GoRogue.Pathing;
-using Primora.Core.Npcs.Objects;
-using Primora.Core.Procedural.WorldBuilding;
+﻿using Primora.Core.Procedural.WorldBuilding;
 using Primora.Screens.Main;
 using SadRogue.Primitives;
-using SadRogue.Primitives.GridViews;
 using System;
 using System.Collections.Generic;
 using System.Linq;

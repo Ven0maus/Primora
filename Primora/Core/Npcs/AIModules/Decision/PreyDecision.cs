@@ -15,9 +15,13 @@ namespace Primora.Core.Npcs.AIModules.Decision
 
             foreach (var target in detectedTargets)
             {
-                // Prey will always be afraid of predators, even if not hostile at the moment
-                if (!target.AIController.IsPredator && !target.IsHostileTowards(self))
-                    continue;
+                if (target.Stats.Health <= 0) continue;
+
+                // Consider non-ai neutral (player?)
+                if (target.AIController == null) continue;
+
+                // Always scared of predators
+                if (!target.AIController.IsPredator && !target.IsHostileTowards(self)) continue;
 
                 int dist = self.DistanceTo(target.Position);
                 if (dist < closestDistance)

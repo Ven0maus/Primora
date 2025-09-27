@@ -12,16 +12,14 @@ namespace Primora.Core.Npcs.AIModules.Movement
             if (self.AIController.CurrentPath.Count == 0)
             {
                 // Shorter range then hunt
-                var target = RandomPositionWithinRange(self, 5);
-                var path = self.Pathfinder.ShortestPath(self.Position, target);
-                foreach (var step in path.Steps)
-                    self.AIController.CurrentPath.Enqueue(step);
+                EnqueuePath(self, RandomPositionWithinRange(self, 5));
             }
-            if (self.AIController.CurrentPath.Count != 0)
-            {
-                if (!self.Move(self.AIController.CurrentPath.Dequeue()))
-                    self.AIController.CurrentPath.Clear();
-            }
+
+            // Skip ticks randomly
+            if (Random.Shared.NextDouble() < 0.6)
+                return;
+
+            MoveOnCurrentPath(self);
 
             // Increase stamina when wandering by one
             self.AIController.RunningStamina = Math.Min(self.AIController.RunningStamina + 1, 100);

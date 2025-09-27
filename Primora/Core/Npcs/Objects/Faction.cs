@@ -3,6 +3,7 @@
     internal enum Faction
     {
         Neutral,
+        Goblins,
         Bandits,
         Kingdom,
         Monsters

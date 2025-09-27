@@ -15,14 +15,11 @@ namespace Primora.Core.Npcs.AIModules.Decision
             // TODO: Implement that if there are hostile enemies near prey, then maybe decide not to attack
             foreach (var target in detectedTargets)
             {
-                // If not prey and its not hostile towards me
-                // (Eg only hunt other predators that are hostile)
-                // TODO: Fix so issues like Goblin and Goblin Brute won't attack eachother
-                // (also can't use race, because human want to fight other humans)
-                if (target.Name == self.Name) continue;
+                if (target.Stats.Health <= 0) continue;
+
 
                 // Is the target hostile towards me?
-                var canAttack = target.AIController.IsPrey || target.IsHostileTowards(self);
+                var canAttack = (target.AIController != null && target.AIController.IsPrey) || target.IsHostileTowards(self);
                 if (!canAttack)
                 {
                     // If we are not hungry enough to be willing to attack this, then continue
@@ -39,7 +36,7 @@ namespace Primora.Core.Npcs.AIModules.Decision
             }
 
             // If we have found prey, but we are not hungry and they are not attacking us at the moment, then skip
-            if (closestPrey != null && self.Stats.Hunger < 50 && closestPrey.AIController.CurrentTarget != self)
+            if (closestPrey != null && self.Stats.Hunger < 50 && closestPrey.AIController?.CurrentTarget != self)
                 closestPrey = null;
 
             if (closestPrey != null)
@@ -47,7 +44,7 @@ namespace Primora.Core.Npcs.AIModules.Decision
                 self.AIController.CurrentTarget = closestPrey;
 
                 // If low health, then flee else if in attack range → combat, otherwise chase
-                if (self.Stats.Health <= self.Stats.Health * 0.15 && !closestPrey.AIController.IsPrey)
+                if (self.Stats.Health <= self.Stats.Health * 0.15 && (closestPrey.AIController == null || !closestPrey.AIController.IsPrey))
                     self.AIController.AIState = AIState.Flee;
                 else if (closestDistance <= self.Stats.AttackRange)
                     self.AIController.AIState = AIState.Combat;

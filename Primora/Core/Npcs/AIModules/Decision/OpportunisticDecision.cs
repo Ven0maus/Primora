@@ -13,10 +13,7 @@ namespace Primora.Core.Npcs.AIModules.Decision
 
             foreach (var target in detectedTargets)
             {
-                // Attack everyone that is alive except same type of actors (eg skellies won't attack other skellies)
-                // TODO: Fix so issues like Goblin and Goblin Brute won't attack eachother
-                // (also can't use race, because human want to fight other humans)
-                if (target.Stats.Health <= 0 || self.Name == target.Name)
+                if (target.Stats.Health <= 0 || !self.IsHostileTowards(target))
                     continue;
 
                 if (target.Stats.Health < lowestHP)

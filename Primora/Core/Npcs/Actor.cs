@@ -7,6 +7,7 @@ using SadConsole.Entities;
 using SadRogue.Primitives;
 using SadRogue.Primitives.GridViews;
 using System;
+using Zone = Primora.Core.Procedural.WorldBuilding.Zone;
 
 namespace Primora.Core.Npcs
 {
@@ -58,7 +59,7 @@ namespace Primora.Core.Npcs
             Position = position;
 
             // World map entities do not need pathfinding
-            if (location is Zone)
+            if (Location is Zone)
             {
                 var walkabilityView = new LambdaGridView<bool>(() => Location.Width, () => Location.Height,
                     (a) => Location.IsWalkable(a) && !ActorManager.ActorExistsAt(Location, a, out _));
@@ -92,18 +93,32 @@ namespace Primora.Core.Npcs
 
         public bool IsHostileTowards(Actor target)
         {
+            return IsHostileTowardsInternal(target, true);
+        }
+
+        private bool IsHostileTowardsInternal(Actor target, bool reverseLookup)
+        {
             // Same faction will never fight eachother (unless neutral faction)
             if (Faction != Faction.Neutral && target.Faction == Faction)
                 return false;
 
+            if (AIController == null)
+            {
+                // Player, do a reverse lookup
+                return target.IsHostileTowardsInternal(this, false);
+            }
+
             // If we are considered aggressive
             if (AIController.IsAggressive) return true;
             // If our current target is the same target or visa versa
-            if (AIController.CurrentTarget == target || target.AIController.CurrentTarget == target) return true;
-            // If we are a predator and hungry
-            if (AIController.IsPredator && Stats.Hunger > 80) return true;
+            if (AIController.CurrentTarget == target || target.AIController?.CurrentTarget == this) return true;
+            // If we are a predator and hungry or target is prey
+            if (AIController.IsPredator && (Stats.Hunger > 80 || (target.AIController != null && target.AIController.IsPrey))) return true;
 
-            // Expand more later
+            // Do a reverse lookup in the other direction
+            if (reverseLookup)
+                return target.IsHostileTowardsInternal(this, false);
+
             return false;
         }
 
