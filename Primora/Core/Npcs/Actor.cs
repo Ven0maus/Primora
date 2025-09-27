@@ -1,4 +1,5 @@
-﻿using GoRogue.Pathing;
+﻿using GoRogue.FOV;
+using GoRogue.Pathing;
 using Primora.Core.Npcs.EventArguments;
 using Primora.Core.Npcs.Objects;
 using Primora.Core.Procedural.Objects;
@@ -27,6 +28,10 @@ namespace Primora.Core.Npcs
         /// The pathfinding algorithm that is used.
         /// </summary>
         public FastAStar Pathfinder { get; protected set; }
+        /// <summary>
+        /// Represents the field of view for the actor.
+        /// </summary>
+        public IFOV FieldOfView { get; protected set; }
 
         /// <summary>
         /// Returns the zone or worldmap that the actor is active in.
@@ -53,9 +58,13 @@ namespace Primora.Core.Npcs
             // World map entities do not need pathfinding
             if (location is Zone)
             {
-                var lambdaGridView = new LambdaGridView<bool>(() => Location.Width, () => Location.Height,
+                var walkabilityView = new LambdaGridView<bool>(() => Location.Width, () => Location.Height,
                     (a) => Location.IsWalkable(a) && !ActorManager.ActorExistsAt(Location, a, out _));
-                Pathfinder = new FastAStar(lambdaGridView, Distance.Manhattan);
+                Pathfinder = new FastAStar(walkabilityView, Distance.Manhattan);
+
+                var transparencyView = new LambdaGridView<bool>(() => Location.Width, () => Location.Height,
+                    (a) => !Location.ObstructsView(a));
+                FieldOfView = new RecursiveShadowcastingBooleanBasedFOV(transparencyView);
             }
 
             // Register in manager on creation after position is defined
@@ -117,6 +126,10 @@ namespace Primora.Core.Npcs
             if (!InBounds(targetPos)) return false;
             if (checkCanMove && !CanMove(targetPos)) return false;
             Position = targetPos;
+
+            // Calculate field of view if present
+            FieldOfView?.Calculate(Position, Stats.VisionRange);
+
             return true;
         }
 

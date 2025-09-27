@@ -7,5 +7,6 @@ namespace Primora.Core.Procedural.Objects
         int Width { get; }
         int Height { get; }
         bool IsWalkable(Point position);
+        bool ObstructsView(Point a);
     }
 }

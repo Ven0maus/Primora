@@ -104,8 +104,21 @@ namespace Primora.Core.Procedural.WorldBuilding
         internal bool InBounds(Point position)
             => InBounds(position.X, position.Y);
 
+        /// <summary>
+        /// Returns true if the specified tile in the zone is walkable.
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public bool IsWalkable(Point position)
             => InBounds(position) && GetTileInfo(position).Walkable;
+
+        /// <summary>
+        /// Returns true if the specified tile in the zone obstructs the view.
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        public bool ObstructsView(Point position)
+            => InBounds(position) && GetTileInfo(position).ObstructView;
 
         private void InitTilemap()
         {

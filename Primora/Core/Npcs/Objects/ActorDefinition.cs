@@ -23,6 +23,7 @@ namespace Primora.Core.Npcs.Objects
         public int Damage { get; set; }
 
         // Defensive
+        public int VisionRange { get; set; }
         public int Armour { get; set; }
         public int Evasion { get; set; }
 
@@ -49,6 +50,7 @@ namespace Primora.Core.Npcs.Objects
             // Defensive
             Armour = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(Armour));
             Evasion = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(Evasion));
+            VisionRange = GameDataLoader.GetAttribute<int>(npcObject.Attributes, nameof(VisionRange));
 
             // Rendering
             Color = GameDataLoader.GetAttribute<Color>(npcObject.Attributes, nameof(Color));

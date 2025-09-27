@@ -17,6 +17,7 @@ namespace Primora.Core.Npcs.Objects
         public int Damage { get; private set; }
 
         // Defensive stats
+        public int VisionRange { get; private set; }
         public int Armour { get; private set; }
         public int Evasion { get; private set; }
 
@@ -39,11 +40,12 @@ namespace Primora.Core.Npcs.Objects
 
             // Offensive
             Damage = Math.Min(1, actorDefinition.Damage);
-            AttackRange = 1; // Minimum
+            AttackRange = 1; // Minimum (can be increased by items)
 
             // Defensive
             Armour = actorDefinition.Armour;
             Evasion = actorDefinition.Evasion;
+            VisionRange = actorDefinition.VisionRange;
         }
 
         /// <summary>

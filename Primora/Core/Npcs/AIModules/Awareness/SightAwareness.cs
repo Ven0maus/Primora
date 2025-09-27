@@ -7,7 +7,20 @@ namespace Primora.Core.Npcs.AIModules.Awareness
     {
         public IEnumerable<Actor> Detect(Actor self)
         {
-            yield break;
+            // Simple FOV based detection
+            var visiblePositions = self.FieldOfView.CurrentFOV;
+            foreach (var position in visiblePositions)
+            {
+                // Check if an actor exists at the position in the FOV
+                if (!ActorManager.ActorExistsAt(self.Location, position, out Actor actor))
+                    continue;
+
+                // Skip self obviously
+                if (actor == self) 
+                    continue;
+
+                yield return actor;
+            }
         }
     }
 }
