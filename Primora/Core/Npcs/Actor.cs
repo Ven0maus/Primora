@@ -34,6 +34,7 @@ namespace Primora.Core.Npcs
         /// </summary>
         public IFOV FieldOfView { get; protected set; }
         public Faction Faction { get; protected set; }
+        public Race Race { get; protected set; }
 
         /// <summary>
         /// Returns the zone or worldmap that the actor is active in.
@@ -49,6 +50,7 @@ namespace Primora.Core.Npcs
             // General
             Name = actorDefinition.Name;
             Faction = actorDefinition.Faction;
+            Race = actorDefinition.Race;
 
             // Handlers
             Stats = new ActorStats(this, actorDefinition);

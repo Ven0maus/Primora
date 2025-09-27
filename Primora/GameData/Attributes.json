@@ -142,5 +142,19 @@
     "Type": "Number",
     "For": "Npcs",
     "Values": null
+  },
+  "Race": {
+    "DefaultValue": "Human",
+    "Type": "Enum",
+    "For": "Npcs",
+    "Values": [
+      "Human",
+      "Goblin",
+      "Undead",
+      "Elf",
+      "Dwarf",
+      "Demon",
+      "Animal"
+    ]
   }
 }

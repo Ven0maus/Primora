@@ -116,25 +116,14 @@ namespace Primora.Core.Npcs
                 _combatModule?.UpdateCombat(Actor);
         }
 
-        private Actor SelectClosestTarget(IEnumerable<Actor> targets)
+        /// <summary>
+        /// Check if the npc is aware of the specified actor.
+        /// </summary>
+        /// <param name="actor"></param>
+        /// <returns></returns>
+        public bool IsAwareOf(Actor actor)
         {
-            Actor closest = null;
-            int bestDistance = int.MaxValue;
-
-            foreach (var target in targets)
-            {
-                int dx = Math.Abs(target.Position.X - Actor.Position.X);
-                int dy = Math.Abs(target.Position.Y - Actor.Position.Y);
-
-                int manhattanDistance = dx + dy; // Manhattan distance
-                if (manhattanDistance < bestDistance)
-                {
-                    bestDistance = manhattanDistance;
-                    closest = target;
-                }
-            }
-
-            return closest;
+            return _awarenessModules.Any(a => a.Detect(Actor).Contains(actor));
         }
     }
 }

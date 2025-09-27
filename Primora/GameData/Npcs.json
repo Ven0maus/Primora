@@ -5,7 +5,8 @@
       "Glyph": "@",
       "Color": "#ffffff",
       "Faction": "Neutral",
-      "VisionRange": 10
+      "VisionRange": 10,
+      "Race": "Human"
     },
     "LootTable": []
   },
@@ -27,7 +28,8 @@
       ],
       "DecisionType": "Opportunistic",
       "Faction": "Goblins",
-      "VisionRange": 4
+      "VisionRange": 4,
+      "Race": "Goblin"
     },
     "LootTable": [
       "Parrying Dagger",
@@ -48,7 +50,8 @@
       ],
       "DecisionType": "Aggressive",
       "Faction": "Monsters",
-      "VisionRange": 4
+      "VisionRange": 4,
+      "Race": "Undead"
     },
     "LootTable": [
       "Iron Hatchet",
@@ -70,7 +73,8 @@
         "Sight"
       ],
       "Faction": "Neutral",
-      "VisionRange": 2
+      "VisionRange": 2,
+      "Race": "Animal"
     },
     "LootTable": []
   },
@@ -94,7 +98,8 @@
       ],
       "DecisionType": "Predator",
       "Faction": "Neutral",
-      "VisionRange": 7
+      "VisionRange": 7,
+      "Race": "Animal"
     },
     "LootTable": [
       "Animal Pelt"
@@ -118,7 +123,8 @@
         "Sight"
       ],
       "Faction": "Neutral",
-      "VisionRange": 5
+      "VisionRange": 5,
+      "Race": "Animal"
     },
     "LootTable": [
       "Animal Pelt"

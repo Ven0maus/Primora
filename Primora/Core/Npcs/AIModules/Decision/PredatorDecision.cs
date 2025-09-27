@@ -12,32 +12,36 @@ namespace Primora.Core.Npcs.AIModules.Decision
             Actor closestPrey = null;
             int closestDistance = int.MaxValue;
 
-            // TODO: Implement that if there are hostile enemies near prey, then maybe decide not to attack
-            foreach (var target in detectedTargets)
+            // Only decide on a target if predator is hungry
+            if (self.Stats.Hunger >= 50)
             {
-                if (target.Stats.Health <= 0) continue;
-
-
-                // Is the target hostile towards me?
-                var canAttack = (target.AIController != null && target.AIController.IsPrey) || target.IsHostileTowards(self);
-                if (!canAttack)
+                foreach (var target in detectedTargets)
                 {
-                    // If we are not hungry enough to be willing to attack this, then continue
-                    if (self.Stats.Hunger < 80)
-                        continue;
-                }
+                    if (target.Stats.Health <= 0) continue;
 
-                int dist = self.DistanceTo(target.Position);
-                if (dist < closestDistance)
-                {
-                    closestDistance = dist;
-                    closestPrey = target;
+                    // Never the same faction
+                    if (self.Faction == target.Faction) continue;
+
+                    var isHostile = self.IsHostileTowards(target);
+                    var isPrey = target.AIController != null && target.AIController.IsPrey;
+
+                    // Anything prey or hostile is a valid target
+                    // However when really hungry anything is a valid target
+                    if (!isPrey && !isHostile)
+                    {
+                        // If we are not hungry enough to be willing to attack this, then continue
+                        if (self.Stats.Hunger < 80)
+                            continue;
+                    }
+
+                    int dist = self.DistanceTo(target.Position);
+                    if (dist < closestDistance)
+                    {
+                        closestDistance = dist;
+                        closestPrey = target;
+                    }
                 }
             }
-
-            // If we have found prey, but we are not hungry and they are not attacking us at the moment, then skip
-            if (closestPrey != null && self.Stats.Hunger < 50 && closestPrey.AIController?.CurrentTarget != self)
-                closestPrey = null;
 
             if (closestPrey != null)
             {
