@@ -1,7 +1,9 @@
-﻿using Primora.Core.Npcs.Objects;
+﻿using GoRogue.Pathing;
+using Primora.Core.Npcs.Objects;
 using Primora.Core.Procedural.WorldBuilding;
 using Primora.Screens.Main;
 using SadRogue.Primitives;
+using SadRogue.Primitives.GridViews;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +36,6 @@ namespace Primora.Core.Npcs.Actors
         /// True if the player is in aiming mode.
         /// </summary>
         public bool IsAiming { get; set; } = false;
-
         public bool IsFastTraveling { get; private set; } = false;
 
         public Player(Zone zone, Point position) : 

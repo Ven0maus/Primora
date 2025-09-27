@@ -13,11 +13,16 @@ namespace Primora.Core.Npcs.Objects
         public int Health { get; private set; }
 
         // Offensive stats
+        public int AttackRange { get; private set; }
         public int Damage { get; private set; }
 
         // Defensive stats
         public int Armour { get; private set; }
         public int Evasion { get; private set; }
+
+        // Other stats
+        public int Hunger { get; set; }
+        public int Thirst { get; set; }
 
         /// <summary>
         /// Raised when the actor dies.
@@ -34,6 +39,7 @@ namespace Primora.Core.Npcs.Objects
 
             // Offensive
             Damage = Math.Min(1, actorDefinition.Damage);
+            AttackRange = 1; // Minimum
 
             // Defensive
             Armour = actorDefinition.Armour;
@@ -59,6 +65,7 @@ namespace Primora.Core.Npcs.Objects
 
         internal void AddItemStats(ItemStats providedStats)
         {
+            AttackRange += providedStats.AttackRange;
             Damage += providedStats.Damage;
             Armour += providedStats.Armour;
             Evasion += providedStats.Evasion;
@@ -66,6 +73,7 @@ namespace Primora.Core.Npcs.Objects
 
         internal void RemoveItemStats(ItemStats providedStats)
         {
+            AttackRange -= providedStats.AttackRange;
             Damage -= providedStats.Damage;
             Armour -= providedStats.Armour;
             Evasion -= providedStats.Evasion;

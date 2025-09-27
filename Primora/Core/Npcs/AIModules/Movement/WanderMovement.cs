@@ -1,12 +1,25 @@
-﻿using Primora.Core.Npcs.Interfaces;
-
-namespace Primora.Core.Npcs.AIModules.Movement
+﻿namespace Primora.Core.Npcs.AIModules.Movement
 {
-    internal class WanderMovement : IMovementModule
+    /// <summary>
+    /// Constant random wandering movement
+    /// </summary>
+    internal class WanderMovement : MovementBase
     {
-        public void UpdateMovement(Actor self)
+        public override void UpdateMovement(Actor self)
         {
-            
+            if (self.AIController.CurrentPath.Count == 0)
+            {
+                // Shorter range then hunt
+                var target = RandomPositionWithinRange(self, 5);
+                var path = self.Pathfinder.ShortestPath(self.Position, target);
+                foreach (var step in path.Steps)
+                    self.AIController.CurrentPath.Enqueue(step);
+            }
+            if (self.AIController.CurrentPath.Count != 0)
+            {
+                if (!self.Move(self.AIController.CurrentPath.Dequeue()))
+                    self.AIController.CurrentPath.Clear();
+            }
         }
     }
 }

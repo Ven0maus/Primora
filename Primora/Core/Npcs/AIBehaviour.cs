@@ -16,7 +16,13 @@ namespace Primora.Core.Npcs
         /// </summary>
         private static readonly Dictionary<AIState, IMovementModule> _movementModules = new()
         {
-            { AIState.Wander, new WanderMovement() }
+            { AIState.Wander, new WanderMovement() },
+            { AIState.Flee, new FleeMovement() },
+            { AIState.Combat, new CombatMovement() },
+            { AIState.Graze, new GrazeMovement() },
+            { AIState.Chase, new ChaseMovement() },
+            { AIState.Hunt, new HuntMovement() },
+            { AIState.Patrol, new PatrolMovement() },
         };
 
         private static readonly Dictionary<DecisionType, IDecisionModule> _decisionModules = new()

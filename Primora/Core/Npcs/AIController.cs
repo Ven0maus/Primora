@@ -1,5 +1,7 @@
-﻿using Primora.Core.Npcs.Interfaces;
+﻿using Primora.Core.Npcs.AIModules.Decision;
+using Primora.Core.Npcs.Interfaces;
 using Primora.Core.Npcs.Objects;
+using SadRogue.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,9 +10,52 @@ namespace Primora.Core.Npcs
 {
     internal class AIController
     {
+        /// <summary>
+        /// The actor this controller is controlling.
+        /// </summary>
         public Actor Actor { get; }
-        public Actor CurrentTarget { get; set; }
+        /// <summary>
+        /// The current state the AI is in.
+        /// </summary>
         public AIState AIState { get; set; }
+
+        /// <summary>
+        /// If there is a target in awareness of actor, this is the closest target.
+        /// </summary>
+        public Actor CurrentTarget { get; set; }
+        /// <summary>
+        /// Used for tracking target with pathfinding updates in AIState.Chase
+        /// </summary>
+        public Point LastKnownTargetPosition { get; set; }
+        /// <summary>
+        /// If pathfinding, this is the path it is currently going.
+        /// </summary>
+        public Queue<Point> CurrentPath { get; }
+        /// <summary>
+        /// Used for patrolling area when in AIState.Patrol
+        /// </summary>
+        public int CurrentPatrolIndex { get; set; } = 0;
+        /// <summary>
+        /// Defines how many turns to wait before continueing with patrol.
+        /// </summary>
+        public int PatrolPauseCounter { get; set; } = 0;
+        /// <summary>
+        /// The current route the actor is patrolling.
+        /// </summary>
+        public List<Point> PatrolRoute { get; set; }
+
+        /// <summary>
+        /// Defines if the current AIController behaves as a prey.
+        /// </summary>
+        public bool IsPrey => _decisionModule is PreyDecision;
+        /// <summary>
+        /// Defines if the current AIController behaves as a predator.
+        /// </summary>
+        public bool IsPredator => _decisionModule is PredatorDecision;
+        /// <summary>
+        /// Defines if the current AIController behaves aggressively.
+        /// </summary>
+        public bool IsAggressive => _decisionModule is AggressiveDecision;
 
         // Cached hashset for performance
         private readonly HashSet<Actor> _detectedTargets = [];
@@ -24,6 +69,7 @@ namespace Primora.Core.Npcs
         public AIController(Actor actor, ActorDefinition actorDefinition)
         {
             Actor = actor;
+            CurrentPath = [];
 
             // These modules don't change anymore
             _decisionModule = AIBehaviour.GetDecisionModule(actorDefinition.DecisionType);
@@ -50,6 +96,10 @@ namespace Primora.Core.Npcs
             // Step 3: Assign movement module to be used based on state
             if (prevState != AIState)
             {
+                // We are changing our movement logic, reset current path
+                if (CurrentPath.Count > 0)
+                    CurrentPath.Clear();
+
                 _movementModule = AIBehaviour.GetMovementModule(AIState);
             }
 

@@ -1,8 +1,11 @@
-﻿using Primora.Core.Npcs.EventArguments;
+﻿using GoRogue.Pathing;
+using Primora.Core.Npcs.EventArguments;
 using Primora.Core.Npcs.Objects;
 using Primora.Core.Procedural.Objects;
 using SadConsole.Entities;
 using SadRogue.Primitives;
+using SadRogue.Primitives.GridViews;
+using System;
 
 namespace Primora.Core.Npcs
 {
@@ -20,6 +23,10 @@ namespace Primora.Core.Npcs
         /// Contains all the equipment the actor is wielding.
         /// </summary>
         public EquipmentManager Equipment { get; }
+        /// <summary>
+        /// The pathfinding algorithm that is used.
+        /// </summary>
+        public FastAStar Pathfinder { get; protected set; }
 
         /// <summary>
         /// Returns the zone or worldmap that the actor is active in.
@@ -32,6 +39,9 @@ namespace Primora.Core.Npcs
                   glyph: actorDefinition.Glyph,
                   zIndex: Constants.Npcs.NpcZIndex)
         {
+            // General
+            Name = actorDefinition.Name;
+
             // Handlers
             Stats = new ActorStats(this, actorDefinition);
             Equipment = new();
@@ -39,6 +49,14 @@ namespace Primora.Core.Npcs
             // Positioning and location
             Location = location;
             Position = position;
+
+            // World map entities do not need pathfinding
+            if (location is Zone)
+            {
+                var lambdaGridView = new LambdaGridView<bool>(() => Location.Width, () => Location.Height,
+                    (a) => Location.IsWalkable(a) && !ActorManager.ActorExistsAt(Location, a, out _));
+                Pathfinder = new FastAStar(lambdaGridView, Distance.Manhattan);
+            }
 
             // Register in manager on creation after position is defined
             ActorManager.Register(this);
@@ -59,6 +77,33 @@ namespace Primora.Core.Npcs
         public virtual void EndTurn()
         {
             AIController?.Update();
+        }
+
+        public bool IsHostileTowards(Actor target)
+        {
+            // If we are a predator and hungry
+            if (AIController.IsPredator && Stats.Hunger > 80) return true;
+            // If we are considered aggressive
+            if (AIController.IsAggressive) return true;
+            // If our current target is the same target
+            if (AIController.CurrentTarget == target) return true;
+
+            // Expand more later
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the MANHATTAN distance towards the given position from the actor.
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        public int DistanceTo(Point position)
+        {
+            int dx = Math.Abs(position.X - Position.X);
+            int dy = Math.Abs(position.Y - Position.Y);
+
+            // Manhattan distance
+            return dx + dy;
         }
 
         /// <summary>

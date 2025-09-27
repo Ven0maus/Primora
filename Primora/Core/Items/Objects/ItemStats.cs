@@ -6,6 +6,7 @@ namespace Primora.Core.Items.Objects
     public class ItemStats
     {
         // Offensive stats
+        public int AttackRange { get; set; }
         public int Damage { get; set; }
 
         // Defensive stats
@@ -19,6 +20,7 @@ namespace Primora.Core.Items.Objects
         public ItemStats(Dictionary<string, object> attributes)
         {
             // Offensive
+            AttackRange = GameDataLoader.GetAttribute<int>(attributes, nameof(AttackRange));
             Damage = GameDataLoader.GetAttribute<int>(attributes, nameof(Damage));
 
             // Defensive
@@ -34,6 +36,7 @@ namespace Primora.Core.Items.Objects
         {
             return new ItemStats
             {
+                AttackRange = AttackRange,
                 Damage = Damage,
                 Armour = Armour,
                 Evasion = Evasion
